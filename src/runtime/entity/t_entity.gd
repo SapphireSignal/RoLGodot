@@ -2,12 +2,23 @@ class_name TEntity
 extends TObject
 ## Port of TEntity (BaseConflict.Entity.pas:323, implementation :507). An entity is its eventbus, blackboard and
 ## components; everything else lives in components.
-## Not ported yet: CreateFromScript / CreateMetaFromScript / CreateDataFromScript / ApplyScript /
-## ApplyScriptReturnGroups (the script runner, phase 2 step 2), Serialize / Deserialize (client-server sync,
-## phase 3), OwningCommander (needs the entity manager, phase 3).
+## Not ported yet: Serialize / Deserialize (client-server sync, phase 3), OwningCommander (needs the entity
+## manager, phase 3).
 
 const C = preload("res://src/runtime/dws/dws_const.gd")
 const BC = preload("res://src/runtime/base_conflict_constants.gd")
+## Original script path (lower case, relative to Scripts\) -> generated GDScript, per side.
+const SCRIPT_INDEX = preload("res://src/content/scripts/script_index.gd")
+## BaseConflict.Constants.pas / BaseConflict.Constants.Cards.pas
+const SCRIPT_INHERIT_VAR_NAME = "InheritsFrom"
+const SCRIPT_INHERIT_PRECEDING_VAR_NAME = "InheritsFromPreceding"
+const FILE_EXTENSION_ENTITY = ".ets"
+const PATH_SCRIPT = "\\Scripts\\"
+
+## Port: the last error of the script runner (the original raised an exception), for tests and logs.
+static var LastScriptError := ""
+## Tests that provoke script errors on purpose set this to keep the log free of expected errors.
+static var QuietScriptErrors := false
 ## TResourceManagerComponent (BaseConflict.EntityComponents.Shared.pas:386): every entity gets one in Create.
 ## Loaded by path so the entity core works before the shared components are ported.
 const RESOURCE_MANAGER_PATH := "res://src/runtime/components/t_resource_manager_component.gd"
@@ -107,6 +118,136 @@ func Create(GlobalEventbus = null, ID: int = 0) -> TEntity:
 	if ResourceLoader.exists(RESOURCE_MANAGER_PATH):
 		load(RESOURCE_MANAGER_PATH).new().CreateGroupedAll(self)
 	return self
+
+
+# ---- script runner (BaseConflict.Entity.pas:587-712, Engine/Engine.Script.pas TScript) ------------------------
+
+## CreateFromScript(PatternFileName, GlobalEventbus[, Initializer]): builds an entity with the script's CreateEntity.
+## Initializer: Callable(Entity) or an empty Callable (nil).
+static func CreateFromScript(PatternFileName: String, GlobalEventbus, Initializer := Callable()) -> TEntity:
+	return CreateFromScriptProc(PatternFileName, "CreateEntity", GlobalEventbus, Initializer)
+
+
+static func CreateMetaFromScript(PatternFileName: String, GlobalEventbus, Initializer := Callable()) -> TEntity:
+	return CreateFromScriptProc(PatternFileName, "CreateMeta", GlobalEventbus, Initializer, true)
+
+
+static func CreateDataFromScript(PatternFileName: String, GlobalEventbus, Initializer := Callable()) -> TEntity:
+	return CreateFromScriptProc(PatternFileName, "CreateData", GlobalEventbus, Initializer, true)
+
+
+## InheritsFrom: the parent chain builds the entity (its ProcName runs fully), then ours runs on it.
+## InheritsFromPreceding: ours runs inside the initializer, right after TEntity.Create, before the base script's.
+## Neither: this is the base script; it creates the entity and runs the initializer, then ProcName.
+## The entity keeps the file name of the script first asked for. Returns null where the original raised.
+static func CreateFromScriptProc(PatternFileName: String, ProcName: String, GlobalEventbus, Initializer := Callable(), IsMeta := false, FileNameOverride := "") -> TEntity:
+	var FinalScriptFilename := PatternFileName if FileNameOverride == "" else FileNameOverride
+	var ScriptFilePath := "scripts\\" + PatternFileName
+	if ScriptFilePath.replace("\\", "/").get_file().get_extension() == "":
+		ScriptFilePath += FILE_EXTENSION_ENTITY
+	var Server: bool = GlobalEventbus == null or GlobalEventbus.ApplicationType == C.nsServer
+	var EntityPattern = CompileScriptFromFile(ScriptFilePath, Server)  # RunMain: init global variables of the script
+	if EntityPattern == null:
+		return null
+	_SetScriptGlobals(EntityPattern, GlobalEventbus)
+	var Result: TEntity = null
+	if SCRIPT_INHERIT_VAR_NAME in EntityPattern:
+		Result = CreateFromScriptProc(EntityPattern.get(SCRIPT_INHERIT_VAR_NAME), ProcName, GlobalEventbus, Initializer, IsMeta, FinalScriptFilename)
+	elif SCRIPT_INHERIT_PRECEDING_VAR_NAME in EntityPattern:
+		var Preceding := func(Entity: TEntity) -> void:
+			if Initializer.is_valid():
+				Initializer.call(Entity)
+			ExecuteFunction(EntityPattern, ProcName, [Entity])
+		Result = CreateFromScriptProc(EntityPattern.get(SCRIPT_INHERIT_PRECEDING_VAR_NAME), ProcName, GlobalEventbus, Preceding, IsMeta, FinalScriptFilename)
+		if Result != null:
+			Result.ScriptFile = FinalScriptFilename
+		return Result
+	else:
+		# only base script file runs initilization methods
+		Result = TEntity.new().Create(GlobalEventbus, 0)
+		Result.IsAbstract = IsMeta
+		if Initializer.is_valid():
+			Initializer.call(Result)
+	if Result == null:
+		return null
+	Result.ScriptFile = FinalScriptFilename
+	ExecuteFunction(EntityPattern, ProcName, [Result])
+	return Result
+
+
+## Runs ProcName (default 'Apply') of a script with Parameters, or with this entity if there are none.
+func ApplyScript(ScriptFileName: String, ProcName := "", Parameters = null) -> void:
+	if ProcName == "":
+		ProcName = "Apply"
+	if not ScriptFileName.is_absolute_path() and not ScriptFileName.begins_with(PATH_SCRIPT):
+		ScriptFileName = PATH_SCRIPT + ScriptFileName
+	var Script = CompileScriptFromFile(ScriptFileName, IsServer())
+	if Script == null:
+		return
+	_SetScriptGlobals(Script, GlobalEventbus)
+	# assigned(Parameters): a dynamic array is nil when empty
+	if Parameters != null and not Parameters.is_empty():
+		ExecuteFunction(Script, ProcName, Parameters)
+	else:
+		ExecuteFunction(Script, ProcName, [self])
+
+
+## Runs ProcName (default 'Apply') with this entity; it returns the component groups it created (array of integer).
+func ApplyScriptReturnGroups(ScriptFileName: String, ProcName := "") -> Array:
+	var finalProcName := "Apply" if ProcName == "" else ProcName
+	var Script = CompileScriptFromFile("scripts\\" + ScriptFileName, IsServer())
+	if Script == null:
+		return []
+	_SetScriptGlobals(Script, GlobalEventbus)
+	var ReturnValue = ExecuteFunction(Script, finalProcName, [self])
+	if not ReturnValue is Array:
+		return []
+	# integer -> Byte (truncates like the original's assignment), then ByteArrayToComponentGroup
+	return DSet.Make(ReturnValue.map(func(i): return int(i) & 0xFF))
+
+
+## Port of TScriptmanager.CompileScriptFromFile + TScript.RunMain: the generated script of one side for an original
+## path (any case, either slash, relative to or inside the Scripts folder), instantiated (= globals initialised).
+## Fails like the original on a missing file and on a file the original could not compile.
+static func CompileScriptFromFile(FileName: String, Server: bool) -> Object:
+	var Key := "\\" + FileName.replace("/", "\\").to_lower()
+	var At := Key.rfind("\\scripts\\")
+	Key = Key.substr(At + 9) if At >= 0 else Key.substr(1)
+	var Index: Dictionary = SCRIPT_INDEX.SERVER if Server else SCRIPT_INDEX.CLIENT
+	if not Index.has(Key):
+		_ScriptError("TScriptmanager.CompileScriptFromFile: Can't find scriptfile \"%s\"." % FileName)
+		return null
+	var Source: GDScript = load(Index[Key])
+	var Constants := Source.get_script_constant_map()
+	if Constants.has("ORIGINAL_COMPILE_ERROR"):
+		_ScriptError("Error while compiling scriptfile (%s): %s" % [FileName, Constants["ORIGINAL_COMPILE_ERROR"]])
+		return null
+	return Source.new()
+
+
+## Port of TScript.ExecuteFunction: the parameter count must match the routine's exactly.
+static func ExecuteFunction(Script: Object, Name: String, Parameters: Array) -> Variant:
+	if not Script.has_method(Name):
+		_ScriptError("TScript.ExecuteFunction: Unknown function \"%s\"." % Name)
+		return null
+	if Script.get_method_argument_count(Name) != Parameters.size():
+		_ScriptError("TScript.ExecuteFunction: Parametercount doesn't match.")
+		return null
+	return Script.callv(Name, Parameters)
+
+
+## SetGlobalVariableValueIfExist for 'GlobalEventbus' and 'Game' (the Game of the bus's side).
+static func _SetScriptGlobals(Script: Object, GlobalEventbus) -> void:
+	if "GlobalEventbus" in Script:
+		Script.set("GlobalEventbus", GlobalEventbus)
+	if "Game" in Script:
+		Script.set("Game", GlobalEventbus.Game if GlobalEventbus != null else null)
+
+
+static func _ScriptError(Message: String) -> void:
+	LastScriptError = Message
+	if not QuietScriptErrors:
+		push_error(Message)
 
 
 func Destroy() -> void:

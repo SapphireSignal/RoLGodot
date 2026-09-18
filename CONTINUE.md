@@ -12,7 +12,7 @@ Hand-off note for the next session. Read `CLAUDE.md` first, then this.
 - Never read or write the owner's other repos.
 
 ## Where we are
-Phases 0 and 1 done, phase 2 step 1 done (see `docs/port-plan.md`). Verified facts about the original are in
+Phases 0 and 1 done, phase 2 steps 1-2 done (see `docs/port-plan.md`). Verified facts about the original are in
 `docs/original-architecture.md`. If `reference/` is missing, run `tools\fetch_reference.ps1` (~800 MB download,
 ~3 GB checked out; run it in the background).
 
@@ -26,14 +26,16 @@ Step 1 done: `src/runtime/entity/` ports `BaseConflict.Entity.pas` minus the scr
 Read `docs/entity-core.md` first: original semantics + port conventions (constructors, `_DeclareEvents` for
 XEvent handlers, `SetVarParam`, RParam memory casts, sets as sorted Arrays, per-bus side and Game).
 
+Step 2 done: the script runner in `TEntity` (section "Script runner" in `docs/entity-core.md`,
+`tests/test_script_runner.gd`).
+
 Next:
-2. The script runner in `TEntity` (`BaseConflict.Entity.pas:587-692`): `CreateFromScriptProc` with
-   `InheritsFrom` / `InheritsFromPreceding`, `CreateFromScript` / `CreateMetaFromScript` / `CreateDataFromScript`,
-   `ApplyScript`, `ApplyScriptReturnGroups`. Scripts are resolved through `script_index.gd` (lower-case original
-   path, per side = `IsServer()`); set the script's `GlobalEventbus` / `Game` vars if declared; fail like the
-   original on `ORIGINAL_COMPILE_ERROR` files. Test: create a real unit script (e.g. `Units\...Footman`) on both
-   sides and check the blackboard values it sets against the script source.
 3. `TResourceManagerComponent` (`BaseConflict.EntityComponents.Shared.pas:386`) at
    `src/runtime/components/t_resource_manager_component.gd` (TEntity.Create picks it up by that path).
+   Until it exists, `CardLeague()`/`CardLevel()` read the plain blackboard slot (0), so scripts using
+   `L.i/L.f(..., Entity.CardLeague())` index `arr[-1]`. Once ported, add a runner test with the real card
+   initializer (`BaseConflict.Classes.Shared.pas:510`, sets reCardLevel/reCardLeague) on e.g.
+   `Units\Neutral\NexusLevel1` (InheritsFrom + `Game` global; needs a fake game with IsDuo/IsPvP/IsOneLane
+   and `L.game_resolver`) and `Units\Black\VoidSkeletonDrop` on the client.
 4. Then the other shared components by `docs/script-api.md`.
 When a hand-written file declares `class_name TFoo`, rerun the transpiler: it drops the stub.

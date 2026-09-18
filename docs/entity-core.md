@@ -72,9 +72,21 @@ Tests: `tests/test_entity_core.gd` (every expectation is derived from the Pascal
   has `ApplicationType` (`nsServer`/`nsClient`, replaces `APPLICATIONTYPE`) and `Game` (replaces the `Game`
   global); an entity takes both from its global bus (`TEntity.IsServer()` for `{$IFDEF SERVER}` code paths).
 
+## Script runner (`TEntity`, tests in `tests/test_script_runner.gd`)
+
+- `TEntity.CreateFromScript(file, bus[, Initializer])` / `CreateMetaFromScript` / `CreateDataFromScript` are static
+  and run `CreateEntity` / `CreateMeta` / `CreateData`; `IsAbstract` = meta. `Initializer` is a `Callable(Entity)`.
+  Inheritance order as in `docs/scripts.md`; the entity keeps the file name first asked for.
+- `ApplyScript(file, proc = "Apply", params)` (empty params = `[self]`), `ApplyScriptReturnGroups(file, proc)`
+  (returned ints truncated to bytes, as a set; `[]` if the routine returns no array).
+- `CompileScriptFromFile(path, Server)`: resolves any case/slash, relative to or inside `Scripts\`, through
+  `script_index.gd` for the side (`IsServer()`, or the global bus's `ApplicationType` for the static creators),
+  and instantiates the script (= `RunMain`). `GlobalEventbus` / `Game` globals are set from the global bus.
+- Where the original raised (missing file, `ORIGINAL_COMPILE_ERROR`, unknown routine, parameter count mismatch):
+  `push_error`, `TEntity.LastScriptError`, creators return `null`. `QuietScriptErrors` silences it for tests.
+
 ## Not ported yet
 
-- `TEntity.CreateFromScript*`, `ApplyScript`, `ApplyScriptReturnGroups`: the script runner (next step).
 - `TResourceManagerComponent`: `TEntity.Create` loads it from `TEntity.RESOURCE_MANAGER_PATH` once it exists.
 - Serialisation (`TEntity.Serialize/Deserialize`, `TBlackboard.SaveToStream/LoadFromStream`,
   `TSerializableEntityComponent`, `TEventbus.InvokeWithRawData`), `TEntity.OwningCommander`, `TTimeManager`

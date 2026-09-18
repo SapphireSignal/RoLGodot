@@ -38,3 +38,6 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - 2026-09-18: Phase 2 step 1 done: `src/runtime/entity/` (TEntity, TEntityComponent, TEventbus, TBlackboard,
   RParam, sets), `docs/entity-core.md`, 14 entity tests; stubs now carry their Delphi constructors.
   1285 files compile, 21 tests green, no leaks. Next: step 2, the script runner (see CONTINUE.md).
+- 2026-09-18: Phase 2 step 2 done: script runner in `TEntity` (`CreateFromScript*` with InheritsFrom /
+  InheritsFromPreceding, `ApplyScript*`, per-side resolution); real unit/projectile scripts build entities on
+  both sides. 28 tests green, no errors. Next: step 3, `TResourceManagerComponent` (see CONTINUE.md).
