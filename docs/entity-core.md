@@ -335,6 +335,21 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   imprinted it offsets from an entity destination, exiles and re-keys the unit (`eiReplaceEntity [ID, new, True]`:
   the entity manager changes its `ID`); AsProjectile hands the unit to a projectile carrying an imprinted teleport
   warhead in [0] (commander = the owner's ID, quirk kept).
+- **Links** (server, `tests/test_links.gd`, incl. a real SmallCasterGolem giving an ally Crystal Power and a real
+  GatlingTurret firing until its ammo is gone): a link is an entity. `TWelaLinkEffectComponent` fires
+  `eiLinkEstablish [owner, target]` (epFirst: an already linked target stops the event; over `eiWelaTargetCount` the
+  oldest link breaks first) and spawns `eiLinkPattern` at (0, 0) with upLink, `eiLinkSource` / `eiLinkDest` (ATargets),
+  `eiCreatorGroup` and a `TLinkEventRedirecter` (empty `eiCooldown` / `eiWelaDamage` / `eiDamageType` reads come from
+  the source in the link effect's group; damage done and kills go to the source). `eiLinkBreak [RTarget]` kills the
+  link entity; death, exile, the global eiLose and freeing break all. The links are a `DelphiDictionary`
+  (`src/runtime/engine/`, Delphi's TDictionary: linear probing, 75% grow threshold, backward-shift delete; keys hash
+  with `RTarget.Hash`): breaking all walks it live, so a link shifted back into a visited slot is skipped and **stays
+  up** (quirk kept; use the class wherever the original walks or edits a TDictionary). `TLinkBrainComponent` fires
+  every cooldown on the global eiIdle (TimesExpired, max 50). `TWelaEffectLinkPayCostMyselfComponentServer`: 1 cost at
+  once, then per whole second on its group's eiThinkChain; emptying fires FireOnEmpty's group. Continuous effects hook
+  the ends with remote subscriptions at eiAfterCreate (damage redirection at epHigher, before armor). Numbers from the
+  turret test: linked at 1500 (LinkTime 500), a volley (3 splash + 15) every 500 ms from 2000, mana 19 → 0 at 20500,
+  38 volleys, then the link breaks.
 - `TNexusEarlyVulnerabilityComponent` (`:88`) is not ported: only declared and exposed, nothing creates it
   (listed in `docs/unused-features.md`, with the unused axis and exclude zones).
 - **Time**: `TTimer` reads `TTimeManager.GetFloatingTimestamp()` (ms). Tests freeze it with

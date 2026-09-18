@@ -7,6 +7,7 @@ extends RefCounted
 ## targets. Create(x) folds the constructor overloads (TEntity, entity ID or Vector2).
 
 const C = preload("res://src/runtime/dws/dws_const.gd")
+const L = preload("res://src/runtime/dws/dws_lib.gd")
 const SPATIALEPSILON = 0.1  # BaseConflict.Constants.pas:31
 
 var FTargetType: int = C.ttNone
@@ -78,6 +79,21 @@ func Equal(b: RTarget) -> bool:
 		C.ttBuild:
 			return BuildGridID == b.BuildGridID and BuildGridCoordinate == b.BuildGridCoordinate
 	return true
+
+
+## Hash (:319): Ord(TargetType) xor EntityID xor FTargetCoord.GetHashValue (Engine.Math.pas:1457, prime factors
+## 73856093 / 19349663; computed in doubles, which may differ from the original's float precision in the last bit),
+## as a 32-bit integer.
+func Hash() -> int:
+	var CoordHash := 0
+	if FTargetCoord != Vector2.ZERO:
+		var hx := L.Round(float(FTargetCoord.x) / 0.00001 * 73856093)
+		var hy := L.Round(float(FTargetCoord.y) / 0.00001 * 19349663)
+		CoordHash = (hx ^ hy) % 0x7FFFFFFF  # Int64 mod, then truncated to Integer
+	var Result := (TargetType ^ EntityID ^ CoordHash) & 0xFFFFFFFF
+	if Result >= 0x80000000:
+		Result -= 0x100000000
+	return Result
 
 
 func IsEmpty() -> bool:
