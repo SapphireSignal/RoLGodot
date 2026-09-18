@@ -29,6 +29,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - `docs/entity-core.md`: TEntity/eventbus/blackboard semantics and the conventions for porting components.
 - `docs/map.md`: map data (zones), build zones, lanes, pathfinding, the priority-queue tie rule.
 - `docs/game-loop.md`: TGame / TServerGame / TGameThread, scenarios, game setup, ticks, what the headless match shows.
+- `docs/assets.md`: the graphics import (`tools/import_graphics.py`, generated `assets/graphics/`), TMesh, the mesh
+  shader (gamma-space port of the original's lighting), TLightManager, the mesh viewer.
 
 ## Status
 - 2026-09-18: Phase 0 (foundation) done: source pinned, reference cloned, architecture researched, Godot
@@ -114,3 +116,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   handler, single-group events walk only their group, no event-stack arrays, network-send lookup); the sandbox
   match runs at 0.31 x real time (was 0.81). `tests/profile_sandbox.gd`, `tests/bench_eventbus.gd`. 1390 files
   compile, 334 tests green, no errors. Next: phase 4, the asset pipeline (see CONTINUE.md).
+- 2026-09-18: Phase 4 part 1, meshes: `tools/import_graphics.py` (200 descriptors -> `assets/graphics/`, generated,
+  git-ignored; raw FBX units, KTF `.tex` decoder, NaN-bone repair on import), `TMesh` + the mesh shader (gamma-space
+  port of Standardshader + the deferred sun/ambient pass), `TLightManager` from the map's `.lig`, the mesh viewer
+  (main scene button). All 200 meshes render and animate without errors. 340 tests green. Next: the map graphics
+  (terrain, water, vegetation), see CONTINUE.md.

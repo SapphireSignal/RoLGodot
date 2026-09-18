@@ -4,8 +4,9 @@ Usage: python tools/convert_maps.py [--check]
 
 A .bcm file is the XML serialisation of TMap (BaseConflict.Map.pas:211): TeamCount, PlayerCount, MapBoundaries
 and the named zones (TMultipolygon of TPolygon). The JSON keeps exactly those fields; TMap.CreateFromFile in
-src/runtime/map/t_map.gd reads it. The graphics files next to the .bcm (terrain, vegetation, water, light) are
-not converted here.
+src/runtime/map/t_map.gd reads it. It also carries the map's lights (<Name>.lig, the XML of TLightManager in
+BaseConflict.Map.Client.pas: FAmbient and FDirectionalLights), read by src/runtime/map/t_light_manager.gd. The other
+graphics files next to the .bcm (terrain, vegetation, water) are not converted here.
 --check: convert everything but write nothing; exit 1 if a committed file is missing or out of date.
 """
 import argparse
@@ -30,6 +31,22 @@ def boolean(text: str) -> bool:
     return text.strip().lower() == 'true'
 
 
+def vector(element, keys='XYZW'):
+    return [num(element.find(k).text) for k in keys]
+
+
+def convert_lights(lig: Path) -> dict:
+    root = ET.parse(lig).getroot()
+    lights = []
+    for item in root.find('FDirectionalLights').findall('Item'):
+        lights.append({
+            'Direction': vector(item.find('Direction'), 'XYZ'),
+            'Color': vector(item.find('Color')),
+            'Enabled': boolean(item.find('Enabled').text),
+        })
+    return {'Ambient': vector(root.find('FAmbient')), 'DirectionalLights': lights}
+
+
 def convert(bcm: Path) -> dict:
     root = ET.parse(bcm).getroot()
     bounds = root.find('MapBoundaries')
@@ -51,6 +68,7 @@ def convert(bcm: Path) -> dict:
         'PlayerCount': int(root.find('PlayerCount').text),
         'MapBoundaries': {k: num(bounds.find(k).text) for k in ('Left', 'Top', 'Right', 'Bottom')},
         'Zones': zones,
+        'Lights': convert_lights(bcm.with_suffix('.lig')),
     }
 
 

@@ -12,8 +12,8 @@ Hand-off note for the next session. Read `CLAUDE.md` first, then this.
 - Never read or write the owner's other repos.
 
 ## Where we are
-Phases 0-2 done, phase 3 done except bots and network (the headless sandbox match runs and is profiled); next is
-phase 4, the asset pipeline (see `docs/port-plan.md`). Verified facts about the original are in
+Phases 0-2 done, phase 3 done except bots and network (the headless sandbox match runs and is profiled); phase 4,
+the asset pipeline, is under way: meshes done, map graphics next (see "Phase 4" below and `docs/port-plan.md`). Verified facts about the original are in
 `docs/original-architecture.md`. If `reference/` is missing, run `tools\fetch_reference.ps1` (~800 MB download,
 ~3 GB checked out; run it in the background).
 
@@ -125,8 +125,16 @@ handler, single-group events walk only their group's subscribers, no event-stack
 send check); the sandbox match runs at 0.31 x real time. Tools: `tests/profile_sandbox.gd` (with
 `PROFILE_HANDLERS=1`: the costliest handlers), `tests/bench_eventbus.gd`; run them by hand like the test runner
 does Godot (headless, absolute `--log-file`, `--script res://tests/...`).
-Next: phase 4, the asset pipeline (`docs/port-plan.md`): start by researching the original's mesh / texture / map
-formats (`docs/original-architecture.md` has what is known) and plan the converters. Open in phase 3: bots
-(`TPvPBotComponent`), network, time manager pause.
+Open in phase 3: bots (`TPvPBotComponent`), network, time manager pause.
+
+## Phase 4, the asset pipeline
+Read `docs/assets.md`. Setup after fetching `reference/`: `python tools/import_graphics.py`, then a Godot `--import`
+(the test runner imports too). Meshes are done: `TMesh` (`src/runtime/graphics/`), the shader, `TLightManager`,
+`src/viewer/mesh_viewer.tscn` (capture mode for checking renders yourself; `--turntable=N` for video frames, ffmpeg is
+installed via WinGet). Every script mesh reference resolves (114 references, 86 base models, 173 unit files with skins).
+Next: the map graphics: `.ter` terrain (+ tiled Classic<N>Diffuse/Material/Normal textures), `.wat` water, `.veg`
+vegetation, `.bcc`; read `Engine.Terrain.pas`, `Engine.Water.pas`, `Engine.Vegetation.pas`, `BaseConflict.Map.Client.pas`
+and plan converters, then render the Classic map in a viewer. Later in phase 4/6: glow stage + bloom, fur, outline,
+the original's shadow mapping.
 The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.
 When a hand-written file declares `class_name TFoo`, rerun the transpiler: it drops the stub.

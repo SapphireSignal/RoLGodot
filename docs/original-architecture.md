@@ -68,7 +68,7 @@ out is in `GameServer/BaseConflict.Game.Server.pas` (`Commander.Cards.Add(...)`)
 
 | Kind | Files | Format | Port route |
 | --- | --- | --- | --- |
-| Unit / effect meshes | `.fbx` (204) + `.xml` descriptor | FBX + XML: `GeometryFile`, diffuse/specular/glow/normal texture, cull mode, alpha, fur, outline | Godot imports FBX; a tool turns the XML into a material + scene |
+| Unit / effect meshes | `.fbx` (204) + `.xml` descriptor | FBX 7.3/7.4 (binary, 14 ASCII), all Y-up, mixed UnitScaleFactor that the original's assimp ignores (raw units) + XML: `GeometryFile`, diffuse/material/glow/fur texture (no normal maps used), cull mode, alpha, outline | done: `tools/import_graphics.py` + `TMesh`, see `assets.md` |
 | Mesh cache | `.msh` (204) | `%KMF V.01` binary (`Engine.Core.Mesh.pas`) | not needed: every `.msh` has its `.fbx` (names differ only in case) |
 | Textures | `.tga` (796), `.png` (912), `.tex` (1717) | `.tex` = `%KTF V.01`: mip chunks of 32-bit pixels, RLE (value, count) pairs (`Engine.Core.Texture.pas`) | use the source image; only 8 `.tex` have none (GUI: sacrifice arrow, early-access banner, a few card/faction icons): a small KTF decoder covers them |
 | Particle effects | `.pfx` (366) | XML `TParticleEffectPattern` | converter to Godot particles, checked side by side |

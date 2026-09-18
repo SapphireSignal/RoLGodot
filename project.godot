@@ -27,3 +27,46 @@ window/stretch/aspect="expand"
 [rendering]
 
 renderer/rendering_method="forward_plus"
+
+[shader_globals]
+
+rol_ambient={
+"type": "vec3",
+"value": Vector3(0.7, 0.7, 0.7)
+}
+rol_light_count={
+"type": "int",
+"value": 0
+}
+rol_light_dir_0={
+"type": "vec3",
+"value": Vector3(0, 1, 0)
+}
+rol_light_dir_1={
+"type": "vec3",
+"value": Vector3(0, 1, 0)
+}
+rol_light_dir_2={
+"type": "vec3",
+"value": Vector3(0, 1, 0)
+}
+rol_light_dir_3={
+"type": "vec3",
+"value": Vector3(0, 1, 0)
+}
+rol_light_color_0={
+"type": "color",
+"value": Color(1, 1, 1, 0)
+}
+rol_light_color_1={
+"type": "color",
+"value": Color(1, 1, 1, 0)
+}
+rol_light_color_2={
+"type": "color",
+"value": Color(1, 1, 1, 0)
+}
+rol_light_color_3={
+"type": "color",
+"value": Color(1, 1, 1, 0)
+}
