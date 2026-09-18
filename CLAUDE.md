@@ -17,7 +17,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - Godot: `D:\Godot\Godot_v4.7.1-stable_win64.exe` (console build `..._console.exe` for headless runs)
 - Delphi: `C:\Program Files (x86)\Embarcadero\Studio\37.0\bin\`
 - Tests: `powershell -ExecutionPolicy Bypass -File tools\run_tests.ps1` (import + compile sweep + tests,
-  hard timeout, logs in `logs/`; any GDScript runtime `SCRIPT ERROR` in the log fails the run). Test files: `tests/test_*.gd` extending `res://tests/test_case.gd`.
+  hard timeout, logs in `logs/`; any GDScript runtime `SCRIPT ERROR` in the log fails the run; last, a smoke test starts the game through
+  `play.bat`, presses the Mesh viewer button and checks a mesh is drawn: a window flashes up). Test files: `tests/test_*.gd` extending `res://tests/test_case.gd`.
 
 ## Docs
 - `docs/original-architecture.md`: how the original is built, file formats, gotchas.

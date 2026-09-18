@@ -43,4 +43,19 @@ $scriptErrors = @(Select-String -Path (Join-Path $logDir 'tests.log') -Pattern '
 Write-Host "runtime script errors: $scriptErrors"
 if ($code -eq 0 -and $scriptErrors -gt 0) { $code = 1 }
 if ($code -eq 0) { $code = $pyCode }
+
+# Launcher smoke test: start the game exactly as the owner does (play.bat, windowed), press the main scene's
+# Mesh viewer button and check a mesh is drawn. The game writes the result file and quits by itself.
+$smoke = Join-Path $logDir 'smoke_test.txt'
+if (Test-Path $smoke) { Remove-Item $smoke }
+& cmd /c (Join-Path $root 'play.bat') -- "--smoke-test=$smoke"
+$deadline = (Get-Date).AddSeconds(60)
+while (-not (Test-Path $smoke) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 500 }
+Start-Sleep -Milliseconds 500
+$smokeResult = if (Test-Path $smoke) { (Get-Content $smoke -Raw).Trim() } else { 'FAIL no result within 60 s' }
+Write-Host "play.bat smoke test: $smokeResult"
+if (-not $smokeResult.StartsWith('ok')) {
+    Get-Process -Name 'Godot_v4.7.1-stable_win64' -ErrorAction SilentlyContinue | Stop-Process -Force
+    if ($code -eq 0) { $code = 1 }
+}
 exit $code

@@ -42,6 +42,21 @@ func _ready() -> void:
 		_run_capture.call_deferred(capture.split(","), _user_arg("capture-out"))
 	elif not _paths.is_empty():
 		_show(_paths[0])
+	var smoke := _user_arg("smoke-test")
+	if smoke != "":
+		_finish_smoke_test.call_deferred(smoke)
+
+
+## The launcher smoke test (tools/run_tests.ps1 starts play.bat with -- --smoke-test=<file>): after a few drawn
+## frames, writes what is on screen to <file> and quits.
+func _finish_smoke_test(result_path: String) -> void:
+	for i in 5:
+		await RenderingServer.frame_post_draw
+	var ok := _mesh != null and not _mesh.MeshInstances.is_empty() and get_viewport().get_texture().get_image() != null
+	var file := FileAccess.open(result_path, FileAccess.WRITE)
+	file.store_string("%s %d meshes listed, showing %s\n" % ["ok" if ok else "FAIL", _paths.size(), _mesh.name if _mesh else "nothing"])
+	file.close()
+	get_tree().quit()
 
 
 func _user_arg(name: String) -> String:

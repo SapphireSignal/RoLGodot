@@ -7,4 +7,5 @@ if not exist "%GODOT%" (
   exit /b 1
 )
 rem %~dp0 ends in a backslash, and \" would escape the closing quote: the trailing . keeps the path intact.
-start "" "%GODOT%" --path "%~dp0."
+rem Extra arguments go to Godot (tools/run_tests.ps1 passes -- --smoke-test=<file>).
+start "" "%GODOT%" --path "%~dp0." %*
