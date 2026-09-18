@@ -388,6 +388,26 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   one group per mode; `ModeCount` keeps the original's `Min(1, modes)`). Charges are the commander's reCharge in the
   card's group. The client's `TCommanderComponent` adds its commander to the global `eiEnumerateCommanders` (epFirst).
   `DelphiRtl` has SysUtils' file-name functions with Windows delimiters and `CompareText` / `SameText` (ASCII only).
+- **Directors** (`GameServer/BaseConflict.EntityComponents.Server.pas`, server only; `tests/test_directors.gd`):
+  `TScenarioDirectorComponent` is the PvE director (`Game.ScenarioDirector`, made by `Scenarios\Attack*Base`). Its
+  unit pool is every card of the faction at the director's league (default `Game.League`), no spawners, no 'Golems'
+  files, units only, typed by `SCENARIO_UNIT_INFO_MAPPING` (`...Constants.Scenario.Server.pas`), costs and squad
+  size normalized to league 4 level 1 (gold of the drop, wood of the spawner card with the same identifier). Timed
+  actions queue in `FActions`; at every global eiGameTick those with tick <= `eiGameTickCounter` run **from the last
+  queued to the first**, then every KI player thinks: income, a drop of units costing exactly `NextGoldSave` (300
+  after the first think, and no golem costs 300, so the KI never drops: waves come from boss waves) and the next
+  random spawner once the wood suffices (fields skip the corners 0, 7, 16). Random picks shuffle the list first with
+  Delphi's `TUltimateList.Shuffle` (`Exchange(i, Random(i))`: the last item always moves, so a two-unit subset
+  alternates whatever the RNG). `SpawnUnits` builds squad rows behind the point (fodder, tank/melee, ranged, siege;
+  3 apart, centred; a row wraps after 7 but keeps its y offset growing). Guards spawn with overwatch and flee 30;
+  mirroring repeats spawns at -y. Where the original raised, the port logs and skips.
+  `TServerSandboxComponent` (infinite gold / wood, tech 2 + 3), `TSandboxComponent` (`Game.GameDirector.ClearEvents`)
+  and `TServerSandboxCommandComponent` (the `BC.cc*` client commands: clear units / spawners / towers, base building
+  levels, indestructible bases, overwatch switches on `Game.Overwatch` / `OverwatchClearable`, forced tick) read
+  `Game.GameInformation.Scenario.MapName` / `.ScenarioUID`. `TTutorialDirectorServerComponent` handles the tutorial's
+  game events: freeze (think blocks + eiStand, also on new entities; eiGameTick stopped), wave spawn / income
+  switches, card costs (`TWelaEffectPayCostComponent.NOT_PAYED_RESOURCES`), give / set gold and wood
+  (`DelphiRtl.StrToIntDef`, default 100), refill charges, skip warming.
 - `TNexusEarlyVulnerabilityComponent` (`:88`) is not ported: only declared and exposed, nothing creates it
   (listed in `docs/unused-features.md`, with the unused axis and exclude zones).
 - **Time**: `TTimer` reads `TTimeManager.GetFloatingTimestamp()` (ms). Tests freeze it with

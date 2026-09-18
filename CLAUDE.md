@@ -99,3 +99,7 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   `src/content/cards.json` by `tools/convert_cards.py`, `TCommanderAbility{,Component}`, `TCommanderComponent`,
   `DelphiHash`, `DelphiRtl`); a commander gets its real drop / building / spawner / spell cards. 1369 files compile,
   310 tests green, no errors. Next: the scenario / tutorial / sandbox directors (see CONTINUE.md).
+- 2026-09-18: Phase 2 step 5 part 21: the directors (`TScenarioDirectorComponent`, `TServerSandbox{,Command}Component`,
+  `TSandboxComponent`, `TTutorialDirectorServerComponent`); the real AttackScenario Base + Easy scripts set up the PvE
+  game and its first minute plays out (spawners, first boss wave). Every server / shared stub is now ported. 1370
+  files compile, 323 tests green, no errors, no leaks. Next: phase 3, the game loop (see CONTINUE.md).

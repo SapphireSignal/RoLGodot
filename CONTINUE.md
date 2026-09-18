@@ -12,7 +12,7 @@ Hand-off note for the next session. Read `CLAUDE.md` first, then this.
 - Never read or write the owner's other repos.
 
 ## Where we are
-Phases 0 and 1 done, phase 2 steps 1-4 done, step 5 under way (entity-local families done up to the commander and its cards) (see `docs/port-plan.md`). Verified facts about the original are in
+Phases 0 and 1 done, phase 2 done up to the client stubs (every server / shared component is ported; next is phase 3, the game loop) (see `docs/port-plan.md`). Verified facts about the original are in
 `docs/original-architecture.md`. If `reference/` is missing, run `tools\fetch_reference.ps1` (~800 MB download,
 ~3 GB checked out; run it in the background).
 
@@ -41,7 +41,7 @@ components reach `Game` as `GlobalEventbus().Game`. `tests/component_fakes.gd`: 
 `Game.EntityManager`. Stubs now carry no-op versions of the methods the scripts call, so real unit scripts run
 without errors (`tests/test_health_component.gd` builds the server SmallMeleeGolem).
 
-Step 5 in progress (the rest by `docs/script-api.md`, entity-local first). Done: `TCommanderIncome*` + `RIncome`,
+Step 5 done for every server / shared class (the rest by `docs/script-api.md`, entity-local first): `TCommanderIncome*` + `RIncome`,
 and `TTimer`/`TTimeManager` clock in `src/runtime/engine/` (tests freeze time with `TTimeManager.FakeTime`);
 `TDynamicZone*Emitter`, `TGameEventEnumeratorComponent` (`TNexusEarlyVulnerabilityComponent` is unused: skipped).
 `TEntityManagerComponent` (the real `Game.EntityManager`; `TServerEntityManagerComponent` /
@@ -103,8 +103,18 @@ translated texts wait for the localization), `TCommanderAbilityComponent` + `RCo
 `TCommanderComponent` (section "Commander and cards", `tests/test_commander.gd`). New engine helpers: `DelphiHash`
 (Delphi's Bob Jenkins string hash, for `DelphiDictionary` string keys) and `DelphiRtl` (ExtractFilePath / FileName,
 ChangeFileExt, CompareText, SameText). Test fakes pass real `TCardInfo`s now (resolve by UID).
-Next, the server rest of the stub list (`src/runtime/dws/stubs/`): the scenario / tutorial / sandbox directors (`TScenarioDirectorComponent`,
-`TTutorialDirectorServerComponent`, `TServerSandbox{,Command}Component`), and phase 3 (the game loop; the real
-`Scenarios\Game` script needs `Game.GameDirector`). The other stubs are client visuals (phase 4+).
+The directors are done: `TScenarioDirectorComponent` (unit pool, timed actions run last-queued-first, boss waves,
+squad rows, KI players), `TServerSandbox{,Command}Component`, `TSandboxComponent`, `TTutorialDirectorServerComponent`
+(bullet "Directors" in `docs/entity-core.md`, `tests/test_directors.gd`, incl. the real `Scenarios\AttackScenarioBase`
++ `AttackScenarioEasy` scripts and their first minute). New: `BC.cc*` (EnumClientCommand), `BC.MAP_SINGLE/DOUBLE`,
+`BC.SCENARIO_PVE_DEFAULT_PREFIX`, `DelphiRtl.StrToIntDef`. Fake games for the directors carry `GameInformation`
+(`.Scenario.MapName`, `.ScenarioUID`), `GameDirector`, `Overwatch` / `OverwatchClearable`.
+Every server / shared stub is ported; the 85 left (`src/runtime/dws/stubs/`) are client visuals / GUI / sound
+(phase 4+) and `RIntVector2` / `RVector3`.
+Next: phase 3, the game loop (`docs/port-plan.md`): `TGame` / `TServerGame` (`GameServer/BaseConflict.Game.Server.pas`,
+the fields the fakes stand in for: EntityManager, ServerEntityManager, CollisionManager, Map, Commanders, League,
+Statistics, DelayedEvents, GameInformation, IngameStatus, Idle with its tick counter and eiGameTick), the
+`GameDirector` (the real `Scenarios\Game` script needs it) and the sandbox deck, until the headless sandbox match
+of the phase 3 goal runs. Read the original's game setup and Idle loop first and plan the family split.
 The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.
 When a hand-written file declares `class_name TFoo`, rerun the transpiler: it drops the stub.

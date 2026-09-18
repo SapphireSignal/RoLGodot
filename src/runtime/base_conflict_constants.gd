@@ -66,6 +66,17 @@ const FILE_EXTENSION_SPELL = ".sps"
 ## BUILDGRID_SIZE / BUILDGRID_SLOTS (:57-58): a build zone has 8 x 3 fields, 20 without the corners.
 const BUILDGRID_SIZE = Vector2i(8, 3)
 const BUILDGRID_SLOTS = 20
+## EnumClientCommand (:312): the sandbox / tutorial commands a client sends (eiClientCommand [Command, Param]).
+enum { ccClearUnits, ccClearAllUnits, ccClearSpawners, ccClearLaneTowers, ccClearGolemTowers, ccBaseBuildingsLevel1,
+	ccBaseBuildingsLevel2, ccBaseBuildingsLevel3, ccBaseBuildingsIndestructible, ccToggleOverwatch,
+	ccToggleOverwatchSandbox, ccClearOverwatch, ccSaveCameraPosition, ccReturnToSavedCameraPosition,
+	ccTutorialGameEvent, ccForceGameTick }
+
+## Map names and the PvE scenario UID prefix (BaseConflict.Constants.Scenario.pas:69-103).
+const MAP_SINGLE = "Single"
+const MAP_DOUBLE = "Classic"
+const SCENARIO_PVE_DEFAULT_PREFIX = "pve_"
+
 ## UNIT_PROPERTIES_STATE_EFFECTS (:293), sorted like DSet.Make.
 static var UNIT_PROPERTIES_STATE_EFFECTS: Array = DSet.Make([C.upStunned, C.upRooted, C.upBlinded, C.upFrozen,
 	C.upSoulless, C.upGrounded, C.upLifted, C.upPetrified])

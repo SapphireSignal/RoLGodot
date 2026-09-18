@@ -2,8 +2,8 @@ class_name TThinkBlockComponent
 extends TEntityComponent
 ## Port of TThinkBlockComponent (GameServer/BaseConflict.EntityComponents.Server.Brains.pas:148, implementation
 ## :2972), server only. Blocks the thinking of its entity: stops eiThink and eiThinkChain at epFirst (made with
-## Create, so only groupless thinking, which is what units' TThinkImpulseTimerComponent sends). The sandbox puts it
-## on units (GameServer/BaseConflict.EntityComponents.Server.pas:3713).
+## Create, so only groupless thinking, which is what units' TThinkImpulseTimerComponent sends). The tutorial
+## director puts it on units to freeze the game (GameServer/BaseConflict.EntityComponents.Server.pas:3713).
 
 
 func _DeclareEvents(e: Array) -> void:
