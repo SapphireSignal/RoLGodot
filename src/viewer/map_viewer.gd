@@ -1,25 +1,44 @@
 extends Node3D
-## Map viewer (phase 4 check): a map's terrain, water and vegetation (TClientMap) seen through the game's camera
-## (TClientCameraComponent.ApplyCamera: eye = target + zoom * 10 * CAMERAOFFSET.Normalize, vertical field of view
-## coEngineCameraFoV, near 1, far 10000). The game limits the zoom to coGameplayCameraMinZoom..MaxZoom (2.6..3.8,
-## starts at 3.8); the viewer lets it go further out for an overview.
+## Map viewer (phase 4 check): a scenario's battlefield seen through the game's camera (TClientCameraComponent.
+## ApplyCamera: eye = target + zoom * 10 * CAMERAOFFSET.Normalize, vertical field of view coEngineCameraFoV, near 1,
+## far 10000). A scenario is set up as in a real game: the server game (TGameThread) runs the scenario scripts, a
+## TClientGame loads the client map (terrain, water, vegetation, the map's decorations such as bridges) and runs the
+## scenario's client part (the PvE nexus ground), then receives the server's entities (nexus, towers, lane nodes...)
+## as a joining client would (TClientGame.ReceiveWorld). The game limits the zoom to coGameplayCameraMinZoom..MaxZoom
+## (2.6..3.8, starts at 3.8); the viewer lets it go further out for an overview.
 ## Controls: WASD / arrows scroll, right mouse drag pans, wheel zooms, Q / E rotate, R resets.
 ## Capture mode (checks without a person):
-##   -- --capture-out=<absolute folder> [--maps=Classic,Single] [--hide=Terrain,Water,Vegetation]
-## writes views of each map (game camera at a few places, an overview), then quits. Launcher smoke test:
-##   -- --smoke-test=<file>  after a few drawn frames writes "ok ..." or "FAIL ..." to <file> and quits.
+##   -- --capture-out=<absolute folder> [--maps=Single,Classic] [--hide=Terrain,Water,Vegetation,Entities]
+## writes views of each scenario on those maps (game camera at a few places, an overview), then quits. Launcher smoke
+## test:  -- --smoke-test=<file>  after a few drawn frames writes "ok ..." or "FAIL ..." to <file> and quits.
 
-const MAPS := ["Classic", "Single"]
+const C = preload("res://src/runtime/dws/dws_const.gd")
+const BC = preload("res://src/runtime/base_conflict_constants.gd")
+## [button, scenario UID, map]: the sandbox of the 1 lane map (Single: 1v1-4v4 PvP, ranked 1v1 / 2v2, tutorial, solo
+## PvE), the 2 lane sandbox (Classic: the two lane PvP modes, ranked 3v3 / 4v4, duo PvE) and the PvE sandbox (Single,
+## with the nexus ground of the PvE scenarios). BaseConflict.Constants.Scenario.pas.
+const SCENARIOS := [["1 lane (Single)", BC.SCENARIO_SANDBOX_UID, "Single"],
+	["2 lanes (Classic)", BC.SCENARIO_SANDBOX_CLASSIC_UID, "Classic"],
+	["PvE (Single)", BC.SCENARIO_PVE_DEFAULT_PREFIX + BC.SCENARIO_SANDBOX_UID, "Single"]]
+const LEAGUE := 1
 ## BaseConflict.Constants.Client.pas CAMERAOFFSET (game space).
 const CAMERAOFFSET := Vector3(-0.394721269607544, 0.812130928039551, -0.429695725440979)
 const FIELD_OF_VIEW := 0.6853981635  # coEngineCameraFoV, radians, vertical
 const MIN_ZOOM := 2.6
 const MAX_ZOOM := 3.8
-## Named views for captures and the view buttons: [name, target x, target z, zoom].
+## Named views for captures and the view buttons: [name, target x, target z, zoom]. Classic's lanes run at z = 23 and
+## -23 around the middle; Single's one lane at z = -23 (the scenario scripts' nexus and towers).
 const VIEWS := [["start", 0.0, 0.0, MAX_ZOOM], ["west base", -90.0, -23.0, MAX_ZOOM], ["east base", 90.0, -23.0, MAX_ZOOM],
 	["center close", 0.0, -10.0, MIN_ZOOM], ["overview", 0.0, 0.0, 30.0]]
+const VIEWS_SINGLE := [["start", 0.0, -23.0, MAX_ZOOM], ["west base", -90.0, -23.0, MAX_ZOOM], ["east base", 90.0, -23.0, MAX_ZOOM],
+	["center close", 0.0, -23.0, MIN_ZOOM], ["overview", 0.0, 0.0, 30.0]]
 
 var _map: TClientMap
+var _client: TClientGame
+var _thread: TGameThread
+var _entities: Node3D
+var _entity_count := 0
+var _scenario_index := 0
 var _camera: Camera3D
 var _target := Vector2.ZERO
 var _zoom := MAX_ZOOM
@@ -36,12 +55,16 @@ func _ready() -> void:
 	var maps := _user_arg("maps")
 	var capture := _user_arg("capture-out")
 	if capture != "":
-		_run_capture.call_deferred(maps.split(",") if maps != "" else PackedStringArray(MAPS), capture)
+		_run_capture.call_deferred(maps.split(",") if maps != "" else PackedStringArray(), capture)
 		return
-	_load_map(maps.get_slice(",", 0) if maps != "" else MAPS[0])
+	_load_scenario(0)
 	var smoke := _user_arg("smoke-test")
 	if smoke != "":
 		_finish_smoke_test.call_deferred(smoke)
+
+
+func _exit_tree() -> void:
+	_unload()
 
 
 func _user_arg(arg_name: String) -> String:
@@ -77,14 +100,15 @@ func _build_ui() -> void:
 	back.text = "Back to main"
 	back.pressed.connect(func() -> void: get_tree().change_scene_to_file("res://src/main/main.tscn"))
 	box.add_child(back)
-	var map_row := HBoxContainer.new()
-	box.add_child(map_row)
-	for map_name: String in MAPS:
+	var scenario_row := HBoxContainer.new()
+	box.add_child(scenario_row)
+	for i in SCENARIOS.size():
 		var button := Button.new()
-		button.text = map_name
-		button.pressed.connect(func() -> void: _load_map(map_name))
-		map_row.add_child(button)
-	for layer_name: String in ["Terrain", "Water", "Vegetation"]:
+		button.text = SCENARIOS[i][0]
+		var index := i
+		button.pressed.connect(func() -> void: _load_scenario(index))
+		scenario_row.add_child(button)
+	for layer_name: String in ["Terrain", "Water", "Vegetation", "Entities"]:
 		var toggle := CheckBox.new()
 		toggle.text = layer_name
 		toggle.button_pressed = true
@@ -93,24 +117,59 @@ func _build_ui() -> void:
 		_toggles[layer_name] = toggle
 	var view_row := HBoxContainer.new()
 	box.add_child(view_row)
-	for view: Array in VIEWS:
+	for i in VIEWS.size():
 		var button := Button.new()
-		button.text = view[0]
-		button.pressed.connect(func() -> void: _set_view(view))
+		button.text = VIEWS[i][0]
+		var index := i
+		button.pressed.connect(func() -> void: _set_view(_views()[index]))
 		view_row.add_child(button)
 	_info = Label.new()
 	box.add_child(_info)
 
 
-func _load_map(map_name: String) -> void:
-	if _map:
-		_map.queue_free()
+func _unload() -> void:
+	if _client != null:
+		_client.Free()  # frees its map and entities (their meshes)
+		_client = null
+		_map = null
+	if _thread != null:
+		_thread.Free()
+		_thread = null
+	if _entities != null:
+		_entities.queue_free()
+		_entities = null
+	GFXD.MainScene = null
+
+
+## The scenario's server game, then the client game (map, decorations, the scenario's client part) and the server's
+## entities as a joining client gets them.
+func _load_scenario(index: int) -> void:
+	_unload()
+	_scenario_index = index
 	var start := Time.get_ticks_msec()
-	_map = TClientMap.CreateFromFile(map_name)
-	_load_ms = Time.get_ticks_msec() - start
+	var uid: String = SCENARIOS[index][1]
+	var server_info := TGameManager.CreateTestserverGameInfo()
+	server_info.ScenarioUID = uid
+	server_info.League = LEAGUE
+	server_info.Scenario = HScenario.ResolveScenario(uid, LEAGUE)
+	_thread = TGameThread.new().Create(server_info)
+	_entities = Node3D.new()
+	_entities.name = "Entities"
+	add_child(_entities)
+	GFXD.MainScene = _entities
+	var client_info := TGameInformation.new().Create()
+	client_info.ScenarioUID = uid
+	client_info.League = LEAGUE
+	client_info.IsSandboxOverride = true
+	client_info.Scenario = HScenario.ResolveScenario(uid, LEAGUE)
+	_client = TClientGame.new().Create(client_info)
+	_map = _client.ClientMap
 	add_child(_map)
+	_entity_count = _client.ReceiveWorld(_thread.InternalGame).size()
+	_client.GlobalEventbus.Trigger(C.eiIdle, [])
+	_load_ms = Time.get_ticks_msec() - start
 	_apply_toggles()
-	_set_view(VIEWS[0])
+	_set_view(_views()[0])
 
 
 func _apply_toggles() -> void:
@@ -118,6 +177,13 @@ func _apply_toggles() -> void:
 		_map.SetDrawTerrain(_toggles.Terrain.button_pressed)
 		_map.SetDrawWater(_toggles.Water.button_pressed)
 		_map.SetDrawVegetation(_toggles.Vegetation.button_pressed)
+	if _entities:
+		_entities.visible = _toggles.Entities.button_pressed
+
+
+## The named views of the loaded map.
+func _views() -> Array:
+	return VIEWS_SINGLE if _map != null and _map.MapName == "Single" else VIEWS
 
 
 func _set_view(view: Array) -> void:
@@ -130,13 +196,14 @@ func _set_view(view: Array) -> void:
 ## ApplyCamera: CameraDirection = FZoom * CAMERAOFFSET.Normalize * 10, turned by the rotation; eye = target + it.
 func _update_camera() -> void:
 	var direction := _zoom * CAMERAOFFSET.normalized() * 10
-	direction = TVegetationManager.RotationPitchYawRoll(Vector3(0, _rotation, 0)) * direction
+	direction = RMatrix.RotationPitchYawRoll(Vector3(0, _rotation, 0)) * direction
 	var target := Vector3(_target.x, 0, _target.y)
 	_camera.position = TMesh.ToGodot(target + direction)
 	_camera.look_at(TMesh.ToGodot(target), Vector3.UP)
 	if _info and _map:
-		_info.text = "%s  loaded in %d ms\ntarget (%.1f, %.1f)  zoom %.2f (game: %.1f..%.1f)  rotation %.2f\nWASD/arrows scroll, right drag pan, wheel zoom, Q/E rotate, R reset" % [
-			_map.MapName, _load_ms, _target.x, _target.y, _zoom, MIN_ZOOM, MAX_ZOOM, _rotation]
+		_info.text = "%s: map %s, %d decorations, %d entities, loaded in %d ms\ntarget (%.1f, %.1f)  zoom %.2f (game: %.1f..%.1f)  rotation %.2f\nWASD/arrows scroll, right drag pan, wheel zoom, Q/E rotate, R reset" % [
+			SCENARIOS[_scenario_index][0], _map.MapName, _map.DecorationEntities.size(), _entity_count, _load_ms,
+			_target.x, _target.y, _zoom, MIN_ZOOM, MAX_ZOOM, _rotation]
 
 
 ## The screen axes on the ground (game space): TClientCameraComponent scrolls along CAMERAOFFSET.XZ and its
@@ -149,6 +216,10 @@ func _scroll(right: float, up: float) -> void:
 
 
 func _process(delta: float) -> void:
+	# the client's frame (BaseConflictMainUnit): eiIdle on the global bus, then the meshes animate while drawn
+	GFXD.NextFrame()
+	if _client != null:
+		_client.GlobalEventbus.Trigger(C.eiIdle, [])
 	var right := Input.get_axis("ui_left", "ui_right")
 	var up := Input.get_axis("ui_down", "ui_up")
 	if Input.is_key_pressed(KEY_A):
@@ -184,7 +255,17 @@ func _unhandled_input(event: InputEvent) -> void:
 		var mm := event as InputEventMouseMotion
 		_scroll(-mm.relative.x * 0.02, mm.relative.y * 0.02)
 	elif event is InputEventKey and event.pressed and (event as InputEventKey).keycode == KEY_R:
-		_set_view(VIEWS[0])
+		_set_view(_views()[0])
+
+
+## Meshes drawn in the entities layer (decorations and the server's entities).
+func _drawn_meshes() -> int:
+	var count := 0
+	if _entities:
+		for child in _entities.get_children():
+			if child is TMesh:
+				count += 1
+	return count
 
 
 func _finish_smoke_test(result_path: String) -> void:
@@ -193,11 +274,13 @@ func _finish_smoke_test(result_path: String) -> void:
 	var terrain_ok := _map != null and _map.Terrain != null and _map.Terrain.get_child_count() > 0
 	var water_ok := _map != null and _map.Water.SurfaceCount() > 0
 	var vegetation_ok := _map != null and _map.Vegetation.get_child_count() > 0
+	var entities_ok := _map != null and _map.DecorationEntities.size() > 0 and _entity_count > 0 and _drawn_meshes() > 0
 	var image_ok := get_viewport().get_texture().get_image() != null
-	var ok := terrain_ok and water_ok and vegetation_ok and image_ok
+	var ok := terrain_ok and water_ok and vegetation_ok and entities_ok and image_ok
 	var file := FileAccess.open(result_path, FileAccess.WRITE)
-	file.store_string("%s map viewer: %s terrain %s, water %s, vegetation %s\n" % ["ok" if ok else "FAIL",
-		_map.MapName if _map else "no map", terrain_ok, water_ok, vegetation_ok])
+	file.store_string("%s map viewer: %s terrain %s, water %s, vegetation %s, %d decorations, %d entities, %d meshes\n" % [
+		"ok" if ok else "FAIL", _map.MapName if _map else "no map", terrain_ok, water_ok, vegetation_ok,
+		_map.DecorationEntities.size() if _map else 0, _entity_count, _drawn_meshes()])
 	file.close()
 	get_tree().quit()
 
@@ -208,12 +291,22 @@ func _run_capture(maps: PackedStringArray, out_dir: String) -> void:
 	for layer_name in _user_arg("hide").split(",", false):
 		if _toggles.has(layer_name):
 			(_toggles[layer_name] as CheckBox).set_pressed_no_signal(false)
-	for map_name in maps:
-		_load_map(map_name)
-		for view: Array in VIEWS:
+	var views: Array = _views()
+	var extra := _user_arg("view")  # --view=x,z,zoom[,rotation] adds a custom view
+	if extra != "":
+		var p := extra.split(",")
+		views = views + [["custom", float(p[0]), float(p[1]), float(p[2]), float(p[3]) if p.size() > 3 else 0.0]]
+	for i in SCENARIOS.size():
+		if not maps.is_empty() and not maps.has(SCENARIOS[i][2]):
+			continue
+		_load_scenario(i)
+		for view: Array in views:
 			_set_view(view)
-			for i in 4:
+			if view.size() > 4:
+				_rotation = view[4]
+				_update_camera()
+			for f in 4:
 				await RenderingServer.frame_post_draw
-			var file := "%s_%s.png" % [map_name.to_lower(), String(view[0]).replace(" ", "_")]
+			var file := "%d_%s_%s.png" % [i, String(SCENARIOS[i][2]).to_lower(), String(view[0]).replace(" ", "_")]
 			get_viewport().get_texture().get_image().save_png(out_dir.path_join(file))
 	get_tree().quit()

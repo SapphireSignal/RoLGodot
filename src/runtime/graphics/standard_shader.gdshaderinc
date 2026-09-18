@@ -106,7 +106,20 @@ vec3 rol_to_linear(vec3 c) {
 	return mix(pow((c + 0.055) / 1.055, vec3(2.4)), c / 12.92, lessThan(c, vec3(0.04045)));
 }
 
+#ifdef ROL_SKINNING
+// BoneTransforms[MAX_BONES]: TSkin.ComputeAnimatedMatrices (CombinedMatrix * BoneSpaceOffsetMatrix), file space.
+uniform mat4 bone_transforms[66];
+#endif
+
 void vertex() {
+#ifdef ROL_SKINNING
+	// Standardshader.fx SKINNING: skinning = sum of BoneWeights[i] * BoneTransforms[BoneIndices[i]] (after the morph
+	// targets, which Godot's blend shapes add before this stage); position and normal through it.
+	mat4 skinning = CUSTOM0.x * bone_transforms[int(CUSTOM1.x)] + CUSTOM0.y * bone_transforms[int(CUSTOM1.y)]
+		+ CUSTOM0.z * bone_transforms[int(CUSTOM1.z)] + CUSTOM0.w * bone_transforms[int(CUSTOM1.w)];
+	VERTEX = mat3(skinning) * VERTEX + skinning[3].xyz;
+	NORMAL = mat3(skinning) * NORMAL;
+#endif
 	world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	// Forward path: Halfway = normalize(normalize(CameraPosition - WorldPosition) + DirectionalLightDir) per vertex
 	forward_halfway = normalize(normalize(CAMERA_POSITION_WORLD - world_position) + rol_light_dir_0);

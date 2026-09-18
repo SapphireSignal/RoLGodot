@@ -19,13 +19,15 @@ Status: ⬜ missing · 🟨 partial · ✅ matches original (checked against the
 | Map terrain (Classic, Single): heightmap, 16 chunk textures, normal / material maps, lighting | `Engine.Terrain.pas`, `Maps/*/*.ter` | 🟨 drawn at full detail (the original's geomipmapping LoD is not ported), no shadow mapping yet |
 | Map water: waves, refraction, reflection, depth color, caustics, sun specular | `Engine.Water.pas`, `Watershader.fx`, `*.wat` | 🟨 the G-buffer lookups come from Godot's depth / screen / normal textures; not compared against a capture of the original |
 | Map vegetation: palms and grass tufts from their stored seeds, wind sway | `Engine.Vegetation.pas`, `*.veg` | ✅ rolls replayed with Delphi's RNG (tested); palms cast no shadow yet |
-| Map decorations (`.bcc` and the scenarios' `AddDecoEntity`: nexus ground, bridges, rocks) | `BaseConflict.Map.Client.pas` | ⬜ need the client entity visuals (phase 5) |
+| Map decorations (`.bcc` and the scenarios' `AddDecoEntity`: nexus ground, bridges, rocks) | `BaseConflict.Map.Client.pas` | ✅ created from their scripts, placed, drawn (map viewer); the ambient sound emitters are silent until sound |
+| Nexus, towers, spawners and the other scenario entities drawn with their meshes, team textures and stand animations | `TMeshComponent`, `TAnimationComponent`, `Engine.Animation.pas` | 🟨 drawn from the engine's raw meshes like release builds; glow, mesh effects (matcap crystals, spawn), particles and point lights not yet |
 | Shadows (the original's own shadow mapping, first light) | `Engine.Core.pas` shadow map | ⬜ |
 | Game camera: scroll (keys, edges, drag), zoom 2.6..3.8, camera zone limits, rotation | `TClientCameraComponent` | 🟨 the map viewer uses its view geometry (offset, field of view, zoom range); the component itself is not ported |
 | Units walk lanes, fight, die | `Scripts/Units`, server components | ⬜ |
 | Card hand, play spawner / drop / spell | `BaseConflict.Classes.Gamestates*.pas` | ⬜ |
 | Minimap | `BaseConflict.Classes.MiniMap.pas` | ⬜ |
-| Unit skins (Default, Machine, Underworld, Woodlands, ...) | mesh folders, `Entity.SkinID` | ⬜ |
+| Unit skins (Default, Machine, Underworld, Woodlands, ...) | mesh folders, `Entity.SkinID` | ⬜ (the SkinID reaches client entities; the skin mesh folders are imported) |
+| Unit animations: walk / attack / stand with fades, walk speed from movement speed | `TAnimationController`, `TMeshComponent.OnPlayAnimation` | 🟨 ported and tested on a static unit; units don't walk on the client yet (no network sync of movement) |
 | Tooltips with ability keywords | `TTooltipUnitAbilityComponent` | ⬜ |
 | Scripted AI `MegaRootDude` never runs: its server script does not compile (undeclared `ArcherDrop`); the port keeps the error | `Scripts/AI/MegaRootDude.dws` | 🟨 transpiled as the error; runtime reporting in phase 2 |
 

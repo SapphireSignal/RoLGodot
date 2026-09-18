@@ -1,4 +1,4 @@
-"""Unit tests of the graphics importer's decoders (KTF .tex textures, the minimal FBX reader) on synthetic files.
+"""Unit tests of the graphics importer (KTF .tex textures, the scripts' graphics references) on synthetic data.
 
 Run: python -m unittest discover -s tools/tests   (tools/run_tests.ps1 runs it too). Needs no reference/ checkout.
 """
@@ -9,11 +9,9 @@ import struct
 import sys
 import tempfile
 import unittest
-import zlib
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import fbx_info  # noqa: E402
 import import_graphics  # noqa: E402
 
 
@@ -67,26 +65,27 @@ class KtfTest(unittest.TestCase):
             self.decode(b'\x04%KTX' + b'\x00' * 40)
 
 
-class FbxReaderTest(unittest.TestCase):
-    def node(self, name, props, children=b'', start=27):
-        body = b''.join(props) + children
-        end = start + 13 + len(name) + len(body) + (13 if children else 0)
-        header = struct.pack('<IIIB', end, len(props), len(b''.join(props)), len(name)) + name.encode()
-        return header + body + (b'\x00' * 13 if children else b'')
+class ScriptGraphicsTest(unittest.TestCase):
+    """The scripts' own graphics references: bound textures (BindTextureToTeam...) and bare geometry files."""
 
-    def test_reads_properties_and_compressed_arrays(self):
-        values = [1.5, -2.0, 3.25, 0.0, 4.0, -1.0]
-        raw = struct.pack('<6d', *values)
-        comp = zlib.compress(raw)
-        array = b'd' + struct.pack('<III', 6, 1, len(comp)) + comp
-        name = b'Vertices'
-        data = b'Kaydara FBX Binary  \x00\x1a\x00' + struct.pack('<I', 7400)
-        data += self.node('Vertices', [array], start=len(data))
-        data += b'\x00' * 13
-        version, root = fbx_info.read_binary(data)
-        self.assertEqual(version, 7400)
-        self.assertEqual(root.children[0].name, name.decode())
-        self.assertEqual(root.children[0].props[0], values)
+    def scan(self, text, pattern):
+        return [m.groups() for m in pattern.finditer(text)]
+
+    def test_bound_textures_follow_their_mesh_statement(self):
+        text = ("TMeshComponent.CreateGrouped(Entity, [2], 'Units\\Neutral\\Nexus\\NexusCrystal.xml')\n"
+                "  .CreateNewAnimation(ANIMATION_STAND, 0, 200)\n"
+                "  .BindTextureToTeam(mtDiffuse, 'NexusDiffuse.tga', 1)\n"
+                "  .BindTextureToTeam(mtGlow, 'NexusGlow2.tga', 2);\n"
+                "TMeshComponent.Create(Entity, 'Other.xml');")
+        found = self.scan(text, import_graphics.MESH_STATEMENT)
+        self.assertEqual(found[0][0], 'Units\\Neutral\\Nexus\\NexusCrystal.xml')
+        self.assertEqual(import_graphics.BOUND_TEXTURE.findall(found[0][1]), ['NexusDiffuse.tga', 'NexusGlow2.tga'])
+        self.assertEqual(import_graphics.BOUND_TEXTURE.findall(found[1][1]), [])
+
+    def test_bare_geometry_files_are_found(self):
+        text = "TMeshComponent.CreateGrouped(Entity, [0], 'Environment\\Stones1\\Stones1.fbx');"
+        self.assertEqual([m.group(1) for m in import_graphics.SCRIPT_GEOMETRY.finditer(text)],
+                         ['Environment\\Stones1\\Stones1.fbx'])
 
 
 if __name__ == '__main__':

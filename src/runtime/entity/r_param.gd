@@ -14,6 +14,14 @@ static func IsEmpty(p) -> bool:
 	return p == null
 
 
+## A value as RParam.SerializeIntoStream / DeserializeFromStream hand it on: arrays and dictionaries deep copied,
+## objects (records the port keeps as objects) shared.
+static func Copy(p):
+	if p is Array or p is Dictionary:
+		return p.duplicate(true)
+	return p
+
+
 ## Round a float to the nearest 32-bit single, as a Delphi `single` variable holds it.
 static func ToSingle(x: float) -> float:
 	_single_buffer[0] = x

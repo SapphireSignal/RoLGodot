@@ -245,4 +245,18 @@ def import_maps(out_root: Path, check: bool, copy_if_changed, write_texture, pro
                         files.add(str(Path(mesh).with_suffix('.msh')))
             for rel in sorted(files):
                 referenced(rel, veg.name)
+        bcc = folder / (name + '.bcc')
+        if bcc.exists():
+            write(out / (name.lower() + '.decorations.json'), json_bytes(convert_decorations(bcc)))
     return written
+
+
+def convert_decorations(bcc: Path):
+    """TClientMap.SavedDecorations (RDecoEntityDescription): position, front, size and the entity script, in file
+    order (the order AddDecoEntity creates them). Freezed is map editor only."""
+    root = ET.parse(bcc).getroot()
+    result = []
+    for item in root.find('SavedDecorations').findall('Item'):
+        result.append({'Position': vector(item.find('Position')), 'Front': vector(item.find('Front')),
+                       'Size': num(item.find('Size').text), 'ScriptFilename': item.find('ScriptFilename').text or ''})
+    return result

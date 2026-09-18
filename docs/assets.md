@@ -10,44 +10,67 @@ How the original's graphics get into the port, and how they are drawn. Facts abo
     Godot --headless --path . --import       # tools/run_tests.ps1 does this too
 
 `tools/run_tests.ps1` runs `import_graphics.py --check` (every descriptor resolves). The export includes
-`assets/graphics/*.json` (descriptors, map data), `*.bin` (terrain grids) and `*.msh` (raw meshes) besides the
-imported resources; `import/` (editor-only) is excluded.
+`assets/graphics/*.json` (descriptors, map data, decorations), `*.bin` (terrain grids) and `*.msh` (raw meshes)
+besides the imported textures.
 
 ## Meshes
+**The geometry is the engine's raw mesh, not the FBX.** Release builds of the original set `LOAD_RAW_MESH`
+(`Engine.Mesh.pas`): `TMeshAnimatedGeometry.CreateFromFile` loads `ChangeFileExt(geometry, '.msh')`, the engine's
+own pre-converted file (vertices, bones, skin, bone and morph animations), for every mesh. The port does the same.
+(It used Godot's FBX import before; for skinned files Godot's result differs from the `.msh`: the nexus crystal ended
+~65 file units lower, under the ground. The `.msh` data has no NaN bones either: the FBX-only NaN repair is gone.)
+
 `tools/import_graphics.py` walks every mesh descriptor `Graphics/**/*.xml` (200, all `TMesh`) and writes, with
 **lowercased paths** (the original's references differ in case from the files; the port lowercases every graphics
 path, `TMesh.ResolveDescriptor`):
 - `<name>.mesh.json`: the descriptor: every published `TRawMesh` property, defaults from
-  `SetDefaultMaterialSettings` for missing ones, texture names resolved in the descriptor's folder. The old
-  `Specular` element of 10 descriptors has no property and is skipped, like the deserializer does.
-- the FBX (copied) and a `.fbx.import` with fixed settings: no LODs, no vertex compression, 30 fps, **no animation
-  trimming** (script frame ranges count from the file's first frame), embedded images discarded,
-  `import/fbx_post_import.gd` as post-import script.
+  `SetDefaultMaterialSettings` for missing ones, texture names resolved in the descriptor's folder, `GeometryFile`
+  = the `.msh`. The old `Specular` element of 10 descriptors has no property and is skipped, like the deserializer.
+- the `.msh`, copied.
 - each referenced texture, copied (`.tga` / `.png`) or decoded from the engine cache `.tex` when no source image
   exists (KTF: `decode_ktf`, pixel-identical to the source TGA where both exist), with a `.import` (lossless,
-  mipmaps: the original generates mipmaps).
+  mipmaps: the original generates mipmaps). Textures the scripts swap in (`BindTextureToTeam` / `UnitProperty` /
+  `Resource`, e.g. `NexusDiffuse2.tga` of the red team) are found by scanning the scripts' `TMeshComponent`
+  statements; a skinned unit's concatenated path (`'...VoidBowman' + SkinFileSuffix + '\VoidBowman.xml'`) matches
+  every skin folder by file name.
+- one script loads a geometry file directly (`Environment\Stones1\Stones1.fbx`): `TRawMesh.CreateFromFile` with a
+  geometry file takes default material settings and textures by name convention (`<name>Diffuse.tga`, ...); the
+  importer writes that as a descriptor (201 in all).
+Stale `.fbx` copies of earlier versions are deleted from `assets/graphics/`.
 
-**Units.** The FBX files are all Y-up with standard axes but mixed `UnitScaleFactor` (2.54, 100, 200, 0.1). The
-original's old assimp ignores it and uses the raw numbers; Godot converts to meters by `UnitScaleFactor / 100`.
-The importer sets `nodes/root_scale = 100 / UnitScaleFactor`, so the port sees raw file units (the Footman is
-~90 units tall), which the scripts' size factors expect (`SIZE_FACTOR_3DSMAX = 2 / 125`, `eiModelSize`).
-`tools/fbx_info.py` reads FBX files (binary and ASCII) to check such facts (`--all` lists every file).
+**The raw mesh** (`TEngineRawMesh`, `t_engine_raw_mesh.gd`, `Engine.Core.Mesh.pas`): header, 184-byte vertices
+(Position[0..7] = base + morph offsets, uv, normal, tangent, binormal, bone weights, bone indices as singles,
+smoothed normal), colors, UInt32 indices, bones (depth first, `string[128]`, `RMatrix4x3`, child count), skin links
+(bone name, offset matrix), animations (ShortString name; channels of keys `Time, Translation, Scale, Quaternion
+x y z w` + target), morph target names. All 201 files read to their exact end. `RMatrix4x3` memory is
+`_11 _12 _13 _41 _21 _22 _23 _42 _31 _32 _33 _43`, column i = `(_i1, _i2, _i3)`; the port keeps it as a Transform3D.
 
-**NaN bones.** ForestGuardian, MeleeGolemTower and AttackBoss animate a `...Stone` bone whose rotation curves and
-default rotation are NaN in the file itself. In the original the bone matrix turns NaN and the GPU drops those
-triangles: the stone is never drawn. `import/fbx_post_import.gd` gives such bones an identity rotation and a
-vanishing scale, which draws the same nothing without NaN errors. (Godot still logs NaN errors while importing
-these three files; the imported result is clean.)
+**Drawing** (`TMesh`, `TMesh.TGeometry` cached per file like the original's device cache): one surface (the raw mesh
+holds the collapsed subsets), the file's index order, file units (the Footman is ~86 units tall; the scripts' size
+factors expect raw units: `SIZE_FACTOR_3DSMAX = 2 / 125`, `eiModelSize`). **Skinning** is done in the shader as
+`Standardshader.fx` does (`ROL_SKINNING`): weights and indices in `CUSTOM0` / `CUSTOM1`, `bone_transforms[66]` =
+`CombinedMatrix * BoneSpaceOffsetMatrix` per skin link (`TSkin.ComputeAnimatedMatrices`), uploaded each frame;
+Godot's skeletons are not used (they cannot hold the sheared matrices the original's math allows). **Morph targets**
+(7 meshes: VoidBowman, Ballista, SaplingFarm, two golems, rootnetwork) are relative blend shapes, weights = the morph
+driver's / 100, applied before skinning like the shader's `pos += Position_Morph_k * weight`. Culling uses the
+file's bounding sphere as `TMesh.Render` does (`custom_aabb`), not the animated pose.
 
-**Space.** The original loads right-handed FBX data unchanged into its left-handed world and mirrors X in the
+**Space.** The original loads right-handed file data unchanged into its left-handed world and mirrors X in the
 world matrix. The port maps game space (x, y, z) to Godot (-x, y, z) (`TMesh.ToGodot`); the two mirrors cancel,
-so imported FBX scenes are used as they are and `TMesh.ComputeTransformationMatrix` conjugates the base:
-`basis = G * Base(Left, Up, Front) * G * Scaling`, `G = diag(-1, 1, 1)`. (Pitch/yaw/roll rotation of TMesh waits for
-the TMeshComponent port.)
+so file coordinates are used as they are and `TMesh.ComputeTransformationMatrix` conjugates the base:
+`basis = G * Base(Left, Up, Front) * G * Scaling`, `G = diag(-1, 1, 1)`. `TMesh.TransformationMatrix()` is the
+original's game-space matrix (with the mirror) for bone positions and bounds.
 
-**Animations.** One take per file ("Take 001"), 30 fps. `TMesh.ShowFrame(frame)` shows a frame as the scripts'
-`CreateNewAnimation(name, start, end)` count them. The script-defined animation slices, blending and speeds come
-with `TMeshComponent` / `TAnimationComponent` (phase 5).
+**Animations** (`t_animation_controller.gd` = `Engine.Animation.pas`, drivers in `t_mesh.gd`). One take per file
+(`AnimStack::Take 001`, `TMesh.FBX_DEFAULT_ANIMATIONTRACK`), keys every 1000 / 30 ms. `TAnimationController`: a stack
+of playing animations with 500 ms fades and a looping default animation, one update per frame (`GFXD.FrameCount`),
+times from `TTimeManager`. `TSkinnedMeshAnimationDriver`: per animation the channels with their times normalized by
+its length; `CreateNewAnimation` (ExtractPart) cuts frames start..end (both included) out of the take; each update
+finds the two keys around the time key, lerps / slerps (`RVector4.SLerp`) and adds the weighted result to the bone;
+`PassAnimationToHierarchy` sums translation and scale by weight, slerps the rotations in order (its weight sum stays
+the first one's, as written) and multiplies down the hierarchy. `TMeshMorphAnimationDriver`: weight curves per
+target, slices by time (`CreateSlice`, including its final-key lerp as written), weights summed per frame.
+`TMesh.ShowFrame(frame)` (mesh viewer) poses a frame of the take directly.
 
 ## Shading
 `src/runtime/graphics/standard_shader.gdshaderinc` ports `Standardshader.fx` and, for opaque meshes, the deferred
@@ -79,8 +102,20 @@ mapped to Godot space, colors rgb + intensity a.
 
 ## Maps
 `TClientMap` (`src/runtime/map/t_client_map.gd`, `BaseConflict.Map.Client.pas`) loads a map's lights, terrain, water
-and vegetation. Both maps (Classic, Single) have all three. The decorations (`.bcc`, and the scenario scripts'
-`AddDecoEntity`) are client entities made from scripts: they wait for the client visuals (phase 5).
+and vegetation. Both maps (Classic, Single) have all three. Which scenario uses which map
+(`BaseConflict.Constants.Scenario.pas`): **Single** (one lane) has the normal 1v1..4v4 PvP, ranked 1v1 / 2v2, the
+tutorial and the solo PvE attack; **Classic** (two lanes) the "two lane" PvP variants, ranked 3v3 / 4v4, the duo
+PvE attack and the Classic sandbox.
+
+**Decorations.** Given the client's global bus, `TClientMap.CreateFromFile` also creates the map's decorations, last,
+like the original: `<Map>.bcc` `SavedDecorations` (converted to `<map>.decorations.json` by
+`import_map_graphics.py`; Classic 54: bridges `Bridge11..333`, 16 `BridgePart1`, 24 `BridgePart2`, `Stones1`, 7
+ambient sound emitters that draw nothing; Single 30), each `TEntity.CreateFromScript(ScriptFilename)` on the client
+bus, placed by `UpdateDecoEntity` (position, display position / front / up, `eiSize` = the description's size), then
+`eiAfterCreate`. `Stones1` has size 0 in the file and is drawn at size zero, like the original. The scenario scripts'
+client part adds more (`Game.ClientMap.AddDecoEntity`: the PvE nexus ground). Script paths like
+`\Environment\Bridge11.ets` start with a backslash; Windows takes the doubled separator after `\Scripts\` as one, and
+so does the port's script lookup.
 
 **Import.** `tools/import_map_graphics.py` (run by `import_graphics.py`) writes `assets/graphics/maps/<map>/`:
 `<map>.terrain.json` + `.terrain.bin`, `<map>.water.json`, `<map>.vegetation.json` (compact), the chunk textures, and
@@ -91,8 +126,8 @@ copies every referenced file to its lowercased game-root path (`TClientMap.Resol
   (per level a Boolean "has array children" and an Int32 length, then the children or the raw singles).
   `GridData[x][y]`, x-major, 513 x 513 for both maps.
 - The engine cache `.tex` of every chunk texture is identical to its PNG (checked), so the PNGs are used.
-- Release builds load the vegetation meshes from the raw `.msh` next to the FBX (`LOAD_RAW_MESH`): `TEngineRawMesh`
-  (`src/runtime/graphics/t_engine_raw_mesh.gd`) reads it; its stored bounding sphere sizes the palms.
+- Release builds load the vegetation meshes from the raw `.msh` next to the FBX (`LOAD_RAW_MESH`, as every mesh):
+  `TEngineRawMesh` reads it; its stored bounding sphere sizes the palms.
 
 **Winding.** Everything is mirrored into Godot space (x negated, see "Space"), and the original's index order is
 kept unchanged: D3D's clockwise front faces (left-handed) remain Godot's front faces. Reversing the triangles (what
@@ -132,10 +167,16 @@ All parts are alpha tested (0.5), two-sided without normal flipping, lit as colo
 list, orbit camera, frame slider / play, unit shading toggle. Capture mode for checks without a person:
 `Godot --path . res://src/viewer/mesh_viewer.tscn -- --capture=<substr,...> --capture-out=<abs dir>` writes two
 views per mesh and steps every frame (errors show in the log); add `--turntable=<frames>` for numbered video frames.
-All 200 meshes load and play without errors.
+All 201 meshes load from their `.msh` and pose without errors.
 
-`src/viewer/map_viewer.tscn` (button on the main scene): a map through the game camera's geometry
+`src/viewer/map_viewer.tscn` (button on the main scene): a scenario's battlefield through the game camera's geometry
 (`TClientCameraComponent.ApplyCamera`: eye = target + zoom * 10 * CAMERAOFFSET.Normalize, vertical field of view
-0.6853981635 rad, near 1, far 10000, game zoom 2.6..3.8), map switch, layer toggles, named views. Capture mode:
-`-- --capture-out=<abs dir> [--maps=Classic,Single] [--hide=Terrain,Water,Vegetation]` writes each named view per map.
-The test runner's second launcher smoke test opens it through `play.bat`.
+0.6853981635 rad, near 1, far 10000, game zoom 2.6..3.8). Three scenarios: the 1 lane sandbox (Single, the default),
+the 2 lane sandbox (Classic) and the PvE sandbox (Single, golem base on its nexus ground). Each is set up as in a
+game: a server `TGameThread` runs the scenario scripts, a `TClientGame` loads the map with its decorations and runs the
+scenario's client part, then `ReceiveWorld` hands it the server's entities (nexus, towers, lane nodes...) the way a
+joining client gets them; every frame the viewer triggers the client's `eiIdle` (`GFXD.MainScene` is its entities
+node). Layer toggles (Terrain, Water, Vegetation, Entities), named views per map. Capture mode:
+`-- --capture-out=<abs dir> [--maps=Single,Classic] [--hide=...] [--view=x,z,zoom[,rotation]]` writes each named view
+per scenario. The test runner's second launcher smoke test opens it through `play.bat` and checks decorations,
+entities and drawn meshes.

@@ -18,7 +18,7 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - Delphi: `C:\Program Files (x86)\Embarcadero\Studio\37.0\bin\`
 - Tests: `powershell -ExecutionPolicy Bypass -File tools\run_tests.ps1` (import + compile sweep + tests,
   hard timeout, logs in `logs/`; any GDScript runtime `SCRIPT ERROR` in the log fails the run; last, two smoke tests start the game through
-  `play.bat` and press the Mesh viewer / Map viewer button, checking a mesh / the Classic map is drawn: windows flash up). Test files: `tests/test_*.gd` extending `res://tests/test_case.gd`.
+  `play.bat` and press the Mesh viewer / Map viewer button, checking a mesh / the Single map with its decorations and entities is drawn: windows flash up). Test files: `tests/test_*.gd` extending `res://tests/test_case.gd`.
 
 ## Docs
 - `docs/original-architecture.md`: how the original is built, file formats, gotchas.
@@ -30,8 +30,9 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - `docs/entity-core.md`: TEntity/eventbus/blackboard semantics and the conventions for porting components.
 - `docs/map.md`: map data (zones), build zones, lanes, pathfinding, the priority-queue tie rule.
 - `docs/game-loop.md`: TGame / TServerGame / TGameThread, scenarios, game setup, ticks, what the headless match shows.
-- `docs/assets.md`: the graphics import (`tools/import_graphics.py`, generated `assets/graphics/`), TMesh, the mesh
-  shader (gamma-space port of the original's lighting), TLightManager, the maps (terrain, water, vegetation), the viewers.
+- `docs/assets.md`: the graphics import (`tools/import_graphics.py`, generated `assets/graphics/`), TMesh on the raw
+  `.msh` (skinning, morphs, animation drivers), the mesh shader (gamma-space port of the original's lighting),
+  TLightManager, the maps (terrain, water, vegetation, decorations), the viewers.
 - `docs/questions-for-devs.md`: what only the closed master server knew (meta values), asked of the original devs.
 
 ## Status
@@ -128,3 +129,9 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   `DelphiRandom`, the Win32 RTL generator), `TEngineRawMesh`, `TClientMap`, three shaders, the map viewer (main scene
   button, capture mode, second launcher smoke test). Both maps render. `docs/questions-for-devs.md` lists what only the
   master server knew. 354 tests green, no errors. Next: see CONTINUE.md.
+- 2026-09-18: Phase 4 part 3, the battlefield: meshes now load from the engine's raw `.msh` like release builds
+  (`LOAD_RAW_MESH`; FBX import dropped: Godot misplaced skinned parts), skinning in the shader, morph blend shapes,
+  `TAnimationController` + bone / morph drivers; client visuals (`TVisualizerComponent`, `TMeshComponent`,
+  `TAnimationComponent`, `TLogicToWorldComponent`), entity serialize / deserialize, map decorations (`.bcc`), a
+  partial `TClientGame`. The map viewer shows the 1 lane / 2 lane / PvE sandboxes with nexus, towers, bridges.
+  1411 files compile, 361 tests green, no errors. Next: see CONTINUE.md.

@@ -76,18 +76,9 @@ static func RollVegetationMesh(obj: Dictionary) -> Dictionary:
 		"Origin": _vec3(obj.FPosition), "Rotation": rotation, "Size": final_size}
 
 
-## RMatrix.CreateRotationPitchYawRoll(Pitch = x, Yaw = y, Roll = z) = RotationY(Yaw) * RotationX(Pitch) *
-## RotationZ(Roll), as a Basis acting on game-space column vectors. The original's matrices (column X, row Y in
-## _XY): RotationY rows [[c, 0, -s], [0, 1, 0], [s, 0, c]], RotationX [[1, 0, 0], [0, c, s], [0, -s, c]],
-## RotationZ [[c, s, 0], [-s, c, 0], [0, 0, 1]].
+## RMatrix.CreateRotationPitchYawRoll as a Basis acting on game-space column vectors (RMatrix.RotationPitchYawRoll).
 static func RotationPitchYawRoll(pitch_yaw_roll: Vector3) -> Basis:
-	return _rows([[cos(pitch_yaw_roll.y), 0, -sin(pitch_yaw_roll.y)], [0, 1, 0], [sin(pitch_yaw_roll.y), 0, cos(pitch_yaw_roll.y)]]) \
-		* _rows([[1, 0, 0], [0, cos(pitch_yaw_roll.x), sin(pitch_yaw_roll.x)], [0, -sin(pitch_yaw_roll.x), cos(pitch_yaw_roll.x)]]) \
-		* _rows([[cos(pitch_yaw_roll.z), sin(pitch_yaw_roll.z), 0], [-sin(pitch_yaw_roll.z), cos(pitch_yaw_roll.z), 0], [0, 0, 1]])
-
-
-static func _rows(r: Array) -> Basis:
-	return Basis(Vector3(r[0][0], r[1][0], r[2][0]), Vector3(r[0][1], r[1][1], r[2][1]), Vector3(r[0][2], r[1][2], r[2][2]))
+	return RMatrix.RotationPitchYawRoll(pitch_yaw_roll)
 
 
 ## RVector3.RotateAxis (Rodrigues).

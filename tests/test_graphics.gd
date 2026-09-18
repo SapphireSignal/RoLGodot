@@ -4,6 +4,7 @@ extends "res://tests/test_case.gd"
 ## filled assets/graphics (it is generated on setup, not committed).
 
 const FOOTMAN := "Units\\White\\Footman_Default\\Footman.xml"
+const CRYSTAL := "Units\\Neutral\\Nexus\\NexusCrystal.xml"
 
 var _meshes: Array[Node] = []
 
@@ -12,6 +13,7 @@ func after_each() -> void:
 	for m in _meshes:
 		m.free()
 	_meshes.clear()
+	TMesh.ClearGeometryCache()
 
 
 func _load(path: String) -> TMesh:
@@ -88,9 +90,31 @@ func test_footman_mesh_loads_with_its_descriptor() -> String:
 	check_eq(mesh.DiffuseTexture, "footmandiffuse.tga", "diffuse")
 	check_eq(mesh.MaterialTexture, "footmanmaterial.tga", "material texture")
 	check_eq(mesh.SpecularPower, 128.0, "specular power")
-	check_eq(mesh.MeshInstances.size(), 3, "three subsets")
+	check_eq(mesh.GeometryFile, "footman.msh", "the raw mesh release builds load (LOAD_RAW_MESH)")
+	check_eq(mesh.MeshInstances.size(), 1, "one surface (the raw mesh holds the collapsed subsets)")
 	check_eq(mesh.FrameCount(), 122, "take length (the script's walk ends at frame 122)")
-	# Raw file units (UnitScaleFactor 2.54 ignored like the original's assimp): the geometry is ~90 units tall.
+	check_eq(mesh.Geometry.SkinBones.size(), 24, "24 skin links")
+	# footman.msh header: RAABB Min (-37.77591, 0.120251, -12.4349), size y 86.14995 (file units)
 	var box := mesh.GetUntransformedBoundingBox()
-	check(absf(box.size.y - 89.70473) < 0.01, "raw height %s" % box.size.y)
+	check(absf(box.size.y - 86.14995) < 0.001, "raw height %s" % box.size.y)
+	return take_failure()
+
+
+## TEngineRawMesh: nexuscrystal.msh (Graphics\Units\Neutral\Nexus) read to its end: 9 bones from RootNode, one skin
+## link, one take of 201 keyframes. Its raw vertices lie below the ground (y -70.2 .. -35.8); the take's bones lift it
+## over the nexus base (whose box ends at y 14.175, nexus.msh): the crystal floats.
+func test_raw_mesh_bones_lift_the_nexus_crystal() -> String:
+	if not TMesh.Exists(CRYSTAL):
+		return ""
+	var mesh := _load(CRYSTAL)
+	check_eq(mesh.Geometry.BoneNames.size(), 9, "bones")
+	check_eq(mesh.Geometry.BoneNames[0], "RootNode", "root")
+	check_eq(mesh.Geometry.SkinBones.size(), 1, "skin links")
+	check_eq(mesh.FrameCount(), 200, "keyframes 0..200")
+	var raw := mesh.GetUntransformedBoundingBox()
+	check(absf(raw.position.y - (-70.16459)) < 0.001, "raw bottom %s" % raw.position.y)
+	mesh.ShowFrame(0)
+	var posed := mesh.GetPosedBoundingBox()
+	check(posed.position.y > 14.175, "posed above the base: %s" % posed.position.y)
+	check(absf(posed.size.y - raw.size.y) < 0.01, "moved, not stretched")
 	return take_failure()

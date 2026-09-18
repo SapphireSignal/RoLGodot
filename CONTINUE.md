@@ -13,8 +13,8 @@ Hand-off note for the next session. Read `CLAUDE.md` first, then this.
 
 ## Where we are
 Phases 0-2 done, phase 3 done except bots and network (the headless sandbox match runs and is profiled); phase 4,
-the asset pipeline, is under way: meshes and map graphics done, the render extras next (see "Phase 4" below and
-`docs/port-plan.md`). Verified facts about the original are in
+the asset pipeline, is under way: meshes (from the raw `.msh`), map graphics, decorations and the client visuals of
+placed entities done, the render extras next (see "Phase 4" below and `docs/port-plan.md`). Verified facts about the original are in
 `docs/original-architecture.md`. If `reference/` is missing, run `tools\fetch_reference.ps1` (~800 MB download,
 ~3 GB checked out; run it in the background).
 
@@ -111,8 +111,8 @@ squad rows, KI players), `TServerSandbox{,Command}Component`, `TSandboxComponent
 + `AttackScenarioEasy` scripts and their first minute). New: `BC.cc*` (EnumClientCommand), `BC.MAP_SINGLE/DOUBLE`,
 `BC.SCENARIO_PVE_DEFAULT_PREFIX`, `DelphiRtl.StrToIntDef`. Fake games for the directors carry `GameInformation`
 (`.Scenario.MapName`, `.ScenarioUID`), `GameDirector`, `Overwatch` / `OverwatchClearable`.
-Every server / shared stub is ported; the 85 left (`src/runtime/dws/stubs/`) are client visuals / GUI / sound
-(phase 4+) and `RIntVector2` / `RVector3`.
+Every server / shared stub is ported; the 82 left (`src/runtime/dws/stubs/`) are client visuals (effects, orienters,
+positioners, particles...) / GUI / sound (phase 4+) and `RIntVector2` / `RVector3`.
 
 ## Phase 3, the game loop
 Done: read `docs/game-loop.md`. `TGameThread.new().Create(TGameManager.CreateTestserverGameInfo())` builds the real
@@ -130,30 +130,30 @@ Open in phase 3: bots (`TPvPBotComponent`), network, time manager pause.
 
 ## Phase 4, the asset pipeline
 Read `docs/assets.md`. Setup after fetching `reference/`: `python tools/import_graphics.py`, then a Godot `--import`
-(the test runner imports too). Meshes are done: `TMesh` (`src/runtime/graphics/`), the shader, `TLightManager`,
-`src/viewer/mesh_viewer.tscn` (capture mode for checking renders yourself; `--turntable=N` for video frames, ffmpeg is
-installed via WinGet). Every script mesh reference resolves (114 references, 86 base models, 173 unit files with skins).
-Map graphics are done (section "Maps" in `docs/assets.md`): `tools/import_map_graphics.py` (run by
-`import_graphics.py`), `TClientMap` with `TTerrain`, `TWaterManager`/`TWaterSurface`, `TVegetationManager`,
-`TEngineRawMesh`, `DelphiRandom` (use it wherever the original replays `Random` from a seed), the terrain / water /
-vegetation shaders, `src/viewer/map_viewer.tscn` (capture mode `--capture-out=<dir> [--maps=..] [--hide=..]`),
-`tests/test_map_graphics.gd`. Winding rule: keep the original's index order in Godot space (see "Winding").
-Open in the map: decorations (`.bcc` + scenario `AddDecoEntity`, need client entities: phase 5), shadows,
-geomipmapping, the camera component (the viewer only borrows its geometry). No capture of the original exists to
-compare against; an idea worth checking: whether the original client (Delphi is installed) can be built and run
-offline far enough to capture reference screenshots (it logs in to the closed master server).
-**Next (the owner's priority, 2026-09-18): the map viewer must show the battlefield, not just the ground.** The owner
-noticed there are no lanes, no nexus, no towers. Lanes are not drawn by the original (no client code renders them);
-what shows them are the bridges and the base plates' paving. So:
-1. Client entity visuals: `TMeshComponent` (+ the animation component) from `BaseConflict.EntityComponents.Client*.pas`,
-   so a client entity built from a script shows its model at its display position / front / size.
-2. Map decorations: `TClientMap` loads `<Map>.bcc` `SavedDecorations` (Classic: 108, e.g. `BridgePart1/2`,
-   `Bridge11..333`, `Stones1`, sound emitters `AtmoBeach/Jungle/Wind` that draw nothing) with `AddDecoEntity`.
-3. The scenario's placed things in the map viewer: the `AddDecoEntity` calls of the scenario scripts (nexus ground)
-   and the units a scenario starts with (nexus, towers, spawners) from the client scripts, placed where the headless
-   sandbox match puts them (`docs/game-loop.md`).
-Check with captures that bridges line up with the terrain and the nexus sits on its plate. Then, in phase 4 again:
-shadow mapping (terrain and vegetation receive it, palms cast it), glow stage + bloom (`PostEffects.fxs`), fur, outline.
+(the test runner imports too). **Meshes load from the engine's raw `.msh`** (what release builds draw,
+`LOAD_RAW_MESH`), not the FBX: `TEngineRawMesh` reads the whole file, `TMesh` (`src/runtime/graphics/`) builds one
+surface, skins in the shader (`ROL_SKINNING`, `bone_transforms`), morphs as blend shapes, and animates with
+`TAnimationController` (`Engine.Animation.pas`) + its bone / morph drivers. The FBX route was dropped because Godot's
+import misplaced skinned parts (the nexus crystal sat under the ground). `src/viewer/mesh_viewer.tscn` (capture mode;
+`--turntable=N` for video frames, ffmpeg is installed via WinGet): all 201 meshes load and pose.
+Map graphics (section "Maps"): `TClientMap` with terrain, water, vegetation and the decorations (`.bcc` ->
+`<map>.decorations.json`), `DelphiRandom`, the map viewer. Winding rule: keep the original's index order in Godot space.
+Client visuals are ported (section "Client visuals" in `docs/entity-core.md`): `TVisualizerComponent`,
+`TMeshComponent`, `TAnimationComponent`, `TLogicToWorldComponent`, entity serialize / deserialize, and a partial
+`TClientGame` (`src/runtime/game/t_client_game.gd`) whose `ReceiveWorld` copies a server game's entities as a joining
+client gets them. `GFXD` (`src/runtime/graphics/gfxd.gd`) holds the main scene and the frame counter;
+`TOptionManager` only the client options in use.
+The map viewer now shows the battlefield: scenario buttons 1 lane (Single, default), 2 lanes (Classic), PvE (Single,
+golem base on its nexus ground); nexus with floating team crystals, towers, bridges with their stone rails.
+Open in phase 4: shadow mapping (terrain and vegetation receive it, palms cast it), glow stage + bloom
+(`PostEffects.fxs`; the nexus / tower glow textures are bound per team already), the mesh effects (`TMeshEffect*`:
+matcap crystals, spawn, metal...), particle effects and point lights on units, fur, outline, geomipmapping, the
+camera component (the viewer only borrows its geometry). No capture of the original exists to compare against; an idea
+worth checking: whether the original client (Delphi is installed) can be built and run offline far enough to capture
+reference screenshots (it logs in to the closed master server).
+**Next:** pick by visibility: the mesh effects that change how the placed buildings look (matcap on nexus / tower
+crystals, `TMeshEffectMatcap`), then glow + bloom; or the live sandbox in the viewer (server frames running, units
+synced to the client: needs the movement sync, `eiMoveTo` / positions over the stream).
 Owner: `docs/questions-for-devs.md` is the list for the original developers (master-server values); record their
 answers there.
 The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.

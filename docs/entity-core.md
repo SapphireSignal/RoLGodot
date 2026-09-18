@@ -436,10 +436,42 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   TDictionary hash order; callers only look entries up).
 - 32-bit integer overflow is not emulated (balances never get near it).
 
+## Client visuals (`BaseConflict.EntityComponents.Client*.pas`; `tests/test_client_visuals.gd`)
+
+- **`TVisualizerComponent`** (+ `RMatrixAdjustments`): on the global `eiIdle` (epLower) `Update` reads `eiSize`
+  (ungrouped times grouped) and `Apply` builds the bind matrix: a bound zone (`eiSubPositionByString` to the bind
+  group), else the entity's `DisplayPosition` / `DisplayFront` / `DisplayUp` (pieces read them hierarchically,
+  fixed orientations replace them), then the adjustments, the rotation offset, the model offset
+  (`Offset * ModelSize * Size + FixedOffset`) and a fixed height. `FinalSize` = scale event (or collision radius)
+  clamped, times the resource scale, times model size and size (not for range / area scale events). `eiModelSize` is
+  read at creation and written later (etWrite epLast). Static visualizers (environment meshes) apply once.
+  Matrices are game-space Transform3Ds (`RMatrix` helpers: Column[0..2] = Left, Up, Front, Column[3] =
+  Translation). `IsVisible`: `eiVisible` (hierarchic, default true), not exiled, wela ready, resource full, client
+  option (`TOptionManager`: only the options in use, with the original's defaults), unit properties.
+- **`TMeshComponent`**: a `TMesh` in `GFXD.MainScene` (the owner of the view sets it; none in headless tests) at the
+  bind matrix with `FinalSize * SizeNormalization` (`ApplyLegacySizeFactor` = 2 / 125, `ApplyAutoSizeNormalization`),
+  `ShadingReductionOverride` = `coEngineGlobalShadingReduction`; `CreateNewAnimation` cuts the take on both drivers
+  and makes `stand` the default; `eiPlayAnimation` plays with the original's length rules (walk scaled by speed and
+  size, random walk offset, following default animations, attack loop); conditional textures (team with
+  `GetDisplayedTeam`, unit property, resource) are checked when dirty; `eiSubPositionByString` answers bones (after
+  `BindZoneToBone` and the bone adjustments) or head / top / ground / pivot / bottom / center; `eiBoundings` the
+  sphere. Not yet: mesh effects (`TMeshEffect*` stay stubs, the effect stack is empty), the death decay manager,
+  the outline pass.
+- **`TAnimationComponent`**: spawn on eiAfterCreate, attack / attack2 / air / ability on eiPreFire or eiFire (by the
+  wela's action point), links, stand, walk (eiMoveTo) as `eiPlayAnimation` to its group.
+- **`TLogicToWorldComponent`**: the client adds it to every entity from the server; logic position / front become
+  the display ones on the ground (epFirst reads), refreshed on the global eiIdle (epHigh) and on eiAfterCreate.
+- **Serialisation** (the network stand-in): `TEntity.Serialize(TEntityStream)` writes ID, script, skin, UID and
+  `TBlackboard.SaveToStream` (count, then event / group slot / index slot / value in event order);
+  `TEntity.Deserialize` creates the entity from its script with the server's blackboard loaded in the initializer,
+  then loads it again over the script's values (blackboard events go through `Write`, position / front through the
+  setters). `TClientGame.AddServerEntity` = `TClientNetworkComponent.DeserializeEntity` (+ TLogicToWorldComponent,
+  eiAfterCreate, Deploy), `ReceiveWorld` = `TServerNetworkComponent.SendWorld` (deployed entities with a script).
+  The serializable components' own fields (`XNetworkSerialize`, only `TMovementComponent.FTarget`) are not sent yet.
+
 ## Not ported yet
 
-- Serialisation (`TEntity.Serialize/Deserialize`, `TBlackboard.SaveToStream/LoadFromStream`,
-  `TSerializableEntityComponent`, `TEventbus.InvokeWithRawData`, `TEntityManagerComponent.InvokeEventOnEntity`),
-  `TEntity.OwningCommander`, the per-game pausable clock (`GameTimeManager`; `TGameTimer` uses `TTimeManager` meanwhile), the rest of
-  `TTimeManager` (pause, `TickTack`): phase 3, with the game
-  loop and client-server sync.
+- `TSerializableEntityComponent` field serialization, `TEventbus.InvokeWithRawData`,
+  `TEntityManagerComponent.InvokeEventOnEntity`, `TEntity.OwningCommander`, the per-game pausable clock
+  (`GameTimeManager`; `TGameTimer` uses `TTimeManager` meanwhile), the rest of `TTimeManager` (pause): with the
+  network.

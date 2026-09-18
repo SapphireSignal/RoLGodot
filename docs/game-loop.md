@@ -14,6 +14,7 @@ Tests: `tests/test_server_game.gd` (setup, ticks, end) and `tests/test_sandbox_m
 | `TServerGame` | `GameServer/BaseConflict.Game.Server.pas:93` | the global bus (server side), server entity + collision managers, statistics, delayed events, commanders (one per slot + a spectator), `Start`, `Idle`, `TeamLost` |
 | `TGameThread` | same file, `:198` | one frame = `DoComputeGame`: TickTack, Idle, debug ticks, waiting -> running (`Start`); finished -> terminated + eiServerShutdown |
 | `TGameManager` (setups only) | same file, `:255-727` | the test server's sandbox game and its decks (`CreateTestserverGameInfo`) |
+| `TClientGame` (part) | `BaseConflict.Game.Client.pas:79` | the client's game on a client bus: client map with decorations, collision and entity manager, scenario scripts' client part (`Initialize`); `ReceiveWorld(ServerGame)` / `AddServerEntity(stream)` stand in for the network (`SendWorld`, `DeserializeEntity`). Network, input, camera, GUI, sound, commander manager, decay, minimap, build grid: not yet |
 
 ## Flow
 

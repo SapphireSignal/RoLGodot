@@ -4,7 +4,7 @@ Usage: python tools/import_graphics.py [--only SUBSTRING] [--check]
 
 For every mesh descriptor (Graphics/**/*.xml, the XML serialisation of TMesh, Engine.Mesh.pas) it writes
   assets/graphics/<lowercased relative path>.mesh.json   the descriptor: parsed numbers, resolved file names
-  assets/graphics/<...>/<geometry>.fbx                    the FBX, copied (Godot imports it)
+  assets/graphics/<...>/<geometry>.msh                    the raw mesh release builds load instead of the FBX, copied
   assets/graphics/<...>/<texture>.tga|.png                 each referenced texture, copied, or decoded from the
                                                            engine's own .tex (KTF) when no source image exists
 and a Godot .import file for each texture (lossless, mipmaps: the original generates mipmaps, mhGenerate).
@@ -15,13 +15,13 @@ files on disk, so the port resolves every graphics path by lowercasing it (see d
 """
 import argparse
 import json
+import re
 import shutil
 import struct
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-import fbx_info
 import import_map_graphics
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -66,44 +66,9 @@ process/size_limit=0
 detect_3d/compress_to=0
 """
 
-
-# FBX import: keep the geometry exact (no LODs, no vertex compression) and the frame numbering the scripts use
-# (no trimming: CreateNewAnimation frame ranges count from the file's first frame, 30 fps like the original's
-# FTimeCorrectionFactor = 1000 / 30). Materials are rebuilt from the descriptor, so embedded images are discarded.
-# Units: the original's old assimp ignores the file's UnitScaleFactor (files use 2.54, 100 or 200), Godot converts
-# to meters by UnitScaleFactor / 100; root_scale = 100 / UnitScaleFactor cancels that, so the port sees the raw
-# file units the scripts' size factors (SIZE_FACTOR_3DSMAX = 2 / 125, eiModelSize) were tuned for.
-FBX_IMPORT = """[remap]
-
-importer="scene"
-importer_version=1
-type="PackedScene"
-
-[params]
-
-nodes/apply_root_scale=true
-nodes/root_scale={root_scale}
-nodes/import_as_skeleton_bones=false
-nodes/use_name_suffixes=false
-nodes/use_node_type_suffixes=false
-meshes/ensure_tangents=true
-meshes/generate_lods=false
-meshes/create_shadow_meshes=true
-meshes/light_baking=0
-meshes/force_disable_compression=true
-skins/use_named_skins=true
-animation/import=true
-animation/fps=30
-animation/trimming=false
-animation/remove_immutable_tracks=false
-animation/import_rest_as_RESET=false
-materials/extract=0
-import_script/path="res://import/fbx_post_import.gd"
-fbx/importer=0
-fbx/allow_geometry_helper_nodes=false
-fbx/embedded_image_handling=0
-fbx/naming_version=2
-"""
+# Release builds load every mesh's geometry from the engine's raw mesh next to it (LOAD_RAW_MESH,
+# TMeshAnimatedGeometry.CreateFromFile: ChangeFileExt(geometry, '.msh')); the port does the same (TEngineRawMesh).
+RAW_MESH_EXTENSION = '.msh'
 
 
 def num(text):
@@ -187,9 +152,9 @@ def parse_descriptor(xml_path: Path, folder: Folder, problems: list):
     for element in root:
         tag, text = element.tag, (element.text or '').strip()
         if tag == 'GeometryFile':
-            geometry = folder.find(Path(text).name) if text else None
+            geometry = folder.find(Path(text).stem + RAW_MESH_EXTENSION) if text else None
             if geometry is None:
-                problems.append(f'{xml_path}: geometry "{text}" not found')
+                problems.append(f'{xml_path}: geometry "{text}" not found (as {RAW_MESH_EXTENSION})')
                 return None
             mesh['GeometryFile'] = geometry.name.lower()
             mesh['_geometry_source'] = geometry
@@ -220,6 +185,71 @@ def parse_descriptor(xml_path: Path, folder: Folder, problems: list):
         # Other elements (the old 'Specular' of 10 descriptors) have no published property: the deserializer skips them.
     for key in TEXTURE_FIELDS.values():
         mesh.setdefault(key, '')
+    return mesh, textures
+
+
+SCRIPTS = ROOT / 'reference' / 'rise-of-legions' / 'Scripts'
+MESH_STATEMENT = re.compile(r"TMeshComponent\.Create(?:Grouped)?\([^;]*?'([^']+\.xml)'([^;]*)", re.IGNORECASE | re.DOTALL)
+BOUND_TEXTURE = re.compile(r"BindTextureTo(?:Team|UnitProperty|Resource)\(\s*mt\w+\s*,\s*'([^']+)'", re.IGNORECASE)
+
+
+def script_textures():
+    """Textures the client scripts swap in (TMeshComponent.BindTextureToTeam / UnitProperty / Resource): a name is
+    taken from the mesh descriptor's folder (TRawMesh.Set*Texture). Returns {descriptor path relative to Graphics
+    (lower case, forward slashes): set of texture names}."""
+    found = {}
+    for path in SCRIPTS.rglob('*'):
+        if path.suffix.lower() not in ('.ets', '.dws'):
+            continue
+        text = path.read_text(encoding='utf-8', errors='replace')
+        for match in MESH_STATEMENT.finditer(text):
+            names = BOUND_TEXTURE.findall(match.group(2))
+            if names:
+                key = match.group(1).replace('\\', '/').lower().lstrip('/')
+                found.setdefault(key, set()).update(names)
+    return found
+
+
+GEOMETRY_EXTENSIONS = ('.x', '.fbx', '.binaryfbx', '.morphfbx', '.basefbx', '.obj', '.blend', '.3ds', '.dae', '.msh')
+SCRIPT_GEOMETRY = re.compile(r"TMeshComponent\.Create(?:Grouped)?\([^;]*?'([^']+\.(?:%s))'"
+                             % '|'.join(e[1:] for e in GEOMETRY_EXTENSIONS), re.IGNORECASE | re.DOTALL)
+CONVENTION_EXTENSIONS = ('.tga', '.png', '.jpg', '.psd')
+
+
+def script_geometry():
+    """Geometry files the client scripts load directly instead of a descriptor (Environment\\Stones1\\Stones1.fbx),
+    relative to Graphics, as written."""
+    found = set()
+    for path in SCRIPTS.rglob('*'):
+        if path.suffix.lower() in ('.ets', '.dws'):
+            for match in SCRIPT_GEOMETRY.finditer(path.read_text(encoding='utf-8', errors='replace')):
+                found.add(match.group(1).replace('\\', '/').lstrip('/'))
+    return found
+
+
+def parse_geometry(folder: Folder, name: str):
+    """TRawMesh.CreateFromFile with a geometry file: default material settings (Init), the geometry, and textures by
+    name convention: ChangeFileExt(file, 'Diffuse' + ext), then the lowercased file with '_diffuse' + ext, per
+    extension .tga, .png, .jpg, .psd (same for Normal, Material, Glow). Returns (mesh, textures) or None."""
+    raw = folder.find(Path(name).stem + RAW_MESH_EXTENSION)
+    if folder.find(name) is None or raw is None:
+        return None
+    mesh = dict(DEFAULTS)
+    mesh['GeometryFile'] = raw.name.lower()
+    mesh['_geometry_source'] = raw
+    for key in TEXTURE_FIELDS.values():
+        mesh[key] = ''
+    textures = {}
+    stem = Path(name).stem
+    for ext in CONVENTION_EXTENSIONS:
+        for key, suffix in (('DiffuseTexture', 'Diffuse'), ('NormalTexture', 'Normal'), ('MaterialTexture', 'Material'),
+                            ('GlowTexture', 'Glow')):
+            if mesh[key]:
+                continue
+            source = folder.find(stem + suffix + ext) or folder.find(stem.lower() + '_' + suffix.lower() + ext)
+            if source is not None:
+                mesh[key] = source.name.lower()
+                textures[mesh[key]] = source
     return mesh, textures
 
 
@@ -258,6 +288,8 @@ def main() -> int:
 
     problems, count, written = [], 0, 0
     folders = {}
+    meshes = []
+    bound_textures = script_textures()
     for xml_path in sorted(GRAPHICS.rglob('*')):
         if xml_path.suffix.lower() != '.xml':
             continue
@@ -269,6 +301,28 @@ def main() -> int:
         if parsed is None:
             continue
         mesh, textures = parsed
+        # a skinned unit's path is concatenated ('Units\Black\VoidBowman' + SkinFileSuffix + '\VoidBowman.xml'):
+        # its key is the bare file name, which fits every skin folder
+        names = bound_textures.get(rel.as_posix().lower(), set()) | bound_textures.get(rel.name.lower(), set())
+        for name in sorted(names):
+            resolved = resolve_texture(folder, Path(name.replace('\\', '/')).name)
+            if resolved is None:
+                problems.append(f'{xml_path}: script texture "{name}" not found (rendered without it, like the original)')
+            else:
+                textures[resolved[1]] = resolved[0]
+        meshes.append((rel, mesh, textures))
+    for rel_text in sorted(script_geometry()):
+        geometry = GRAPHICS / rel_text
+        if args.only and args.only.lower() not in rel_text.lower():
+            continue
+        folder = folders.setdefault(geometry.parent, Folder(geometry.parent)) if geometry.parent.exists() else None
+        parsed = parse_geometry(folder, Path(rel_text).name) if folder else None
+        if parsed is None:
+            problems.append(f'script mesh "{rel_text}" not found')
+            continue
+        meshes.append((Path(rel_text), parsed[0], parsed[1]))
+
+    for rel, mesh, textures in meshes:
         count += 1
         if args.check:
             continue
@@ -276,14 +330,6 @@ def main() -> int:
         out_dir.mkdir(parents=True, exist_ok=True)
         geometry = mesh.pop('_geometry_source')
         written += copy_if_changed(geometry, out_dir / mesh['GeometryFile'])
-        fbx_import = out_dir / (mesh['GeometryFile'] + '.import')
-        unit = fbx_info.info(geometry)[1].get('UnitScaleFactor', [100.0])[0]
-        scale_line = 'nodes/root_scale=%s' % repr(100.0 / unit)
-        current = fbx_import.read_text(encoding='utf-8') if fbx_import.exists() else ''
-        if 'fbx_post_import.gd' not in current or scale_line + '\n' not in current:
-            fbx_import.write_text(FBX_IMPORT.replace('nodes/root_scale={root_scale}', scale_line),
-                                  encoding='utf-8', newline='\n')
-            written += 1
         for name, source in textures.items():
             written += write_texture(source, out_dir / name)
         mesh['Source'] = 'Graphics/' + rel.as_posix()
@@ -293,6 +339,11 @@ def main() -> int:
             descriptor.write_text(text, encoding='utf-8', newline='\n')
             written += 1
 
+    if not args.check and not args.only:
+        # earlier versions copied the FBX files for Godot to import; the raw meshes replaced them
+        for stale in list(OUT.rglob('*.fbx')) + list(OUT.rglob('*.fbx.import')):
+            stale.unlink()
+            written += 1
     map_problems = []
     if not args.only:
         written += import_map_graphics.import_maps(OUT, args.check, copy_if_changed, write_texture, map_problems)

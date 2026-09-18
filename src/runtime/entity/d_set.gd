@@ -54,6 +54,14 @@ static func Intersection(a: Array, b: Array) -> Array:
 	return result
 
 
+## `A <= B` (every member of A is in B)
+static func IsSubset(a: Array, b: Array) -> bool:
+	for v in a:
+		if not b.has(v):
+			return false
+	return true
+
+
 ## `A = B`
 static func Equal(a: Array, b: Array) -> bool:
 	return Make(a) == Make(b)

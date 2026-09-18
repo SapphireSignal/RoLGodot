@@ -3,9 +3,10 @@ extends TObject
 ## Port of TBlackboard (BaseConflict.Entity.pas:100, implementation :2257). Holds a value for every event, the
 ## entity-local pool of values. The script side (TBlackboardScriptInvoker, :1871) calls the same methods: its
 ## overloads are folded into SetValue / SetIndexedValue / SetIndexedValues (the value's type picks the overload).
-## Not ported yet: SaveToStream / LoadFromStream (client-server sync, phase 3).
+## SaveToStream / LoadFromStream carry the values in a TEntityStream (the network's byte stream in the original).
 
 const C = preload("res://src/runtime/dws/dws_const.gd")
+const BC = preload("res://src/runtime/base_conflict_constants.gd")
 
 var FOwner = null  # TEntity
 ## Values for [Event][GroupIndex][SubIndex]: Event -> Array of Arrays. GroupIndex 0 = no group, g + 1 = group g;
@@ -115,6 +116,52 @@ func SetIndexedValue(Event: int, Group: Array, Index: int, Value) -> void:
 
 func SetValue(Event: int, Group: Array, Value) -> void:
 	SetIndexedValue(Event, Group, -1, Value)
+
+
+## SaveToStream: the count of assigned values, then each as event, group slot, index slot, value, in event order.
+## Port: the stream is an Array the entries are appended to (TEntityStream), values are deep copies (the original
+## serializes the RParam).
+func SaveToStream(Stream: TEntityStream) -> void:
+	var entries: Array = []
+	var events: Array = FValues.keys()
+	events.sort()
+	for i: int in events:
+		var groups: Array = FValues[i]
+		for j in groups.size():
+			var values: Array = groups[j]
+			for k in values.size():
+				if values[k] != null:
+					entries.append([i, j, k, values[k]])
+	Stream.Write(entries.size())
+	for entry: Array in entries:
+		Stream.Write(entry[0])
+		Stream.Write(entry[1])
+		Stream.Write(entry[2])
+		Stream.Write(RParam.Copy(entry[3]))
+
+
+## LoadFromStream: blackboard events (EventIdentifierToBlackboardEvent) are written through the owner (position and
+## front through its setters), the others go into the blackboard raw.
+func LoadFromStream(Stream: TEntityStream) -> void:
+	var Count: int = Stream.Read()
+	for _n in Count:
+		var i: int = Stream.Read()
+		var j: int = Stream.Read()
+		var k: int = Stream.Read()
+		var Para = RParam.Copy(Stream.Read())
+		if Para == null:
+			continue
+		if BC.EventIdentifierToBlackboardEvent(i):
+			assert(k == 0, "TBlackboard.LoadFromStream: Blackboardevents cannot have indices!")
+			var Group: Array = [] if j <= 0 else [j - 1]
+			if i == C.eiPosition:
+				FOwner.Position = RParam.AsVector2(Para)
+			elif i == C.eiFront:
+				FOwner.Front = RParam.AsVector2(Para)
+			else:
+				FOwner.Eventbus.Write(i, [Para], Group)
+		else:
+			SetValueRaw(i, j, k, Para)
 
 
 ## Script side SetIndexedValues(Event, Group, Values: TArray<integer|single|string>): value i at index i.

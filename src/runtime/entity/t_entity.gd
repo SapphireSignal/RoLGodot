@@ -2,8 +2,8 @@ class_name TEntity
 extends TObject
 ## Port of TEntity (BaseConflict.Entity.pas:323, implementation :507). An entity is its eventbus, blackboard and
 ## components; everything else lives in components.
-## Not ported yet: Serialize / Deserialize (client-server sync, phase 3), OwningCommander (needs the entity
-## manager, phase 3).
+## Serialize / Deserialize use TEntityStream (an in-memory stand-in for the network stream); the serializable
+## components' own fields are not ported yet.
 
 const C = preload("res://src/runtime/dws/dws_const.gd")
 const BC = preload("res://src/runtime/base_conflict_constants.gd")
@@ -207,6 +207,9 @@ func ApplyScriptReturnGroups(ScriptFileName: String, ProcName := "") -> Array:
 ## Fails like the original on a missing file and on a file the original could not compile.
 static func CompileScriptFromFile(FileName: String, Server: bool) -> Object:
 	var Key := "\\" + FileName.replace("/", "\\").to_lower()
+	# Windows takes doubled separators as one: '\Scripts\' + '\Environment\Bridge11.ets' (TClientMap decorations)
+	while Key.contains("\\\\"):
+		Key = Key.replace("\\\\", "\\")
 	var At := Key.rfind("\\scripts\\")
 	Key = Key.substr(At + 9) if At >= 0 else Key.substr(1)
 	var Index: Dictionary = SCRIPT_INDEX.SERVER if Server else SCRIPT_INDEX.CLIENT
@@ -378,6 +381,40 @@ func RemoveGroups(Groups: Array) -> void:
 func Deploy() -> void:
 	FGlobalEventbus.Trigger(C.eiNewEntity, [self])
 	Eventbus.Trigger(C.eiDeploy, [])
+
+
+## TEntity.Serialize (:801): ID, script, skin, UID and the blackboard, then eiSerialize for the serializable
+## components (their RTTI field serialization is not ported yet: no component writes anything).
+func Serialize(Stream: TEntityStream) -> void:
+	Stream.Write(FID)
+	Stream.Write(FScriptFile)
+	Stream.Write(FSkinID)
+	Stream.Write(FUID)
+	Blackboard.SaveToStream(Stream)
+	Eventbus.Trigger(C.eiSerialize, [Stream])
+
+
+## TEntity.Deserialize (:733): the client builds the entity from its script with the server's blackboard already in
+## place (so the creating components see the server's values), then loads the blackboard again over what the script
+## set. The stream stands after the ID (TClientNetworkComponent.DeserializeEntity reads it first). Serialized
+## components (the rest of the stream) are not ported yet.
+static func Deserialize(EntityID: int, Stream: TEntityStream, GlobalEventbus) -> TEntity:
+	var ScriptFile_: String = Stream.Read()
+	var SkinID_: String = Stream.Read()
+	var UID_: String = Stream.Read()
+	var BlackboardStreamPosition := Stream.Position
+	var Result := CreateFromScript(ScriptFile_, GlobalEventbus, func(Entity: TEntity) -> void:
+		Entity.SkinID = SkinID_
+		# init all values set by the server to the entity, so all components have access to them
+		Entity.Blackboard.LoadFromStream(Stream))
+	if Result == null:
+		return null
+	# now override all values already overwritten by the server, but set by the creation script
+	Stream.Position = BlackboardStreamPosition
+	Result.Blackboard.LoadFromStream(Stream)
+	Result.FID = EntityID
+	Result.UID = UID_
+	return Result
 
 
 func DeferFree() -> void:
