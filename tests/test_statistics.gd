@@ -30,7 +30,10 @@ class FakeEntityManager:
 
 class FakeGameInformation:
 	extends RefCounted
-	var IsTutorial := false
+	var Tutorial := false
+
+	func IsTutorial() -> bool:
+		return Tutorial
 
 
 class FakeMap:
@@ -40,9 +43,12 @@ class FakeMap:
 
 class FakeGame:
 	extends RefCounted
-	var IsShuttingDown := false
 	var EntityManager := FakeEntityManager.new()
 	var Statistics := TGameStatisticManager.new().Create()
+
+	func IsShuttingDown() -> bool:
+		return false
+
 	var Commanders: Array = []
 	var Map := FakeMap.new()
 	var GameInformation := FakeGameInformation.new()
@@ -238,7 +244,7 @@ func test_income_payout() -> void:
 # --- wave spawn ---
 
 func _wave_spawner(tutorial: bool) -> TWelaEffectWaveSpawnComponent:
-	_bus.Game.GameInformation.IsTutorial = tutorial
+	_bus.Game.GameInformation.Tutorial = tutorial
 	_bus.Game.Map.BuildZones.AddBuildZone(TBuildZone.new().Create(1)).AddBuildZone(TBuildZone.new().Create(0))
 	var e := _entity(60)
 	var w: TWelaEffectWaveSpawnComponent = TWelaEffectWaveSpawnComponent.new().CreateGrouped(e, [1])

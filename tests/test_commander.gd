@@ -23,11 +23,16 @@ var _manager: TEntityManagerComponent
 
 class FakeGame:
 	extends RefCounted
-	var IsShuttingDown := false
-	var IngameStatus := 0  # gsLoading
+	var InGameStatus := 0  # gsLoading
 	var EntityManager = null
 	var Statistics := TGameStatisticManager.new().Create()
 	var Commanders: Array = []
+
+	func IsShuttingDown() -> bool:
+		return false
+
+	func IsSandbox() -> bool:
+		return false
 
 
 ## Logs eiUseAbility in its group.

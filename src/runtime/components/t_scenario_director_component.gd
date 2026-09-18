@@ -347,7 +347,7 @@ func CreateGrouped(Owner = null, Group = []) -> TEntityComponent:
 	FSpawnerUnitSubset = UnitSubset.new()
 	FBossWavePool = []
 	FKIPlayers = []
-	FLeague = ServerGame().League
+	FLeague = ServerGame().League()
 	return self
 
 

@@ -15,9 +15,12 @@ var _manager: TEntityManagerComponent
 
 class FakeGame:
 	extends RefCounted
-	var IsShuttingDown := false
-	var IngameStatus := 0  # gsLoading
+	var InGameStatus := 0  # gsLoading
 	var EntityManager = null
+
+	func IsShuttingDown() -> bool:
+		return false
+
 
 
 func _setup() -> void:

@@ -35,7 +35,7 @@ func OccupiedField() -> Vector2i:
 
 func OnDeploy() -> bool:
 	var Game = BrainGame()
-	if not FFireNotInitially and IsWelaReady() and Game != null and Game.HasStarted:
+	if not FFireNotInitially and IsWelaReady() and Game != null and Game.HasStarted():
 		GlobalEventbus().Trigger(C.eiWaveSpawn, [BuildGridID(), OccupiedField()])
 	return true
 

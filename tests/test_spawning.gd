@@ -31,20 +31,29 @@ class FakeMap:
 
 class FakeGame:
 	extends RefCounted
-	var IsShuttingDown := false
 	var Commanders: Array = []
-	var IsSandbox := false
+	var Sandbox := false
 	var Overwatch := false
 	var OverwatchClearable := false
-	var HasStarted := false
-	var IngameStatus := 2  # BC.gsPlaying
-	var League := 3
+	var InGameStatus := 2  # BC.gsPlaying
 	var Map := FakeMap.new()
 	var EntityManager = null
 	var ServerEntityManager = null
 	var CollisionManager = null
 	var Statistics := TGameStatisticManager.new().Create()
 	var DelayedEvents := TIntPriorityQueue.new()
+
+	func IsShuttingDown() -> bool:
+		return false
+
+	func IsSandbox() -> bool:
+		return Sandbox
+
+	func HasStarted() -> bool:
+		return false
+
+	func League() -> int:
+		return 3
 
 
 ## Global traffic, on the game entity: [name, parameters...] in call order.
@@ -415,7 +424,7 @@ func test_spawn_variants() -> void:
 	var flee = _manager.SpawnUnitWithOverwatchAndFlee(1.0, 2.0, 0.0, -1.0, "Units\\Colorless\\SmallMeleeGolem", 2, 3.0)
 	check(_classes(flee).has("TBrainOverwatchComponent") and _classes(flee).has("TBrainFleeComponent"), "overwatch and flee")
 	check(not _classes(altar).has("TBrainOverwatchComponent"), "no overwatch outside the sandbox")
-	_bus.Game.IsSandbox = true
+	_bus.Game.Sandbox = true
 	_bus.Game.Overwatch = true
 	var sandboxed = _manager.SpawnUnit(0.0, 5.0, "Units\\Colorless\\SmallMeleeGolem", 1)
 	check(_classes(sandboxed).has("TBrainOverwatchComponent"), "sandbox overwatch")

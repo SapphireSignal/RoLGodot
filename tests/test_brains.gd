@@ -24,17 +24,24 @@ class FakeMap:
 
 class FakeGame:
 	extends RefCounted
-	var IsShuttingDown := false
 	var Statistics := TGameStatisticManager.new().Create()
 	var Commanders: Array = []
-	var IsSandbox := false
-	var IngameStatus := 2  # BC.gsPlaying
-	var League := 1
+	var Sandbox := false
+	var InGameStatus := 2  # BC.gsPlaying
 	var Map := FakeMap.new()
 	var EntityManager = null
 	var ServerEntityManager = null
 	var CollisionManager = null
 	var DelayedEvents := TIntPriorityQueue.new()
+
+	func IsShuttingDown() -> bool:
+		return false
+
+	func IsSandbox() -> bool:
+		return Sandbox
+
+	func League() -> int:
+		return 1
 
 
 ## Records brain traffic on its entity (ALLGROUP): [name, called-to group, parameters...] in call order.
@@ -806,9 +813,9 @@ func test_commander_brain() -> void:
 	check_eq(commander.Eventbus.Read(C.eiCanUseAbility, [targets], [1]), false, "not ready")
 	commander.Eventbus.Trigger(C.eiUseAbility, [targets], [1])
 	check_eq(probe.Of("Fire"), [], "no fire")
-	_bus.Game.IsSandbox = true
+	_bus.Game.Sandbox = true
 	check_eq(commander.Eventbus.Read(C.eiCanUseAbility, [targets], [1]), true, "the sandbox ignores readiness")
-	_bus.Game.IsSandbox = false
+	_bus.Game.Sandbox = false
 	commander.Blackboard.SetValue(C.eiIsReady, [1], true)
 	brain.OverrideTargetToOwner()
 	commander.Eventbus.Trigger(C.eiUseAbility, [targets], [1])

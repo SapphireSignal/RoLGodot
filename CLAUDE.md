@@ -28,6 +28,7 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - `docs/script-api.md` (generated): every class member the scripts use, per class. Phase 2 work list.
 - `docs/entity-core.md`: TEntity/eventbus/blackboard semantics and the conventions for porting components.
 - `docs/map.md`: map data (zones), build zones, lanes, pathfinding, the priority-queue tie rule.
+- `docs/game-loop.md`: TGame / TServerGame / TGameThread, scenarios, game setup, ticks, what the headless match shows.
 
 ## Status
 - 2026-09-18: Phase 0 (foundation) done: source pinned, reference cloned, architecture researched, Godot
@@ -103,3 +104,9 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   `TSandboxComponent`, `TTutorialDirectorServerComponent`); the real AttackScenario Base + Easy scripts set up the PvE
   game and its first minute plays out (spawners, first boss wave). Every server / shared stub is now ported. 1370
   files compile, 323 tests green, no errors, no leaks. Next: phase 3, the game loop (see CONTINUE.md).
+- 2026-09-18: Phase 3 game loop: `src/runtime/game/` (scenarios, game information, `TGame`, `TServerGame`,
+  `TGameThread`, the sandbox setup) + tick / director / token mapping / surrender components; `docs/game-loop.md`.
+  The headless sandbox match runs: Footman squads trade hits (10.4 / 2048 ms, hit at the 320 ms action point),
+  spawners spawn, footmen damage the nexus. Game predicates are methods now (fakes updated). Test runner:
+  `RUN_TESTS_ONLY` filter, default timeout 400 s. 1388 files compile, 334 tests green, no errors, no leaks.
+  Next: profile the headless simulation (about real time only), then phase 4 (see CONTINUE.md).

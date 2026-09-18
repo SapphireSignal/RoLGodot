@@ -81,8 +81,6 @@ class FakeDirector:
 
 class FakeGame:
 	extends RefCounted
-	var IsShuttingDown := false
-	var League := 3
 	var Map = FakeMap.new()
 	var EntityManager = null
 	var ServerEntityManager := RecordingManager.new()
@@ -92,6 +90,12 @@ class FakeGame:
 	var GameDirector := FakeDirector.new()
 	var Overwatch := false
 	var OverwatchClearable := false
+
+	func IsShuttingDown() -> bool:
+		return false
+
+	func League() -> int:
+		return 3
 
 
 ## On the game entity: answers eiGameTickCounter and records the global events the directors send.

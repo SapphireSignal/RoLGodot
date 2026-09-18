@@ -1,8 +1,8 @@
 class_name TServerSandboxComponent
 extends TEntityComponent
 ## Port of TServerSandboxComponent (GameServer/BaseConflict.EntityComponents.Server.pas:435, implementation :3462),
-## server only. Adds infinite resources to all commanders: at the global eiGameCommencing every commander gets a gold
-## cap of 100000 (overwriting), 100000 gold and 10000 wood; then the tech level 2 and 3 game events.
+## server only. Adds infinite resources to all commanders: at the global eiGameCommencing every commander's gold cap
+## grows by 100000 (without filling it), then +100000 gold and +10000 wood; then the tech level 2 and 3 game events.
 
 
 func _DeclareEvents(e: Array) -> void:

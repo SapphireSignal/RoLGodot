@@ -14,8 +14,11 @@ var _owner: TEntity
 
 class FakeGame:
 	extends RefCounted
-	var IsShuttingDown := false
 	var EntityManager = null
+
+	func IsShuttingDown() -> bool:
+		return false
+
 
 
 func _setup() -> void:

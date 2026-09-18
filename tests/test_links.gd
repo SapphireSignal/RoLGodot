@@ -31,20 +31,28 @@ class FakeMap:
 
 class FakeGame:
 	extends RefCounted
-	var IsShuttingDown := false
 	var Commanders: Array = []
-	var IsSandbox := false
 	var Overwatch := false
 	var OverwatchClearable := false
-	var HasStarted := false
-	var IngameStatus := 2  # BC.gsPlaying
-	var League := 3
+	var InGameStatus := 2  # BC.gsPlaying
 	var Map := FakeMap.new()
 	var EntityManager = null
 	var ServerEntityManager = null
 	var CollisionManager = null
 	var Statistics := TGameStatisticManager.new().Create()
 	var DelayedEvents := TIntPriorityQueue.new()
+
+	func IsShuttingDown() -> bool:
+		return false
+
+	func IsSandbox() -> bool:
+		return false
+
+	func HasStarted() -> bool:
+		return false
+
+	func League() -> int:
+		return 3
 
 
 ## Global traffic: sent entities and delayed kills.

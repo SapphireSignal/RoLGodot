@@ -118,7 +118,7 @@ func GetBuildZone(Game):
 
 ## The target entity if it exists, else null (also while the game shuts down).
 func GetTargetEntity(Game):
-	if IsEntity() and Game != null and not Game.IsShuttingDown:
+	if IsEntity() and Game != null and not Game.IsShuttingDown():
 		return Game.EntityManager.GetEntityByID(EntityID)
 	return null
 

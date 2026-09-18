@@ -20,8 +20,11 @@ class FakeMap:
 
 class FakeGame:
 	extends RefCounted
-	var IsShuttingDown := false
 	var Map := FakeMap.new()
+
+	func IsShuttingDown() -> bool:
+		return false
+
 	var EntityManager = null
 	var CollisionManager = null
 

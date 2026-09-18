@@ -58,8 +58,11 @@ class FakeEntityManager:
 
 class FakeGame:
 	extends RefCounted
-	var IsShuttingDown := false
 	var Statistics := TGameStatisticManager.new().Create()
+
+	func IsShuttingDown() -> bool:
+		return false
+
 	var Commanders: Array = []
 	var EntityManager := FakeEntityManager.new()
 	var Map: TMap

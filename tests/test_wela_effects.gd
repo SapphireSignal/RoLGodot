@@ -18,9 +18,12 @@ var _probe: EffectProbe
 
 class FakeGame:
 	extends RefCounted
-	var IsShuttingDown := false
-	var IngameStatus: int = BC.gsLoading
+	var InGameStatus: int = BC.gsLoading
 	var Map = null
+
+	func IsShuttingDown() -> bool:
+		return false
+
 	var EntityManager = null
 
 
@@ -352,7 +355,7 @@ func test_helper_init_active_after_game_start() -> void:
 	_owner.Blackboard.SetIndexedValue(C.eiResourceCap, [2], C.reCharge, 3)
 	_owner.Blackboard.SetIndexedValue(C.eiResourceBalance, [2], C.reCharge, 3)
 	TWelaHelperInitActiveAfterGameStartComponent.new().CreateGrouped(_owner, [3]).DisableOnReachResourceCap(C.reCharge, [2])
-	_bus.Game.IngameStatus = BC.gsPlaying
+	_bus.Game.InGameStatus = BC.gsPlaying
 	TWelaHelperInitActiveAfterGameStartComponent.new().CreateGrouped(_owner, [4])
 	check_eq(_owner.Blackboard.GetValue(C.eiWelaActive, [4]), null, "created while playing: untouched")
 	_bus.Trigger(C.eiGameTick, [])

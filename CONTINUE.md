@@ -111,10 +111,16 @@ squad rows, KI players), `TServerSandbox{,Command}Component`, `TSandboxComponent
 (`.Scenario.MapName`, `.ScenarioUID`), `GameDirector`, `Overwatch` / `OverwatchClearable`.
 Every server / shared stub is ported; the 85 left (`src/runtime/dws/stubs/`) are client visuals / GUI / sound
 (phase 4+) and `RIntVector2` / `RVector3`.
-Next: phase 3, the game loop (`docs/port-plan.md`): `TGame` / `TServerGame` (`GameServer/BaseConflict.Game.Server.pas`,
-the fields the fakes stand in for: EntityManager, ServerEntityManager, CollisionManager, Map, Commanders, League,
-Statistics, DelayedEvents, GameInformation, IngameStatus, Idle with its tick counter and eiGameTick), the
-`GameDirector` (the real `Scenarios\Game` script needs it) and the sandbox deck, until the headless sandbox match
-of the phase 3 goal runs. Read the original's game setup and Idle loop first and plan the family split.
+
+## Phase 3, the game loop
+Done: read `docs/game-loop.md`. `TGameThread.new().Create(TGameManager.CreateTestserverGameInfo())` builds the real
+sandbox; `SetAllPlayersPlaying()` then `DoComputeGame()` per 32 ms frame runs it. `tests/test_sandbox_match.gd` is
+the phase 3 goal: Footman duel numbers, spawner, nexus damage. Game predicates are methods (`League()`,
+`IsSandbox()`, `HasStarted()`, `IsShuttingDown()`, `GameInformation.IsTutorial()`), `InGameStatus` a property; test
+fakes follow that. Runner: `$env:RUN_TESTS_ONLY = 'test_foo'` runs one file and prints objects left per test (the
+~82 objects "leaked at exit" are the compile sweep's baseline).
+Next: profile the headless simulation (it runs only about real time with ~15 units; use a short sandbox match and
+Godot's profiler or timing around `DoComputeGame`), fix the hot spots without changing behaviour, then phase 4
+(asset pipeline, `docs/port-plan.md`). Open in phase 3: bots (`TPvPBotComponent`), network, time manager pause.
 The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.
 When a hand-written file declares `class_name TFoo`, rerun the transpiler: it drops the stub.

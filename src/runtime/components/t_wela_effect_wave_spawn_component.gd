@@ -100,7 +100,7 @@ func OnAfterCreate() -> bool:
 	var Game = GlobalEventbus().Game
 	if Game != null:
 		for ZoneID in Game.Map.BuildZones.BuildZones.keys():
-			FSpawnRotations.Add(ZoneID, TSpawnrotation.new().Create(FSpawnInOrder, Game.GameInformation.IsTutorial))
+			FSpawnRotations.Add(ZoneID, TSpawnrotation.new().Create(FSpawnInOrder, Game.GameInformation.IsTutorial()))
 	return true
 
 

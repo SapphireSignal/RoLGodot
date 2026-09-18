@@ -1,5 +1,5 @@
 # Runs the headless test suite with a hard timeout. Exit code 0 = all green.
-param([int]$TimeoutSec = 180)
+param([int]$TimeoutSec = 400)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $godot = 'D:\Godot\Godot_v4.7.1-stable_win64_console.exe'

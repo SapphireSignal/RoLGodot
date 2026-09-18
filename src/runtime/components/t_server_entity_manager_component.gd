@@ -128,7 +128,7 @@ func SpawnUnit(Position, Front, PatternFileName = "", League = INHERIT_FROM_GAME
 		return null
 
 	if League == INHERIT_FROM_GAME:
-		League = Game.League
+		League = Game.League()
 	if Level == INHERIT_FROM_GAME:
 		Level = BC.MAX_LEVEL
 
@@ -161,7 +161,7 @@ func SpawnUnit(Position, Front, PatternFileName = "", League = INHERIT_FROM_GAME
 	if Callback.is_valid():
 		Callback.call(Entity)
 
-	if Game.IsSandbox and Game.get("Overwatch"):
+	if Game.IsSandbox() and Game.get("Overwatch"):
 		if Game.get("OverwatchClearable"):
 			TBrainOverwatchSandboxComponent.new().Create(Entity)
 		else:

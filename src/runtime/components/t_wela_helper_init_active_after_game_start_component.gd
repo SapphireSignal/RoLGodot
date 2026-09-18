@@ -22,7 +22,7 @@ func _DeclareEvents(e: Array) -> void:
 func CreateGrouped(Owner = null, Group = []) -> TEntityComponent:
 	super(Owner, Group)
 	var game = GlobalEventbus().Game
-	var state: bool = game != null and game.IngameStatus == BC.gsPlaying
+	var state: bool = game != null and game.InGameStatus == BC.gsPlaying
 	if state or not RParam.AsBooleanDefaultTrue(Eventbus().Read(C.eiWelaActive, [], ComponentGroup)):
 		FDisabled = true
 	else:

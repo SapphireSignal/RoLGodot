@@ -16,7 +16,7 @@ var FChangedResource := 0.0
 
 func BeforeComponentFree() -> void:
 	var game = GlobalEventbus().Game if GlobalEventbus() != null else null
-	if game != null and not game.IsShuttingDown:
+	if game != null and not game.IsShuttingDown():
 		ModifyResource(-FChangedResource)
 	super()
 

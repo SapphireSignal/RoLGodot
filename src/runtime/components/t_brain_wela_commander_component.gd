@@ -20,7 +20,7 @@ func _DeclareEvents(e: Array) -> void:
 
 func IsSandbox() -> bool:
 	var game = BrainGame()
-	return game != null and game.get("IsSandbox") == true
+	return game != null and game.IsSandbox()
 
 
 func OverrideTargetToOwner() -> TBrainWelaCommanderComponent:

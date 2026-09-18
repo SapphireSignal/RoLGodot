@@ -26,17 +26,23 @@ class FakeMap:
 
 class FakeGame:
 	extends RefCounted
-	var IsShuttingDown := false
 	var Statistics := TGameStatisticManager.new().Create()
 	var Commanders: Array = []
-	var IsSandbox := false
-	var IngameStatus := 2  # BC.gsPlaying
-	var League := 3
+	var InGameStatus := 2  # BC.gsPlaying
 	var Map := FakeMap.new()
 	var EntityManager = null
 	var ServerEntityManager = null
 	var CollisionManager = null
 	var DelayedEvents := TIntPriorityQueue.new()
+
+	func IsShuttingDown() -> bool:
+		return false
+
+	func IsSandbox() -> bool:
+		return false
+
+	func League() -> int:
+		return 3
 
 
 class GlobalLog:

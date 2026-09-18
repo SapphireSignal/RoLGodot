@@ -56,6 +56,8 @@ const MAX_LEVEL = 5
 const DISABLE_LEAGUE_SYSTEM = false
 const DEFAULT_LEAGUE = MAX_LEAGUE - 1
 const DEFAULT_LEVEL = MAX_LEVEL
+## ALL_COLORS (:199): every EnumEntityColor, sorted like DSet.Make.
+const ALL_COLORS = [C.ecColorless, C.ecBlack, C.ecGreen, C.ecRed, C.ecBlue, C.ecWhite]
 const FILE_IDENTIFIER_DROP = "Drop"
 const FILE_IDENTIFIER_SPAWNER = "Spawner"
 const FILE_IDENTIFIER_BUILDING = "Building"
@@ -72,10 +74,51 @@ enum { ccClearUnits, ccClearAllUnits, ccClearSpawners, ccClearLaneTowers, ccClea
 	ccToggleOverwatchSandbox, ccClearOverwatch, ccSaveCameraPosition, ccReturnToSavedCameraPosition,
 	ccTutorialGameEvent, ccForceGameTick }
 
-## Map names and the PvE scenario UID prefix (BaseConflict.Constants.Scenario.pas:69-103).
+## GAME_TICK_DURATION / GAME_WARMING_DURATION (:48-49): ms per game tick, ms from eiGameCommencing to the first tick.
+const GAME_TICK_DURATION = 1000
+const GAME_WARMING_DURATION = 10000
+## PATH_SCRIPT_SCENARIO / _MUTATOR (:24-25).
+const PATH_SCRIPT_SCENARIO = "\\Scripts\\Scenarios\\"
+const PATH_SCRIPT_SCENARIO_MUTATOR = PATH_SCRIPT_SCENARIO + "Mutators\\"
+
+## Map names and scenario UIDs (BaseConflict.Constants.Scenario.pas:69-107).
 const MAP_SINGLE = "Single"
 const MAP_DOUBLE = "Classic"
+const SCENARIO_DEBUG_UID = "debug"
+const SCENARIO_PERFORMANCE_TEST = "performance_test"
+const SCENARIO_SANDBOX_UID = "sandbox"
+const SCENARIO_SANDBOX_DUO_UID = "sandbox_duo"
+const SCENARIO_SANDBOX_CLASSIC_UID = "sandbox_classic"
+const SCENARIO_PVP_TEST_UID = "pvp_test"
+const SCENARIO_PVE_TUTORIAL = "tutorial"
+const SCENARIO_PVP_DUEL_PREFIX = "duel"
+const SCENARIO_PVP_DUEL_1VS1 = SCENARIO_PVP_DUEL_PREFIX
+const SCENARIO_PVP_DUEL_1VS1_TWO_LANE = "two_lane_" + SCENARIO_PVP_DUEL_1VS1
+const SCENARIO_PVP_DUEL_2VS2 = "duel2v2"
+const SCENARIO_PVP_DUEL_2VS2_TWO_LANE = "two_lane_" + SCENARIO_PVP_DUEL_2VS2
+const SCENARIO_PVP_DUEL_3VS3 = "duel3v3"
+const SCENARIO_PVP_DUEL_3VS3_TWO_LANE = "two_lane_" + SCENARIO_PVP_DUEL_3VS3
+const SCENARIO_PVP_DUEL_4VS4 = "duel4v4"
+const SCENARIO_PVP_DUEL_4VS4_TWO_LANE = "two_lane_" + SCENARIO_PVP_DUEL_4VS4
+const SCENARIO_PVP_1VS1 = "1vs1"
+const SCENARIO_PVP_1VS1_TWO_LANE = "two_lane_" + SCENARIO_PVP_1VS1
+const SCENARIO_PVP_2VS2 = "2vs2"
+const SCENARIO_PVP_2VS2_TWO_LANE = "two_lane_" + SCENARIO_PVP_2VS2
+const SCENARIO_PVP_3VS3 = "3vs3"
+const SCENARIO_PVP_3VS3_TWO_LANE = "two_lane_" + SCENARIO_PVP_3VS3
+const SCENARIO_PVP_4VS4 = "4vs4"
+const SCENARIO_PVP_4VS4_TWO_LANE = "two_lane_" + SCENARIO_PVP_4VS4
+const SCENARIO_PVP_1VS1_RANKED = "ranked" + SCENARIO_PVP_1VS1
+const SCENARIO_PVP_2VS2_RANKED = "ranked" + SCENARIO_PVP_2VS2
+const SCENARIO_PVP_3VS3_RANKED = "ranked" + SCENARIO_PVP_3VS3
+const SCENARIO_PVP_4VS4_RANKED = "ranked" + SCENARIO_PVP_4VS4
 const SCENARIO_PVE_DEFAULT_PREFIX = "pve_"
+const SCENARIO_PVE_DEFAULT = "pve_attack_solo"
+const SCENARIO_PVE_ATTACK_SOLO = SCENARIO_PVE_DEFAULT_PREFIX + "attack_solo"
+const SCENARIO_PVE_ATTACK_DUO = SCENARIO_PVE_DEFAULT_PREFIX + "attack"
+## The scenario the test server creates (vars in the original, :111-112): the sandbox, league 1.
+const TESTSERVER_SCENARIO_UID = SCENARIO_SANDBOX_UID
+const TESTSERVER_SENARIO_LEAGUE = 1
 
 ## UNIT_PROPERTIES_STATE_EFFECTS (:293), sorted like DSet.Make.
 static var UNIT_PROPERTIES_STATE_EFFECTS: Array = DSet.Make([C.upStunned, C.upRooted, C.upBlinded, C.upFrozen,

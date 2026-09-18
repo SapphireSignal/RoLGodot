@@ -26,16 +26,22 @@ class FakeMap:
 
 class FakeGame:
 	extends RefCounted
-	var IsShuttingDown := false
 	var Statistics := TGameStatisticManager.new().Create()
 	var Commanders: Array = []
-	var IsSandbox := false
-	var IngameStatus: int = BC.gsLoading
-	var League := 1
+	var InGameStatus: int = BC.gsLoading
 	var Map := FakeMap.new()
 	var EntityManager = null
 	var ServerEntityManager = null
 	var CollisionManager = null
+
+	func IsShuttingDown() -> bool:
+		return false
+
+	func IsSandbox() -> bool:
+		return false
+
+	func League() -> int:
+		return 1
 
 
 ## Records [name, parameters..., called-to group] of the events the warheads send.

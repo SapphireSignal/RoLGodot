@@ -7,7 +7,7 @@ extends TAutoBrainComponent
 
 func BeforeComponentFree() -> void:
 	var game = GlobalEventbus().Game if GlobalEventbus() != null else null
-	if game != null and not game.IsShuttingDown and \
+	if game != null and not game.IsShuttingDown() and \
 		RParam.AsBooleanDefaultTrue(Eventbus().Read(C.eiIsReady, [], ComponentGroup)):
 		Fire()
 	super()

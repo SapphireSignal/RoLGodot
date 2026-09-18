@@ -9,8 +9,11 @@ var _free: Array = []
 
 class FakeGame:
 	extends RefCounted
-	var IsShuttingDown := false
 	var Commanders: Array = []
+
+	func IsShuttingDown() -> bool:
+		return false
+
 
 
 func after_each() -> void:

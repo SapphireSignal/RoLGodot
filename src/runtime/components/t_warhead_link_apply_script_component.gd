@@ -25,7 +25,7 @@ func CreateGrouped(Owner = null, Group = [], ScriptToApply = "") -> TEntityCompo
 func BeforeComponentFree() -> void:
 	# if Game is been closed some other entites might already been freed, as all entities are freed we don't need to deregister
 	var game = GlobalEventbus().Game if GlobalEventbus() != null else null
-	if not (game != null and not game.IsShuttingDown):
+	if not (game != null and not game.IsShuttingDown()):
 		return
 	var Targets := ATarget.FromRParam(Eventbus().Read(C.eiLinkDest, []))
 	if not ATarget.HasIndex(Targets, 0):

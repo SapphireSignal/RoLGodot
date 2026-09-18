@@ -21,8 +21,11 @@ class FakeEntityManager:
 
 class FakeGame:
 	extends RefCounted
-	var IsShuttingDown := false
 	var EntityManager := FakeEntityManager.new()
+
+	func IsShuttingDown() -> bool:
+		return false
+
 	var Map: TMap
 
 

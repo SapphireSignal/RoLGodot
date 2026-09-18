@@ -35,8 +35,11 @@ class FakeNexus:
 
 class FakeGame:
 	extends RefCounted
-	var IsShuttingDown := false
 	var EntityManager = FakeEntityManager.new()
+
+	func IsShuttingDown() -> bool:
+		return false
+
 	var ServerEntityManager := FakeServerEntityManager.new()
 	var Map: TMap
 	var TwoLane := false

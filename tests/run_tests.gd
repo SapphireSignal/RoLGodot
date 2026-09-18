@@ -3,6 +3,7 @@ extends SceneTree
 ## 1. Compile sweep: every .gd under res://src and res://tests must load.
 ## 2. Runs every func test_*() in res://tests/**/test_*.gd. A test fails by returning a non-empty String
 ##    or by calling fail(); a file that does not compile is reported and skipped, never fatal.
+##    The environment variable RUN_TESTS_ONLY limits the run to test files whose name contains it.
 
 const SWEEP_ROOTS = ["res://src", "res://tests"]
 const TEST_ROOT = "res://tests"
@@ -18,6 +19,10 @@ func _init() -> void:
 	print("tests: %d passed, %d failed" % [counts[0], counts[1]])
 	for f in _failures:
 		print("  FAIL %s" % f)
+	# release the global caches, so Godot's exit report shows only real leaks
+	TCardInfoManager._Instance = null
+	TScenarioInfoManager._Instance = null
+	TEntityComponent.FComponentSubscriptionPatterns = {}
 	quit(0 if compile_errors == 0 and counts[1] == 0 else 1)
 
 
@@ -50,6 +55,11 @@ func _compile_sweep() -> int:
 func _run_tests() -> Array:
 	var files: Array = []
 	_collect(TEST_ROOT, files, "test_")
+	# RUN_TESTS_ONLY=<part of a file name>: run only the matching test files (for chasing one problem)
+	var only := OS.get_environment("RUN_TESTS_ONLY")
+	if only != "":
+		files = files.filter(func(path: String) -> bool: return path.get_file().contains(only))
+		print("RUN_TESTS_ONLY=%s: %d files" % [only, files.size()])
 	var passed := 0
 	var failed := 0
 	for path in files:
@@ -63,9 +73,13 @@ func _run_tests() -> Array:
 			var name: String = m["name"]
 			if not name.begins_with("test_"):
 				continue
+			var objects_before := Performance.get_monitor(Performance.OBJECT_COUNT)
 			var result = suite.call(name)
 			if suite.has_method("after_each"):
 				suite.call("after_each")
+			if only != "":
+				# objects a test leaves behind (the first test of a file also loads classes and caches)
+				print("  %s: %+d objects" % [name, Performance.get_monitor(Performance.OBJECT_COUNT) - objects_before])
 			var err := ""
 			if result is String:
 				err = result
