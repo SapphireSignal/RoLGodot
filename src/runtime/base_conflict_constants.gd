@@ -14,9 +14,26 @@ static func IsIntResource(ResourceType: int) -> bool:
 	return ResourceType >= C.reInteger and ResourceType <= C.reCharmCount
 
 
+## RES_FLOAT_RESOURCES : SetResource = [reFloat .. pred(reInteger)]
+static func IsFloatResource(ResourceType: int) -> bool:
+	return ResourceType >= C.reFloat and ResourceType < C.reInteger
+
+
 ## RES_IGNORE_CAP : SetResource = [reGadgetCount, reCharmCount]
 static func IgnoresCap(ResourceType: int) -> bool:
 	return ResourceType == C.reGadgetCount or ResourceType == C.reCharmCount
+
+
+## ResourceAsSingle (BaseConflict.Types.Shared.pas:168): an int resource's value as a single.
+static func ResourceAsSingle(ResourceType: int, Resource) -> float:
+	if IsIntResource(ResourceType):
+		return float(RParam.AsInteger(Resource))
+	return RParam.AsSingle(Resource)
+
+
+## ARMORY_TYPES_NORMAL = [atUnarmored .. atHeavy] (BaseConflict.Constants.Cards.pas:44)
+static func IsNormalArmorType(ArmorType: int) -> bool:
+	return ArmorType >= C.atUnarmored and ArmorType <= C.atHeavy
 
 
 ## BaseConflict.Constants.pas:1058

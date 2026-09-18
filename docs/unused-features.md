@@ -7,7 +7,7 @@ adding. ("Wela" in the original = a weapon or ability of a unit.)
 How the list is kept:
 - **Whole classes**: `python tools/find_unused_classes.py` lists every class exposed to scripts
   (`ScriptManager.ExposeClass`) whose name appears in no script (`.dws/.ets/.sps`) and in no other code (case
-  ignored, as Delphi and DWScript do). Rerun it after changes to the pinned source; 26 classes on 2026-09-18.
+  ignored, as Delphi and DWScript do). Rerun it after changes to the pinned source; 39 classes on 2026-09-18 (26 before its fluent-setter fix).
 - **Unused options of used classes** (a method no script calls): added by hand when porting turns one up.
 
 ## Gameplay ideas
@@ -33,6 +33,18 @@ How the list is kept:
 | Only own units | `TWelaTargetConstraintOwningComponent`, `BaseConflict.EntityComponents.Shared.Wela.pas:447` | An ability that may only target units of the same player (not just the same team). | No |
 | Never usable | `TWelaTargetConstraintNeverComponent`, same unit `:273` | Disables an ability entirely (placeholder / switched-off abilities). | No |
 | Projectile brain | `TBrainWelaProjectileComponent`, `...Server.Brains.pas:833` | A projectile that fires as soon as it gets a target (the game drives its projectiles another way). | No |
+| Wela count modifier | `TModifierWelaCountComponent`, `BaseConflict.EntityComponents.Shared.Wela.pas:59` | Adds to an ability's `eiWelaCount` (e.g. how many units it spawns): a flat offset, or the number of units on the map (all or enemy) with given properties, optionally times a resource. | No |
+| Trigger on kill | `TAutoBrainOnKillComponent`, `...Server.Brains.pas:558` | An ability that fires at the unit it just killed (or at itself, `FireAtMyself`). | No |
+| Survival mode director | `TSurvivalScenarioDirectorComponent`, `GameServer/BaseConflict.EntityComponents.Server.pas:1041` | A scenario director that computes a "threat" level each tick for a survival mode (waves scaled to how the player is doing). | No |
+| Instant kill warhead | `TWarheadSplashKillComponent`, `...Server.Warheads.pas:284` | Kills everything hit at once, ignoring shields and abilities (`Sacrifice` / `Exile` variants). | No |
+| Resource steal warhead | `TWarheadSplashResourceCollectComponent`, `...Server.Warheads.pas:243` | Takes a resource from every target hit and gives it to the owner, optionally converted to another resource. | No |
+| Inherit creator value | `TWelaEffectInheritEventValueComponent`, `...Server.Welas.pas:440` | Units a spawner produces copy one of the spawner's values (read at creation). | No |
+| Ready after game time | `TWelaReadyAfterGameTimeComponent`, `BaseConflict.EntityComponents.Shared.Wela.pas:728` | An ability that only unlocks after the match has run a set number of seconds (game ticks). | No |
+| Ready every Nth tick | `TWelaReadyEachNthGameTickComponent`, `...Server.Welas.pas:197` | An ability that is ready once every N game ticks (default 60) since its creation. | No |
+| Target by buff | `TWelaTargetConstraintBuffComponent`, `BaseConflict.EntityComponents.Shared.Wela.pas:513` | An ability that may only (or may never) target units carrying certain buff types, e.g. dispel only buffed enemies. | No |
+| Global targeting | `TWelaTargetingGlobalComponent`, `...Server.Welas.pas:141` | Picks the best targets anywhere on the map instead of in range. | No |
+| Rectangle targeting | `TWelaTargetingRectangleComponent`, `...Server.Welas.pas:160` | Picks targets in a rectangle in front of the unit (a line/beam area) instead of a circle. | No |
+| Damage type trigger check | `TWelaTriggerCheckTakeDamageTypeComponent`, `BaseConflict.EntityComponents.Shared.Wela.pas:560` | An on-damage-taken ability that only reacts to (or ignores) certain damage types, e.g. "when hit by ranged". | No |
 
 ## Developer tools (debug views, not gameplay)
 

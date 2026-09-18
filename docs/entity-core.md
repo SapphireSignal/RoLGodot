@@ -112,6 +112,7 @@ One file per class, `class_name` = Delphi name (the transpiler then drops its st
 | `../types/r_income.gd` | `RIncome` (`BaseConflict.Types.Shared.pas:47`), a record: copies in and out of RParams |
 | `t_dynamic_zone_*emitter_component.gd` | `TDynamicZone{,Radial,Axis}EmitterComponent` (`:581-614`): answer `eiInDynamicZone` |
 | `t_game_event_enumerator_component.gd` | `TGameEventEnumeratorComponent` (`:630`): lists its owner for `eiGameEvent` |
+| `t_modifier_*component.gd` | `TModifier{,DamageType,WelaTargetCount,Resource,MultiplyCooldown,ArmorType,WelaDamage,WelaRange,Cost}Component` (`Shared.Wela.pas:32-207`) |
 | `t_entity_manager_component.gd` | `TEntityManagerComponent` (`:276`): `Game.EntityManager`, entity registry and deferred freeing |
 | `../engine/t_timer.gd`, `t_time_manager.gd` | `TTimer` (whole) and the `TTimeManager` clock (`Engine.Helferlein.Windows.pas:985`) |
 
@@ -129,6 +130,13 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   Radial: `eiWelaRange` of its group around the owner, owner's team or TeamID <= -1. Axis: dot of the direction
   from its point with its normal >= 0 (`SetPosition` normalizes the point, as in the original).
 - **Game events** (`eiGameEvent`, global read `[Name]`): an Array of the owners listening to that name, or empty.
+- **Modifiers** (`tests/test_modifier_components.gd`, incl. the real `Modifiers\BlessingHealth` on the server
+  SmallMeleeGolem): read handlers at epMiddle that change a value read from their groups, using eiWelaModifier
+  (or eiWelaDamage) of `SetValueGroup` (default: own group); `ReadyGroup` makes them work only while eiIsReady of
+  that group is true or empty (checked by ArmorType, WelaDamage, WelaRange). `TModifierResourceComponent` is the
+  exception: it changes a resource cap once on `ApplyNow` and takes it back in `BeforeComponentFree` (needs
+  `Game.IsShuttingDown`). Delphi `Round` is banker's rounding (`L.Round`). `TModifierWelaCountComponent` and
+  `TModifierMultiplyMovementSpeedComponent` are unused and not ported (`docs/unused-features.md`).
 - **Entity manager** (`tests/test_entity_manager.gd`): `eiNewEntity` (sent by `TEntity.Deploy`) registers,
   `GenerateUniqueID` counts from 2. `eiKillEntity` unregisters at once and frees at the next `Idle` (called by the
   game loop); `eiRemoveComponent` / `eiRemoveComponentGroup` / `FreeEntity` are deferred to `Idle` too.
