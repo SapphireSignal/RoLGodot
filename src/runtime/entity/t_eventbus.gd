@@ -127,6 +127,9 @@ var FRemoteSubscriptions: Array = []  # of TRemoteSubscription
 var ApplicationType: int = C.nsServer
 ## Port: the TGame of this side (the original's Game global); set on the global eventbus by the game.
 var Game = null
+## Port: the original's EntityDataCache global (per game thread, the client's per process); set on the global
+## eventbus by the game. The bus frees it (its data entities hang on this bus).
+var EntityDataCache: TEntityDataCache = null
 
 var Owner:
 	get:
@@ -139,6 +142,9 @@ func Create(Owner = null) -> TEventbus:
 
 
 func Destroy() -> void:
+	if EntityDataCache != null:
+		EntityDataCache.Free()
+		EntityDataCache = null
 	for sub in FRemoteSubscriptions.duplicate():
 		sub.FreeEventbus()
 	FRemoteSubscriptions.clear()

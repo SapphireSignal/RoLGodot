@@ -117,6 +117,10 @@ One file per class, `class_name` = Delphi name (the transpiler then drops its st
 | `../types/t_game_timer.gd` | `TGameTimer` (`BaseConflict.Types.Shared.pas:54`): TTimer with `StartingTime` |
 | `t_wela_target_constraint_*component.gd`, `t_wela_trigger_check_*component.gd` | `TWelaTargetConstraint*` (18 of 21 used) and `TWelaTriggerCheck{TakeDamage,NotSelf,TakeDamageThreshold}Component` (`Shared.Wela.pas:222-560`) |
 | `../types/r_target.gd`, `a_target.gd`, `r_target_validity.gd` | `RTarget`, `ATarget` helpers, `RTargetValidity` (`BaseConflict.Types.Target.pas`) |
+| `t_wela_helper_resolve_component.gd` | `TWelaHelperResolveComponent` (`Shared.Wela.pas:941`): wela values per team / level / tier |
+| `t_warhead_apply_script_component.gd`, `t_warhead_link_apply_script_component.gd` | `TWarheadApplyScriptComponent` / `TWarheadLinkApplyScriptComponent` (`Shared.Wela.pas:855`, `:918`): apply a script to targets / link destinations |
+| `../classes/t_entity_data_cache.gd` | `TEntityDataCache` (`BaseConflict.Classes.Shared.pas:27`): one data entity per card file / league / level |
+| `t_wela_event_redirecter.gd`, `t_wela_ready_spawned_component.gd` | `TWelaEventRedirecter`, `TWelaReadySpawnedComponent` (`Shared.Wela.pas:832`, `:661`): wela values / readiness from the produced unit's data |
 | `t_entity_manager_component.gd` | `TEntityManagerComponent` (`:276`): `Game.EntityManager`, entity registry and deferred freeing |
 | `../engine/t_timer.gd`, `t_time_manager.gd` | `TTimer` (whole) and the `TTimeManager` clock (`Engine.Helferlein.Windows.pas:985`) |
 
@@ -147,7 +151,7 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   answers reads that touch its ReadyGroup; interval = eiCooldown - eiWelaActionpoint; the server writes the start
   to `eiCooldownStartingTime`, the client's timer reads it from there on every check. Helpers in `BC`:
   `ResourceCompare` (int resources compare with `Round(Reference)`), `ResourceAdd`, `ResourcePercentage`.
-  Not yet: `TWelaReadySpawnedComponent` (needs `EntityDataCache`), `TWelaReadyEnemiesNearbyComponent` (needs
+  `TWelaReadySpawnedComponent`: see "Data cache" below. Not yet: `TWelaReadyEnemiesNearbyComponent` (needs
   `eiEntitiesInRange` and targets). `TWelaReadyBooleanComponent` / `AfterGameTime` are unused.
 - **Targets** (`tests/test_wela_target_constraints.gd`, incl. two real server SmallMeleeGolems in a real
   entity manager): an ATarget is an Array of RTarget (treat both as values: `Clone`). RTarget methods that read
@@ -165,6 +169,28 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   `eiSetGridFieldBlocking` needs `Game.Map` as well (both untested until the map exists). Quirk kept:
   `NexusNext` / `NexusNextEnemy` return the *farthest* nexus (`bestDistance < distance`). The registry is an
   insertion-ordered Dictionary (original: hash order). `InvokeEventOnEntity` waits for `InvokeWithRawData`.
+- **Resolve** (`tests/test_warhead_apply_script.gd`): `TWelaHelperResolveComponent` answers wela reads (epFirst)
+  with the blackboard value at index = team ID / `reLevel` / a resource / game tier (0-2 by `eiGameEventTimeTo` of
+  tech2/tech3) / owner tier, in the group the read was called to; else the previous value. Quirk kept: owner tier
+  gives 1 for `upTier1` and `upTier2`, 3 otherwise.
+- **Apply script** (same test file, real `BlessingHealth`, `SummoningSickness`, `Links\Invisible`):
+  `TWarheadApplyScriptComponent` runs `Entity.ApplyScript(Script, Methodname or 'Apply', [Entity, Pass* values...])`
+  on eiFireWarhead entity targets (local call), or on eiWelaUnitProduced (`ApplyToProducedUnits`), or on its owner
+  at eiAfterCreate / the first global eiIdle after a delay (then `DeferFree`). Pass* values are read at apply time
+  (`RWarheadParameter.GetValue`); eiColorIdentity / eiTeamID / eiFront are read without group; unset record fields
+  are zero (original: stack garbage). The link variant never applies at fire: at eiAfterCreate it applies to the
+  first `eiLinkDest` if `eiWelaTargetPossible` of its group allows, copies eiCreator / eiCreatorGroup into the new
+  groups, and removes them (global `eiRemoveComponentGroup`, deferred) when freed or when its target is replaced.
+- **Data cache** (`tests/test_entity_data_cache.gd`, real VoidSkeletonDrop / TyrusDrop / Freeze data and
+  `Commander\CommanderMethods` AddDrop): the original's `EntityDataCache` global (per game thread) is
+  `TEventbus.EntityDataCache` on the global bus, set by the game and freed with the bus. `Read(file, league, level,
+  event, group = [], index = -1, ByPassCache)` builds the data entity on first use (`CreateDataFromScript` with card
+  level/league set; `.sps`: bare entity + `CreateData(Entity, 0, 1)`, and every group but [1] reads [0]), caches
+  every result (empty too) until a bypassing read. `TWelaEventRedirecter` (epFirst) answers still-empty reads from
+  the data of the eiWelaUnitPattern of the group the read was called to (at the component's card league/level);
+  `CopyValue` / `CopyIndexedValue` copy once at setup. `TWelaReadySpawnedComponent` writes the wela's
+  eiOwnerCommander into that data entity and uses its eiIsReady (legendary checks). A missing data entity reads
+  empty (the original crashed).
 - `TNexusEarlyVulnerabilityComponent` (`:88`) is not ported: only declared and exposed, nothing creates it
   (listed in `docs/unused-features.md`, with the unused axis and exclude zones).
 - **Time**: `TTimer` reads `TTimeManager.GetFloatingTimestamp()` (ms). Tests freeze it with

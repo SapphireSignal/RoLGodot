@@ -60,3 +60,6 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - 2026-09-18: Phase 2 step 5 parts 4-6: `TModifier*` (9), `TWelaReady*` (8) + `TGameTimer`, `RTarget`/`ATarget`/
   `RTargetValidity` + `TWelaTargetConstraint*` (18) + `TWelaTriggerCheck*` (3); unused-class finder fixed (43).
   1309 files compile, 124 tests green, no errors. Next: `TWelaHelperResolve`, warhead apply-script (CONTINUE.md).
+- 2026-09-18: Phase 2 step 5 parts 7-8: `TWelaHelperResolveComponent`, `TWarhead{,Link}ApplyScriptComponent`;
+  `TEntityDataCache` (on the global bus) + `TWelaEventRedirecter` + `TWelaReadySpawnedComponent`. 1312 files
+  compile, 137 tests green, no errors. Next: the map's build zones (see CONTINUE.md).

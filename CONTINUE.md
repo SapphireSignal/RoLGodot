@@ -50,10 +50,13 @@ and `TTimer`/`TTimeManager` clock in `src/runtime/engine/` (tests freeze time wi
 `TWelaTargetConstraint*` (18) + `TWelaTriggerCheck*` (3), each with a real-script test (see `docs/entity-core.md`).
 `tools/find_unused_classes.py` now skips fluent setters, strings and comments (43 unused classes, all in
 `docs/unused-features.md`).
-Next (the rest of `Shared.Wela.pas` by `docs/script-api.md`): `TWelaHelperResolveComponent` (`:941`),
-`TWarheadApplyScriptComponent` / `TWarheadLinkApplyScriptComponent` (`:855`, `:918`); then `EntityDataCache`
-(needed by `TWelaEventRedirecter` `:832` and `TWelaReadySpawnedComponent`); then the map's build zones (needed by
-`TWelaTargetConstraint{Grid,BuildTeam,Zone}`, `TEntityManagerComponent.OnSetGridFieldBlocking`, build targets).
+`TWelaHelperResolveComponent`, `TWarhead{,Link}ApplyScriptComponent` (`tests/test_warhead_apply_script.gd`);
+`TEntityDataCache` (`src/runtime/classes/`, carried by the global bus as `TEventbus.EntityDataCache`),
+`TWelaEventRedirecter`, `TWelaReadySpawnedComponent` (`tests/test_entity_data_cache.gd`, incl. the real
+`Commander\CommanderMethods` AddDrop). `Shared.Wela.pas` is now done except what waits for the map / targeting.
+Next: the map's build zones (needed by `TWelaTargetConstraint{Grid,BuildTeam,Zone}`,
+`TEntityManagerComponent.OnSetGridFieldBlocking` / `OnReplaceEntity`, `RTarget.GetBuildZone`, build targets):
+find `TBuildZone` / `TMap` in the original first and check what they pull in.
 `TPositionComponent`/`TMovementComponent` need the map and pathfinding, so check first what they pull in.
 The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.
 When a hand-written file declares `class_name TFoo`, rerun the transpiler: it drops the stub.
