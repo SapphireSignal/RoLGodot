@@ -16,8 +16,11 @@ static func IsEmpty(p) -> bool:
 
 ## Round a float to the nearest 32-bit single, as a Delphi `single` variable holds it.
 static func ToSingle(x: float) -> float:
-	var buf := PackedFloat32Array([x])
-	return buf[0]
+	_single_buffer[0] = x
+	return _single_buffer[0]
+
+
+static var _single_buffer := PackedFloat32Array([0.0])
 
 
 static func _int_bits_as_single(i: int) -> float:

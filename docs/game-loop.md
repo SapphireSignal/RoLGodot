@@ -45,9 +45,26 @@ Tests: `tests/test_server_game.gd` (setup, ticks, end) and `tests/test_sandbox_m
 - A spawner fires on placement; later its field's turn in the 20-field wave rotation (~41 s).
 - Footmen at the nexus deal 13 per hit; the nexus shoots back.
 
+## Performance
+
+`tests/profile_sandbox.gd` (run by hand, see its header; `PROFILE_HANDLERS=1` lists the costliest handlers) plays
+the sandbox with a Footman drop and a spawner per side (16 units). The test server's sandbox has 16 commanders
+(every colour's deck per player), so ~570 components listen to the global eiIdle, ~500 of them think timers that
+read eiExiled and eiIsAlive every frame, as in the original.
+
+| | before (2026-09-18) | after the bus speed-ups |
+| --- | --- | --- |
+| match frame (32 ms of game time) | 25.8 ms | 10.1 ms (0.31 x real time) |
+| warm-up, 10 s of game time | 6.7 s | 2.3 s |
+| `Trigger(eiThink)` on a commander (100 subscribers) | 108 us | 11 us |
+
+What was slow: the handler lookup and `callv` per call, walking every subscriber of an event called to one group,
+the event-stack array per event, the 37-way `match` of `EventIdentifierToNetworkSend` on every Trigger, set and
+single conversions. Setup: 1.5 s per sandbox game (16 commanders with all their cards) plus 2.3 s of one-off
+script and data loading on the first game. Left, if it matters later: the per-frame think-timer reads (~2 us each),
+`THealthComponent.OnUnitProperies`, `TMovementComponent.OnIdle`.
+
 ## Not yet
 
 - Network (`TServerNetworkComponent`), bots (`TPvPBotComponent`, a bot slot errors), the time manager pause,
   the client game (`TClientGame`).
-- Performance: the headless sandbox runs only about as fast as real time with ~15 units (an exploratory run of
-  ~110 s of game time took ~3 min of wall time, startup included). Profile before phase 5.

@@ -12,7 +12,8 @@ Hand-off note for the next session. Read `CLAUDE.md` first, then this.
 - Never read or write the owner's other repos.
 
 ## Where we are
-Phases 0 and 1 done, phase 2 done up to the client stubs (every server / shared component is ported; next is phase 3, the game loop) (see `docs/port-plan.md`). Verified facts about the original are in
+Phases 0-2 done, phase 3 done except bots and network (the headless sandbox match runs and is profiled); next is
+phase 4, the asset pipeline (see `docs/port-plan.md`). Verified facts about the original are in
 `docs/original-architecture.md`. If `reference/` is missing, run `tools\fetch_reference.ps1` (~800 MB download,
 ~3 GB checked out; run it in the background).
 
@@ -119,8 +120,13 @@ the phase 3 goal: Footman duel numbers, spawner, nexus damage. Game predicates a
 `IsSandbox()`, `HasStarted()`, `IsShuttingDown()`, `GameInformation.IsTutorial()`), `InGameStatus` a property; test
 fakes follow that. Runner: `$env:RUN_TESTS_ONLY = 'test_foo'` runs one file and prints objects left per test (the
 ~82 objects "leaked at exit" are the compile sweep's baseline).
-Next: profile the headless simulation (it runs only about real time with ~15 units; use a short sandbox match and
-Godot's profiler or timing around `DoComputeGame`), fix the hot spots without changing behaviour, then phase 4
-(asset pipeline, `docs/port-plan.md`). Open in phase 3: bots (`TPvPBotComponent`), network, time manager pause.
+Profiled (section "Performance" in `docs/game-loop.md`): the event bus is 2.5x faster (subscribers carry their
+handler, single-group events walk only their group's subscribers, no event-stack arrays, a lookup for the network
+send check); the sandbox match runs at 0.31 x real time. Tools: `tests/profile_sandbox.gd` (with
+`PROFILE_HANDLERS=1`: the costliest handlers), `tests/bench_eventbus.gd`; run them by hand like the test runner
+does Godot (headless, absolute `--log-file`, `--script res://tests/...`).
+Next: phase 4, the asset pipeline (`docs/port-plan.md`): start by researching the original's mesh / texture / map
+formats (`docs/original-architecture.md` has what is known) and plan the converters. Open in phase 3: bots
+(`TPvPBotComponent`), network, time manager pause.
 The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.
 When a hand-written file declares `class_name TFoo`, rerun the transpiler: it drops the stub.

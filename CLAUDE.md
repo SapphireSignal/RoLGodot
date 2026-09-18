@@ -110,3 +110,7 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   spawners spawn, footmen damage the nexus. Game predicates are methods now (fakes updated). Test runner:
   `RUN_TESTS_ONLY` filter, default timeout 400 s. 1388 files compile, 334 tests green, no errors, no leaks.
   Next: profile the headless simulation (about real time only), then phase 4 (see CONTINUE.md).
+- 2026-09-18: Phase 3 profiled: the event bus is 2.5x faster with the same behaviour (subscribers carry their
+  handler, single-group events walk only their group, no event-stack arrays, network-send lookup); the sandbox
+  match runs at 0.31 x real time (was 0.81). `tests/profile_sandbox.gd`, `tests/bench_eventbus.gd`. 1390 files
+  compile, 334 tests green, no errors. Next: phase 4, the asset pipeline (see CONTINUE.md).

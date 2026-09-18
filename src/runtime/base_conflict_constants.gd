@@ -262,20 +262,27 @@ static func IsNormalArmorType(ArmorType: int) -> bool:
 	return ArmorType >= C.atUnarmored and ArmorType <= C.atHeavy
 
 
-## BaseConflict.Constants.pas:1058
+## BaseConflict.Constants.pas:1058 (every Trigger asks: a lookup, not a match over 37 events)
 static func EventIdentifierToNetworkSend(Event: int) -> int:
-	match Event:
-		C.eiTeamID, C.eiMoveTo, C.eiStand, C.eiSyncPosition, C.eiDie, C.eiRemoveComponent, \
-		C.eiKillEntity, C.eiResourceBalance, C.eiResourceCap, C.eiResourceCost, C.eiLose, C.eiPreFire, C.eiFire, \
-		C.eiCancelFire, C.eiFireWarhead, C.eiGameCommencing, C.eiGameStart, \
-		C.eiRemoveComponentGroup, C.eiReplaceEntity, C.eiWelaSetMainTarget, C.eiGameTick, C.eiLinkEstablish, \
-		C.eiLinkBreak, C.eiSetGridFieldBlocking, C.eiExiled, C.eiUnitProperties, \
-		C.eiWelaUnitProduced, C.eiCooldownStartingTime, C.eiGameEvent, \
-		C.eiWelaActive, C.eiWelaSavedTargets, C.eiSyncPath, C.eiWaveSpawn, C.eiWelaCooldownReset:
-			return C.nsServer
-		C.eiUseAbility, C.eiSurrender, C.eiClientCommand:
-			return C.nsClient
-	return C.nsNone
+	return _NETWORK_SEND.get(Event, C.nsNone)
+
+
+static var _NETWORK_SEND := _MakeNetworkSend()
+
+
+static func _MakeNetworkSend() -> Dictionary:
+	var Result := {}
+	for Event in [C.eiTeamID, C.eiMoveTo, C.eiStand, C.eiSyncPosition, C.eiDie, C.eiRemoveComponent,
+			C.eiKillEntity, C.eiResourceBalance, C.eiResourceCap, C.eiResourceCost, C.eiLose, C.eiPreFire, C.eiFire,
+			C.eiCancelFire, C.eiFireWarhead, C.eiGameCommencing, C.eiGameStart,
+			C.eiRemoveComponentGroup, C.eiReplaceEntity, C.eiWelaSetMainTarget, C.eiGameTick, C.eiLinkEstablish,
+			C.eiLinkBreak, C.eiSetGridFieldBlocking, C.eiExiled, C.eiUnitProperties,
+			C.eiWelaUnitProduced, C.eiCooldownStartingTime, C.eiGameEvent,
+			C.eiWelaActive, C.eiWelaSavedTargets, C.eiSyncPath, C.eiWaveSpawn, C.eiWelaCooldownReset]:
+		Result[Event] = C.nsServer
+	for Event in [C.eiUseAbility, C.eiSurrender, C.eiClientCommand]:
+		Result[Event] = C.nsClient
+	return Result
 
 
 ## BaseConflict.Constants.pas:1073

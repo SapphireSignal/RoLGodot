@@ -26,7 +26,7 @@ can run or check, tests green, and docs updated. Facts about the original: `orig
 | 0 | **Foundation**: pin source, docs, Godot scaffold, test runner, `play.bat`, export preset | ✅ this session |
 | 1 | **Script transpiler**: DWScript subset → GDScript for all of `Scripts/` | ✅ all 500 scripts × 2 sides convert (one mirrors an original compile error) and compile in the sweep |
 | 2 | **Entity core**: `TEntity`, blackboard, eventbus, component base, shared components | unit tests mirror the Pascal behaviour (event order, grouped values) |
-| 3 | **Simulation**: server components (brains, welas, warheads), game loop, pathfinding, the sandbox deck | headless sandbox match: Footman vs Footman trades hits at 13 dmg / 2000 ms with the right action point; lanes, spawners, nexus damage. ✅ runs (`docs/game-loop.md`); open: bots, network, performance |
+| 3 | **Simulation**: server components (brains, welas, warheads), game loop, pathfinding, the sandbox deck | headless sandbox match: Footman vs Footman trades hits at 13 dmg / 2000 ms with the right action point; lanes, spawners, nexus damage. ✅ runs (`docs/game-loop.md`, 0.31 x real time after profiling); open: bots, network |
 | 4 | **Asset pipeline**: meshes (FBX + XML → scene/material), textures (+ KTF decoder), maps (terrain, water, vegetation, lights) | the Classic map and every unit render in a viewer scene, side-by-side screenshots checked |
 | 5 | **Playable sandbox**: camera, input, card hand, spawning, HUD, animations, minimap | the owner plays a sandbox match against the idle opponent |
 | 6 | **Effects and sound**: particles (`.pfx`), shaders and post effects, FMOD extraction and event mapping | every card's effects and sounds present; audit per card |

@@ -10,6 +10,11 @@ static func Make(values) -> Array:
 	var result: Array = []
 	if values == null:
 		return result
+	# fast paths (hot in every event call): no or one member
+	if values is Array and values.size() <= 1:
+		if values.size() == 1:
+			result.append(int(values[0]))
+		return result
 	for v in values:
 		var b := int(v)
 		if not result.has(b):

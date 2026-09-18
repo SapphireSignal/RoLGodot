@@ -142,7 +142,7 @@ func ChangeEventPriority(Eventname: int, EventType: int, Priority: int, Scope: i
 	TargetEventbus.Unsubscribe(SubscribedEvent.Eventname, SubscribedEvent.EventType, SubscribedEvent.EventPriority, self)
 	SubscribedEvent.EventPriority = Priority
 	DeploySubscribedEvent(SubscribedEvent)
-	TargetEventbus.Subscribe(SubscribedEvent.Eventname, SubscribedEvent.EventType, SubscribedEvent.EventPriority, self, SubscribedEvent.ParameterCount)
+	TargetEventbus.Subscribe(SubscribedEvent.Eventname, SubscribedEvent.EventType, SubscribedEvent.EventPriority, self, SubscribedEvent.ParameterCount, SubscribedEvent.EventHandler)
 
 
 func BeforeComponentFree() -> void:
@@ -217,28 +217,8 @@ func ExtractSubscribedEvent(Event: TSubscribedEvent) -> void:
 	DeleteSubscribedEvent(Event)
 
 
-func OnRead(Caller, Event: int, Parameters: Array, ResultFromAncestor):
-	var SubscribedEvent := LookUpSubscribedEvent(Caller, Event, C.etRead)
-	assert(SubscribedEvent != null, "For event %d of type etRead no method found!" % Event)
-	# ResultFromAncestor is optional, check parametercount
-	if not (Parameters.size() + 1 == SubscribedEvent.ParameterCount or Parameters.size() == SubscribedEvent.ParameterCount):
-		push_error("Parametercount for read event %d in component %s does not match - expected %d[+1], found %d." % [
-			Event, ClassName(), SubscribedEvent.ParameterCount, Parameters.size()])
-		return ResultFromAncestor
-	if Parameters.size() + 1 == SubscribedEvent.ParameterCount:
-		return callv(SubscribedEvent.EventHandler, Parameters + [ResultFromAncestor])
-	return callv(SubscribedEvent.EventHandler, Parameters)
-
-
-func OnTrigger(Caller, Event: int, Parameters: Array, Write: bool) -> bool:
-	var SubscribedEvent := LookUpSubscribedEvent(Caller, Event, C.etWrite if Write else C.etTrigger)
-	assert(SubscribedEvent != null, "For event %d of type etTrigger no method found!" % Event)
-	# check parametercount
-	if Parameters.size() != SubscribedEvent.ParameterCount:
-		push_error("Parametercount for trigger event %d in component %s does not match - expected %d, found %d." % [
-			Event, ClassName(), SubscribedEvent.ParameterCount, Parameters.size()])
-		return true
-	return callv(SubscribedEvent.EventHandler, Parameters)
+# TEntityComponent.OnRead / OnTrigger (the handler call and its parameter count check) are
+# TEventbus.RSubscriber.CallRead / CallTrigger: the subscriber carries its handler, so no lookup per call.
 
 
 func RegisterInOwner() -> void:
@@ -254,12 +234,13 @@ func DeregisterInOwner() -> void:
 func SetSetComponentGroup(Value) -> void:
 	DeregisterInOwner()
 	FComponentGroup = DSet.Make(Value)
+	TEventbus.GroupsVersion += 1
 	RegisterInOwner()
 
 
 func SubscribeEvent(Event: int, EventType: int, EventPriority: int, EventHandler: String, ParameterCount: int, TargetEventbus: TEventbus) -> void:
 	# subscribe event
-	TargetEventbus.Subscribe(Event, EventType, EventPriority, self, ParameterCount)
+	TargetEventbus.Subscribe(Event, EventType, EventPriority, self, ParameterCount, EventHandler)
 	DeploySubscribedEvent(TSubscribedEvent.new(Event, EventHandler, ParameterCount, TargetEventbus, EventPriority, EventType))
 
 

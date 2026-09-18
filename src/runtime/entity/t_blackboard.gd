@@ -26,7 +26,10 @@ func Destroy() -> void:
 
 
 func GetValueRaw(Event: int, GroupIndex: int, Index: int):
-	var groups: Array = FValues.get(Event, [])
+	var found = FValues.get(Event)
+	if found == null:
+		return RParam.RPARAMEMPTY
+	var groups: Array = found
 	if groups.size() > GroupIndex:
 		var values: Array = groups[GroupIndex]
 		if values.size() > Index:
@@ -62,6 +65,8 @@ func GetIndexedValue(Event: int, Group: Array, Index: int):
 	Index += 1
 	if Group.is_empty():
 		return GetValueRaw(Event, 0, Index)
+	if Group.size() == 1:
+		return GetValueRaw(Event, int(Group[0]) + 1, Index)
 	var Result = RParam.RPARAMEMPTY
 	for i in DSet.Make(Group):
 		Result = GetValueRaw(Event, i + 1, Index)

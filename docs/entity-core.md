@@ -79,6 +79,13 @@ Tests: `tests/test_entity_core.gd` (every expectation is derived from the Pascal
 - **Two sides in one process**: the original ran client and server as separate programs. Here each `TEventbus`
   has `ApplicationType` (`nsServer`/`nsClient`, replaces `APPLICATIONTYPE`) and `Game` (replaces the `Game`
   global); an entity takes both from its global bus (`TEntity.IsServer()` for `{$IFDEF SERVER}` code paths).
+- **Bus speed-ups** (same behaviour, see `t_eventbus.gd`): each `RSubscriber` carries its handler as a Callable
+  and calls it (the original's `TEntityComponent.OnRead` / `OnTrigger` lookup is gone); an event called to one
+  group walks only the subscribers of that group (`TEventhandler.MatchingIndices`, dropped on any subscribe /
+  unsubscribe and on any component group change via `TEventbus.GroupsVersion`; after a change mid-event the walk
+  goes on as the original's); the event stack lives in `Read` / `Trigger` locals. Change a component's group only
+  through the `ComponentGroup` setter, never by editing `FComponentGroup` in place. `TEventbus.Prof = {}` times
+  every handler (`tests/profile_sandbox.gd`, `tests/bench_eventbus.gd`).
 
 ## Script runner (`TEntity`, tests in `tests/test_script_runner.gd`)
 

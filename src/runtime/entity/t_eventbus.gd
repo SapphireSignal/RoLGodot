@@ -14,14 +14,48 @@ extends TObject
 const C = preload("res://src/runtime/dws/dws_const.gd")
 const BC = preload("res://src/runtime/base_conflict_constants.gd")
 
-## TEventbus.RSubscriber
+## TEventbus.RSubscriber. Port: it also carries the handler and its parameter count, and calls it (the original's
+## TEntityComponent.OnRead / OnTrigger, which look the handler up per call).
 class RSubscriber:
 	var EntityComponent = null  # TEntityComponent
 	var Priority: int = 0
+	var Method: Callable
+	var ParameterCount := 0
 
-	func _init(entity_component, priority: int) -> void:
+	func _init(entity_component, priority: int, method_name: String = "", parameter_count: int = 0) -> void:
 		EntityComponent = entity_component
 		Priority = priority
+		if method_name != "":
+			Method = Callable(entity_component, method_name)
+		ParameterCount = parameter_count
+
+	## TEntityComponent.OnRead: the previous result is an optional extra last parameter.
+	func CallRead(Event: int, Parameters: Array, ResultFromAncestor):
+		var n := Parameters.size()
+		if n + 1 == ParameterCount:
+			match n:
+				0:
+					return Method.call(ResultFromAncestor)
+				1:
+					return Method.call(Parameters[0], ResultFromAncestor)
+				2:
+					return Method.call(Parameters[0], Parameters[1], ResultFromAncestor)
+				3:
+					return Method.call(Parameters[0], Parameters[1], Parameters[2], ResultFromAncestor)
+			return Method.callv(Parameters + [ResultFromAncestor])
+		if n == ParameterCount:
+			return TEventbus._Invoke(Method, Parameters)
+		push_error("Parametercount for read event %d in component %s does not match - expected %d[+1], found %d." % [
+			Event, EntityComponent.ClassName(), ParameterCount, n])
+		return ResultFromAncestor
+
+	## TEntityComponent.OnTrigger
+	func CallTrigger(Event: int, Parameters: Array) -> bool:
+		if Parameters.size() != ParameterCount:
+			push_error("Parametercount for trigger event %d in component %s does not match - expected %d, found %d." % [
+				Event, EntityComponent.ClassName(), ParameterCount, Parameters.size()])
+			return true
+		return TEventbus._Invoke(Method, Parameters)
 
 
 ## TEventbus.TEventEnumerator: one per nesting level of the same event, kept in step with inserts/removals.
@@ -62,12 +96,34 @@ class TEventhandler:
 	var FEnumerators: Array = []
 	var FEnumeratorIndex := 0
 	var Subscribers: Array = []  # of RSubscriber
+	## Port, a speed-up: bumped by every insert / removal.
+	var Version := 0
+	## Port, a speed-up: group -> the indices of the subscribers an event called to that single group reaches
+	## (in the group or in ALLGROUP), for this Version and TEventbus.GroupsVersion.
+	var FMatchCache := {}
+	var FMatchCacheGroupsVersion := -1
 
 	func _init(parameter_count: int) -> void:
 		ParameterCount = parameter_count
 		FEnumerators.append(TEventEnumerator.new(self))
 
+	func MatchingIndices(Group: int) -> PackedInt32Array:
+		if FMatchCacheGroupsVersion != TEventbus.GroupsVersion:
+			FMatchCache.clear()
+			FMatchCacheGroupsVersion = TEventbus.GroupsVersion
+		if FMatchCache.has(Group):
+			return FMatchCache[Group]
+		var Result := PackedInt32Array()
+		for i in Subscribers.size():
+			var cg: Array = Subscribers[i].EntityComponent.FComponentGroup
+			if cg.has(Group) or cg.has(C.ALLGROUP_INDEX):
+				Result.append(i)
+		FMatchCache[Group] = Result
+		return Result
+
 	func AddSubscriber(Subscriber: RSubscriber) -> void:
+		Version += 1
+		FMatchCache.clear()
 		var Inserted := false
 		for i in Subscribers.size():
 			if Subscribers[i].Priority > Subscriber.Priority:
@@ -92,6 +148,8 @@ class TEventhandler:
 		assert(i >= 0, "TEventbus.TEventhandler.RemoveSubscriber: Trying to remove subscriber of event, but isn't present!")
 		if i < 0:
 			return
+		Version += 1
+		FMatchCache.clear()
 		Subscribers.remove_at(i)
 		# if a subscriber get removed before current position, the position has to decrement as stack shrinks
 		for e in FEnumerators:
@@ -112,12 +170,13 @@ class TEventhandler:
 		assert(not FEnumerators[FEnumeratorIndex].FCurrentlyActive)
 
 
-## threadvar CurrentEvent : REventInformation (the event being executed) and the Eventstack.
+## threadvar CurrentEvent : REventInformation (the event being executed); the Eventstack see StartEvent.
 static var CurrentEvent_EventIdentifier := 0
 static var CurrentEvent_CalledToGroup: Array = []
 ## Port: the parameter array of the executing event (see SetVarParam).
 static var CurrentParameters: Array = []
-static var Eventstack: Array = []
+## Port, a speed-up: bumped whenever a component changes its group (invalidates every TEventhandler.FMatchCache).
+static var GroupsVersion := 0
 
 var FOwner = null  # TEntity
 ## [EnumEventIdentifier * 3 + EnumEventType] -> TEventhandler
@@ -161,24 +220,18 @@ static func _key(Event: int, EventType: int) -> int:
 	return Event * 3 + EventType
 
 
+## Port: the Eventstack only restores the outer event when one ends, so Read / Trigger keep the outer event in
+## locals and hand it to EndEvent (no stack object per event). The outermost event restores 0 / [] / [].
 func StartEvent(Event: int, Group: Array, Parameters: Array) -> void:
 	CurrentEvent_EventIdentifier = Event
 	CurrentEvent_CalledToGroup = Group
 	CurrentParameters = Parameters
-	Eventstack.push_back([Event, Group, Parameters])
 
 
-func EndEvent() -> void:
-	Eventstack.pop_back()
-	if Eventstack.size() > 0:
-		var top: Array = Eventstack.back()
-		CurrentEvent_EventIdentifier = top[0]
-		CurrentEvent_CalledToGroup = top[1]
-		CurrentParameters = top[2]
-	else:
-		CurrentEvent_EventIdentifier = 0
-		CurrentEvent_CalledToGroup = []
-		CurrentParameters = []
+func EndEvent(OuterEvent: int, OuterGroup: Array, OuterParameters: Array) -> void:
+	CurrentEvent_EventIdentifier = OuterEvent
+	CurrentEvent_CalledToGroup = OuterGroup
+	CurrentParameters = OuterParameters
 
 
 static func _Matches(EntityComponent, Group: Array, ComponentID: int) -> bool:
@@ -187,9 +240,49 @@ static func _Matches(EntityComponent, Group: Array, ComponentID: int) -> bool:
 		and (ComponentID == 0 or EntityComponent.FUniqueID == ComponentID)
 
 
+## Port, a speed-up of the original's walk (every subscriber in order, _Matches each): the state of one walk,
+## [matching indices of a single-group event or null, position in them, handler Version, GroupsVersion].
+static func _StartWalk(EventHandler: TEventhandler, Group: Array) -> Array:
+	var Indices = EventHandler.MatchingIndices(Group[0]) if Group.size() == 1 else null
+	return [Indices, 0, EventHandler.Version, GroupsVersion]
+
+
+## Moves the enumerator to the next subscriber the event reaches and returns it, null at the end. Uses the
+## matching indices while the subscriber list and the groups stay as they were, else walks as the original.
+static func _NextSubscriber(EventHandler: TEventhandler, EventEnumerator: TEventEnumerator, Group: Array, ComponentID: int, Walk: Array) -> RSubscriber:
+	var Subscribers: Array = EventHandler.Subscribers
+	if Walk[0] != null and (EventHandler.Version != Walk[2] or GroupsVersion != Walk[3]):
+		Walk[0] = null
+	if Walk[0] != null:
+		var Indices: PackedInt32Array = Walk[0]
+		var k: int = Walk[1]
+		while k < Indices.size():
+			var i := Indices[k]
+			k += 1
+			if i >= EventEnumerator.FActiveIndex:
+				var Subscriber: RSubscriber = Subscribers[i]
+				if ComponentID == 0 or Subscriber.EntityComponent.FUniqueID == ComponentID:
+					Walk[1] = k
+					EventEnumerator.FActiveIndex = i
+					return Subscriber
+		Walk[1] = k
+		EventEnumerator.FActiveIndex = Subscribers.size()
+		return null
+	while EventEnumerator.FActiveIndex < Subscribers.size():
+		var Subscriber: RSubscriber = Subscribers[EventEnumerator.FActiveIndex]
+		if _Matches(Subscriber.EntityComponent, Group, ComponentID):
+			return Subscriber
+		EventEnumerator.FActiveIndex += 1
+	return null
+
+
 func Read(Eventname: int, Parameters: Array = [], Group: Array = [], ComponentID: int = 0):
-	Parameters = Parameters.duplicate()  # open array parameter passed by value
+	if not Parameters.is_empty():
+		Parameters = Parameters.duplicate()  # open array parameter passed by value
 	Group = DSet.Make(Group)
+	var OuterEvent := CurrentEvent_EventIdentifier
+	var OuterGroup := CurrentEvent_CalledToGroup
+	var OuterParameters := CurrentParameters
 	StartEvent(Eventname, Group, Parameters)
 	var Result = RParam.RPARAMEMPTY
 	if FOwner != null:
@@ -198,14 +291,21 @@ func Read(Eventname: int, Parameters: Array = [], Group: Array = [], ComponentID
 	if EventHandler != null:
 		var EventEnumerator := EventHandler.GetEnumerator()
 		EventEnumerator.BeginEvent()
-		while EventEnumerator.HasNext():
-			var EntityComponent = EventEnumerator.CurrentSubscriber().EntityComponent
-			if _Matches(EntityComponent, Group, ComponentID):
-				Result = EntityComponent.OnRead(self, Eventname, Parameters, Result)
-			EventEnumerator.Increment()
+		var Walk := _StartWalk(EventHandler, Group)
+		while true:
+			var Subscriber := _NextSubscriber(EventHandler, EventEnumerator, Group, ComponentID, Walk)
+			if Subscriber == null:
+				break
+			if Prof != null:
+				var t := _ProfEnter()
+				Result = Subscriber.CallRead(Eventname, Parameters, Result)
+				_ProfLeave(Subscriber, t)
+			else:
+				Result = Subscriber.CallRead(Eventname, Parameters, Result)
+			EventEnumerator.FActiveIndex += 1
 		EventEnumerator.EndEvent()
 		EventHandler.ReleaseEnumerator()
-	EndEvent()
+	EndEvent(OuterEvent, OuterGroup, OuterParameters)
 	return Result
 
 
@@ -217,8 +317,9 @@ func ReadHierarchic(Eventname: int, Values: Array, Group: Array):
 	return Result
 
 
-func Subscribe(Eventname: int, EventType: int, Priority: int, EntityCompononent, ParameterCount: int) -> void:
-	var Subscriber := RSubscriber.new(EntityCompononent, Priority)
+## Port: MethodName and ParameterCount are the handler the subscriber calls (see RSubscriber).
+func Subscribe(Eventname: int, EventType: int, Priority: int, EntityCompononent, ParameterCount: int, MethodName: String) -> void:
+	var Subscriber := RSubscriber.new(EntityCompononent, Priority, MethodName, ParameterCount)
 	var key := _key(Eventname, EventType)
 	var EventHandler: TEventhandler = FEventhandler.get(key)
 	if EventHandler == null:
@@ -243,20 +344,32 @@ func SubscribeRemote(Eventname: int, EventType: int, Priority: int, EntityCompon
 func Trigger(Eventname: int, Values: Array = [], Group: Array = [], ComponentID: int = 0, Write: bool = false) -> void:
 	Values = _ScriptValues(Values)  # open array parameter passed by value
 	Group = DSet.Make(Group)
+	var OuterEvent := CurrentEvent_EventIdentifier
+	var OuterGroup := CurrentEvent_CalledToGroup
+	var OuterParameters := CurrentParameters
 	StartEvent(Eventname, Group, Values)
 	var EventHandler: TEventhandler = FEventhandler.get(_key(Eventname, C.etWrite if Write else C.etTrigger))
 	if EventHandler != null:
 		var EventEnumerator := EventHandler.GetEnumerator()
 		EventEnumerator.BeginEvent()
-		while EventEnumerator.HasNext():
-			var Subscriber := EventEnumerator.CurrentSubscriber()
-			if _Matches(Subscriber.EntityComponent, Group, ComponentID):
-				if not Subscriber.EntityComponent.OnTrigger(self, Eventname, Values, Write):
-					EventEnumerator.EndEvent()
-					EventHandler.ReleaseEnumerator()
-					EndEvent()
-					return
-			EventEnumerator.Increment()
+		var Walk := _StartWalk(EventHandler, Group)
+		while true:
+			var Subscriber := _NextSubscriber(EventHandler, EventEnumerator, Group, ComponentID, Walk)
+			if Subscriber == null:
+				break
+			var Continue: bool
+			if Prof != null:
+				var t := _ProfEnter()
+				Continue = Subscriber.CallTrigger(Eventname, Values)
+				_ProfLeave(Subscriber, t)
+			else:
+				Continue = Subscriber.CallTrigger(Eventname, Values)
+			if not Continue:
+				EventEnumerator.EndEvent()
+				EventHandler.ReleaseEnumerator()
+				EndEvent(OuterEvent, OuterGroup, OuterParameters)
+				return
+			EventEnumerator.FActiveIndex += 1
 		EventEnumerator.EndEvent()
 		EventHandler.ReleaseEnumerator()
 	if BC.EventIdentifierToNetworkSend(Eventname) == ApplicationType:
@@ -268,7 +381,7 @@ func Trigger(Eventname: int, Values: Array = [], Group: Array = [], ComponentID:
 			GlobalEventbus.Trigger(C.eiNetworkSend, [SendID, Eventname, Group, ComponentID, Parameters, Write])
 	if FOwner != null and Write and Values.size() > 0:
 		FOwner.FBlackboard.SetValue(Eventname, Group, Values[0])
-	EndEvent()
+	EndEvent(OuterEvent, OuterGroup, OuterParameters)
 
 
 func Write(Eventname: int, Values: Array = [], Group: Array = [], ComponentID: int = 0) -> void:
@@ -294,8 +407,50 @@ func Unsubscribe(Eventname: int, EventType: int, Priority: int, EntityComponent)
 
 ## The copy of the value array every call makes; script floats become singles (TEventbusScriptSideHelper).
 static func _ScriptValues(Values: Array) -> Array:
+	if Values.is_empty():
+		return Values
 	var copy := Values.duplicate()
 	for i in copy.size():
 		if copy[i] is float:
 			copy[i] = RParam.ToSingle(copy[i])
 	return copy
+
+
+## Calls a handler with the parameter array spread out (Object.callv, without its array for the usual counts).
+static func _Invoke(Method: Callable, Parameters: Array):
+	match Parameters.size():
+		0:
+			return Method.call()
+		1:
+			return Method.call(Parameters[0])
+		2:
+			return Method.call(Parameters[0], Parameters[1])
+		3:
+			return Method.call(Parameters[0], Parameters[1], Parameters[2])
+		4:
+			return Method.call(Parameters[0], Parameters[1], Parameters[2], Parameters[3])
+	return Method.callv(Parameters)
+
+
+## Port, a development aid: set Prof = {} to time every handler call ("Class.Method" -> [calls, self us,
+## inclusive us]; self time leaves out the handlers it calls through the buses). tests/profile_sandbox.gd uses it.
+static var Prof = null
+static var _ProfChildTime: Array = []
+
+
+static func _ProfEnter() -> int:
+	_ProfChildTime.append(0)
+	return Time.get_ticks_usec()
+
+
+static func _ProfLeave(Subscriber: RSubscriber, Start: int) -> void:
+	var Total: int = Time.get_ticks_usec() - Start
+	var Children: int = _ProfChildTime.pop_back()
+	if not _ProfChildTime.is_empty():
+		_ProfChildTime[-1] += Total
+	var Key: String = Subscriber.EntityComponent.ClassName() + "." + Subscriber.Method.get_method()
+	var Entry: Array = Prof.get(Key, [0, 0, 0])
+	Entry[0] += 1
+	Entry[1] += Total - Children
+	Entry[2] += Total
+	Prof[Key] = Entry
