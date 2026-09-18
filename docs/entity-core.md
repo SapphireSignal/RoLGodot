@@ -115,6 +115,8 @@ One file per class, `class_name` = Delphi name (the transpiler then drops its st
 | `t_modifier_*component.gd` | `TModifier{,DamageType,WelaTargetCount,Resource,MultiplyCooldown,ArmorType,WelaDamage,WelaRange,Cost}Component` (`Shared.Wela.pas:32-207`) |
 | `t_wela_ready_*component.gd` | `TWelaReady{,Cost,Cooldown,AfterGameStart,AfterGameEvent,ResourceCompare,UnitProperty,Creator,EventCompare}Component` (`Shared.Wela.pas:575-767`) |
 | `../types/t_game_timer.gd` | `TGameTimer` (`BaseConflict.Types.Shared.pas:54`): TTimer with `StartingTime` |
+| `t_wela_target_constraint_*component.gd`, `t_wela_trigger_check_*component.gd` | `TWelaTargetConstraint*` (18 of 21 used) and `TWelaTriggerCheck{TakeDamage,NotSelf,TakeDamageThreshold}Component` (`Shared.Wela.pas:222-560`) |
+| `../types/r_target.gd`, `a_target.gd`, `r_target_validity.gd` | `RTarget`, `ATarget` helpers, `RTargetValidity` (`BaseConflict.Types.Target.pas`) |
 | `t_entity_manager_component.gd` | `TEntityManagerComponent` (`:276`): `Game.EntityManager`, entity registry and deferred freeing |
 | `../engine/t_timer.gd`, `t_time_manager.gd` | `TTimer` (whole) and the `TTimeManager` clock (`Engine.Helferlein.Windows.pas:985`) |
 
@@ -147,6 +149,15 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   `ResourceCompare` (int resources compare with `Round(Reference)`), `ResourceAdd`, `ResourcePercentage`.
   Not yet: `TWelaReadySpawnedComponent` (needs `EntityDataCache`), `TWelaReadyEnemiesNearbyComponent` (needs
   `eiEntitiesInRange` and targets). `TWelaReadyBooleanComponent` / `AfterGameTime` are unused.
+- **Targets** (`tests/test_wela_target_constraints.gd`, incl. two real server SmallMeleeGolems in a real
+  entity manager): an ATarget is an Array of RTarget (treat both as values: `Clone`). RTarget methods that read
+  the original's `Game` global take the Game as a parameter (`GetTargetEntity(Game)`, `GetTargetPosition(Game)`);
+  constraints pass `TargetGame()` = `GlobalEventbus().Game`. `eiWelaTargetPossible` / `eiWarheadTargetPossible`
+  read `[ATarget]` in a wela's group returns an `RTargetValidity` (`FromRParam` for a copy; empty = valid): each
+  constraint (epHigher, own group only) can only make targets invalid; empty targets start invalid.
+  `eiWelaTriggerCheck` `[Amount, DamageType, InflictorID]` is the AND of the trigger checks. Quirk kept:
+  MaxTargetDistance only compares empty targets (never fails). Waiting for the map: `TWelaTargetConstraint{Grid,
+  BuildTeam,Zone}Component` (stubs), `RTarget.GetBuildZone`, build targets' positions.
 - **Entity manager** (`tests/test_entity_manager.gd`): `eiNewEntity` (sent by `TEntity.Deploy`) registers,
   `GenerateUniqueID` counts from 2. `eiKillEntity` unregisters at once and frees at the next `Idle` (called by the
   game loop); `eiRemoveComponent` / `eiRemoveComponentGroup` / `FreeEntity` are deferred to `Idle` too.

@@ -46,7 +46,14 @@ and `TTimer`/`TTimeManager` clock in `src/runtime/engine/` (tests freeze time wi
 `TDynamicZone*Emitter`, `TGameEventEnumeratorComponent` (`TNexusEarlyVulnerabilityComponent` is unused: skipped).
 `TEntityManagerComponent` (the real `Game.EntityManager`; `TServerEntityManagerComponent` /
 `TClientEntityManagerComponent` extend it later, with the game).
-Next: the entity-local modifier components `TModifier*Component` (`BaseConflict.EntityComponents.Shared.Wela.pas:32-207`,
-see `docs/script-api.md`), then the `TWelaReady*` / `TWelaTargetConstraint*` families. `TPositionComponent`/
-`TMovementComponent` need the map and pathfinding, so check first what they pull in.
+`TModifier*` (9), `TWelaReady*` (8 + `TGameTimer`), target types (`RTarget`/`ATarget`/`RTargetValidity`) and
+`TWelaTargetConstraint*` (18) + `TWelaTriggerCheck*` (3), each with a real-script test (see `docs/entity-core.md`).
+`tools/find_unused_classes.py` now skips fluent setters, strings and comments (43 unused classes, all in
+`docs/unused-features.md`).
+Next (the rest of `Shared.Wela.pas` by `docs/script-api.md`): `TWelaHelperResolveComponent` (`:941`),
+`TWarheadApplyScriptComponent` / `TWarheadLinkApplyScriptComponent` (`:855`, `:918`); then `EntityDataCache`
+(needed by `TWelaEventRedirecter` `:832` and `TWelaReadySpawnedComponent`); then the map's build zones (needed by
+`TWelaTargetConstraint{Grid,BuildTeam,Zone}`, `TEntityManagerComponent.OnSetGridFieldBlocking`, build targets).
+`TPositionComponent`/`TMovementComponent` need the map and pathfinding, so check first what they pull in.
+The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.
 When a hand-written file declares `class_name TFoo`, rerun the transpiler: it drops the stub.

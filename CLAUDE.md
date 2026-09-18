@@ -57,3 +57,6 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   1300 files compile, 75 tests green, no errors. Next: `TEntityManagerComponent` (see CONTINUE.md).
 - 2026-09-18: Phase 2 step 5 part 3: `TEntityManagerComponent` (registry, deferred freeing, nexus queries).
   1302 files compile, 84 tests green, no errors. Next: `TModifier*Component` (see CONTINUE.md).
+- 2026-09-18: Phase 2 step 5 parts 4-6: `TModifier*` (9), `TWelaReady*` (8) + `TGameTimer`, `RTarget`/`ATarget`/
+  `RTargetValidity` + `TWelaTargetConstraint*` (18) + `TWelaTriggerCheck*` (3); unused-class finder fixed (43).
+  1309 files compile, 124 tests green, no errors. Next: `TWelaHelperResolve`, warhead apply-script (CONTINUE.md).

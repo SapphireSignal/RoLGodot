@@ -39,6 +39,38 @@ static func ResourceAdd(ResourceType: int, Summand, Summand2):
 	return RParam.ToSingle(RParam.AsSingle(Summand) + RParam.AsSingle(Summand2))
 
 
+## ResourceSubtract (BaseConflict.Types.Shared.pas:150)
+static func ResourceSubtract(ResourceType: int, Minuend, Subtrahend):
+	if IsIntResource(ResourceType):
+		return RParam.AsInteger(Minuend) - RParam.AsInteger(Subtrahend)
+	return RParam.ToSingle(RParam.AsSingle(Minuend) - RParam.AsSingle(Subtrahend))
+
+
+## ResourceCompare(ResourceType, Resource, Comparator, ReferenceValue: RParam, ReferenceFactor) (:125):
+## compares with ReferenceValue * ReferenceFactor (not rounded, also for int resources).
+static func ResourceCompareParam(ResourceType: int, Resource, Comparator: int, ReferenceValue, ReferenceFactor: float = 1.0) -> bool:
+	var Value: float
+	var Reference: float
+	if IsIntResource(ResourceType):
+		Value = RParam.AsInteger(Resource)
+		Reference = RParam.AsInteger(ReferenceValue) * RParam.ToSingle(ReferenceFactor)
+	else:
+		Value = RParam.AsSingle(Resource)
+		Reference = RParam.AsSingle(ReferenceValue) * RParam.ToSingle(ReferenceFactor)
+	match Comparator:
+		C.coLowerEqual:
+			return Value <= Reference
+		C.coLower:
+			return Value < Reference
+		C.coGreaterEqual:
+			return Value >= Reference
+		C.coGreater:
+			return Value > Reference
+		C.coEqual:
+			return Value == Reference
+	return false
+
+
 ## ResourcePercentage (BaseConflict.Types.Shared.pas:162): Balance / Cap.
 static func ResourcePercentage(ResourceType: int, Balance, Cap) -> float:
 	if IsIntResource(ResourceType):
