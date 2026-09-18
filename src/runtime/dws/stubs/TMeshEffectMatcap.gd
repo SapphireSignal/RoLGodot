@@ -2,3 +2,8 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TMeshEffectMatcap
 extends TMeshEffectGeneric
+
+
+func Create(Param0 = null, Param1 = null):
+	super(Param0, Param1)
+	return self

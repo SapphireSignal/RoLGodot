@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -177,20 +178,81 @@ def declared_class_names() -> dict[str, str]:
     return found
 
 
+def gd_param_count(params: str) -> int:
+    """Number of parameters in a GDScript parameter list text (commas inside brackets do not count)."""
+    depth, count, seen = 0, 0, False
+    for ch in params:
+        if ch in '([{':
+            depth += 1
+        elif ch in ')]}':
+            depth -= 1
+        elif ch == ',' and depth == 0:
+            count += 1
+            continue
+        if not ch.isspace():
+            seen = True
+    return count + 1 if seen else 0
+
+
+def gd_method_arities(path: str) -> dict[str, int]:
+    """Method name -> parameter count for the top-level funcs of a hand-written GDScript file."""
+    with open(path, encoding='utf-8') as f:
+        text = f.read()
+    return {m.group(1): gd_param_count(m.group(2))
+            for m in re.finditer(r'^func (\w+)\(([^)]*)\)', text, re.M)}
+
+
 def stub_scripts(sym: SymbolTable, used: set[str]) -> dict[str, str]:
-    """Stub file text per class name, for the used classes and all their ancestors."""
+    """Stub file text per class name, for the used classes and all their ancestors.
+
+    A stub declares the Delphi constructors of its class (instance methods returning self, see docs/scripts.md),
+    so calls with the class's own constructor parameters compile. GDScript overrides may only add parameters with
+    defaults, so every parameter is defaulted and the count is at least the inherited method's. The body runs the
+    inherited constructor, so the component still joins its entity; the class-specific part is not ported yet."""
     real = declared_class_names()
+    real_arities = {name: gd_method_arities(path) for name, path in real.items()}
+    stub_arities: dict[str, dict[str, int]] = {}
+
+    def arity(class_name: str, method: str) -> int | None:
+        """Parameter count of `method` as class_name has it, declared there or inherited."""
+        for decl in sym.ancestors(class_name):
+            found = real_arities.get(decl.name, stub_arities.get(decl.name, {})).get(method)
+            if found is not None:
+                return found
+        return None
+
+    def constructors(decl) -> dict[str, list[str]]:
+        """Constructor name -> parameter names of its longest overload, declared in this class."""
+        found: dict[str, list[str]] = {}
+        for m in decl.members:
+            if m.routine == 'constructor' and not m.is_class and m.visibility in ('public', 'published'):
+                names = [p.name for p in m.params]
+                if len(names) >= len(found.get(m.name, [])):
+                    found[m.name] = names
+        return found
+
     stubs = {}
     for name in sorted(used):
-        for decl in sym.ancestors(name):
+        # root first, so each stub sees the arities of its ancestors
+        for decl in reversed(sym.ancestors(name)):
             if decl.name in stubs or decl.name in real:
                 continue
             chain = sym.ancestors(decl.name)
             parent = chain[1].name if len(chain) > 1 else 'RefCounted'
-            stubs[decl.name] = '\n'.join([
-                f'{STUB_HEADER} for {decl.name} ({decl.file}:{decl.line}).',
-                '# Phase 2 replaces it with the real class (delete this file when a real one declares the name).',
-                f'class_name {decl.name}', f'extends {parent}', ''])
+            lines = [f'{STUB_HEADER} for {decl.name} ({decl.file}:{decl.line}).',
+                     '# Phase 2 replaces it with the real class (delete this file when a real one declares the name).',
+                     f'class_name {decl.name}', f'extends {parent}', '']
+            own = {}
+            for ctor, names in sorted(constructors(decl).items()):
+                inherited = arity(parent, ctor)
+                count = max(len(names), inherited or 0)
+                names = names + [f'Param{i}' for i in range(len(names), count)]
+                own[ctor] = count
+                call = f'super({", ".join(names[:inherited])})' if inherited is not None else 'pass'
+                lines += ['', f'func {ctor}({", ".join(n + " = null" for n in names)}):', f'\t{call}',
+                          '\treturn self', '']
+            stub_arities[decl.name] = {**stub_arities.get(parent, {}), **own}
+            stubs[decl.name] = '\n'.join(lines).rstrip('\n') + '\n'
     return stubs
 
 

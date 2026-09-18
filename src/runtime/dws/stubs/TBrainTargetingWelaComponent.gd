@@ -2,3 +2,8 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TBrainTargetingWelaComponent
 extends TBrainWelaComponent
+
+
+func CreateGrouped(Owner = null, ControlledWelaID = null):
+	super(Owner, ControlledWelaID)
+	return self

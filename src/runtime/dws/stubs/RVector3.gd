@@ -2,3 +2,18 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name RVector3
 extends RefCounted
+
+
+func Create(X = null, Y = null, Z = null):
+	pass
+	return self
+
+
+func Create0Y0(Y = null):
+	pass
+	return self
+
+
+func CreateFromIniString(Value = null):
+	pass
+	return self

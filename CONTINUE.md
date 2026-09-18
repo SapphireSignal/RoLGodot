@@ -12,7 +12,7 @@ Hand-off note for the next session. Read `CLAUDE.md` first, then this.
 - Never read or write the owner's other repos.
 
 ## Where we are
-Phases 0 and 1 done (see `docs/port-plan.md`). Verified facts about the original are in
+Phases 0 and 1 done, phase 2 step 1 done (see `docs/port-plan.md`). Verified facts about the original are in
 `docs/original-architecture.md`. If `reference/` is missing, run `tools\fetch_reference.ps1` (~800 MB download,
 ~3 GB checked out; run it in the background).
 
@@ -21,13 +21,19 @@ Phase 1: `docs/scripts.md` explains the pipeline and the output. `python tools/t
 `src/runtime/dws/stubs/` and `docs/script-api.md`. `tools/run_tests.ps1` runs the transpiler unit tests, checks
 the generated files are up to date (when `reference/` exists) and runs the Godot compile sweep + tests.
 
-## Next: phase 2, the entity core
-Port by hand from `BaseConflict.Entity.pas` (method by method, Delphi names kept):
-1. `TEntity`, `TBlackboard` (script side = the `CustomExpose` methods, see `docs/scripts.md`), `TEventbus`
-   (events, priorities, groups), `TEntityComponent` (constructors `Create`/`CreateGrouped` are instance methods
-   returning `self`: the transpiler emits `TFoo.new().CreateGrouped(...)`).
-2. The script runner: `CreateFromScript` with `InheritsFrom` / `InheritsFromPreceding`, `ApplyScript`,
-   `ApplyScriptReturnGroups`, `L.game_resolver`, the `ORIGINAL_COMPILE_ERROR` files (`script_index.gd` maps paths).
-3. Unit tests mirroring the Pascal behaviour (event order, grouped values).
+## Phase 2, the entity core
+Step 1 done: `src/runtime/entity/` ports `BaseConflict.Entity.pas` minus the script runner and serialisation.
+Read `docs/entity-core.md` first: original semantics + port conventions (constructors, `_DeclareEvents` for
+XEvent handlers, `SetVarParam`, RParam memory casts, sets as sorted Arrays, per-bus side and Game).
+
+Next:
+2. The script runner in `TEntity` (`BaseConflict.Entity.pas:587-692`): `CreateFromScriptProc` with
+   `InheritsFrom` / `InheritsFromPreceding`, `CreateFromScript` / `CreateMetaFromScript` / `CreateDataFromScript`,
+   `ApplyScript`, `ApplyScriptReturnGroups`. Scripts are resolved through `script_index.gd` (lower-case original
+   path, per side = `IsServer()`); set the script's `GlobalEventbus` / `Game` vars if declared; fail like the
+   original on `ORIGINAL_COMPILE_ERROR` files. Test: create a real unit script (e.g. `Units\...Footman`) on both
+   sides and check the blackboard values it sets against the script source.
+3. `TResourceManagerComponent` (`BaseConflict.EntityComponents.Shared.pas:386`) at
+   `src/runtime/components/t_resource_manager_component.gd` (TEntity.Create picks it up by that path).
+4. Then the other shared components by `docs/script-api.md`.
 When a hand-written file declares `class_name TFoo`, rerun the transpiler: it drops the stub.
-Delphi overloads (e.g. `TBlackboard.SetValue`) need one GDScript method that dispatches on the value's type.

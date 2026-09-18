@@ -2,3 +2,8 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TWarheadApplyScriptComponent
 extends TEntityComponent
+
+
+func CreateGrouped(Owner = null, Group = null, ScriptToApply = null):
+	super(Owner, Group)
+	return self

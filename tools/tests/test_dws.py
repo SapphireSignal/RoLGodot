@@ -105,5 +105,15 @@ class EmitterTest(unittest.TestCase):
             emit('procedure P; begin repeat until True; end;')
 
 
+class StubTest(unittest.TestCase):
+    def test_gd_param_count(self):
+        # stubs size their constructors by the inherited method's parameter count
+        from transpile_scripts import gd_param_count
+        self.assertEqual(gd_param_count(''), 0)
+        self.assertEqual(gd_param_count(' '), 0)
+        self.assertEqual(gd_param_count('Owner = null'), 1)
+        self.assertEqual(gd_param_count('Owner = null, Group = [1, 2], f: Callable = Callable()'), 3)
+
+
 if __name__ == '__main__':
     unittest.main()

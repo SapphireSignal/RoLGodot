@@ -2,3 +2,8 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TMeshEffectStone
 extends TMeshEffectWithTimekeys
+
+
+func Create(Duration = null, Param1 = null):
+	super(Duration, Param1)
+	return self

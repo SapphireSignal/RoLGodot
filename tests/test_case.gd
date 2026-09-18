@@ -19,6 +19,11 @@ func check_eq(actual, expected, what: String) -> void:
 		fail("%s: expected %s, got %s" % [what, str(expected), str(actual)])
 
 
+## Runs after every test (override to free what the test created).
+func after_each() -> void:
+	pass
+
+
 func take_failure() -> String:
 	var f := _failure
 	_failure = ""

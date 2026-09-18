@@ -64,6 +64,8 @@ func _run_tests() -> Array:
 			if not name.begins_with("test_"):
 				continue
 			var result = suite.call(name)
+			if suite.has_method("after_each"):
+				suite.call("after_each")
 			var err := ""
 			if result is String:
 				err = result

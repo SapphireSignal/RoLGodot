@@ -2,3 +2,8 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TWelaTargetConstraintAlliesComponent
 extends TWelaTargetConstraintTeamComponent
+
+
+func CreateGrouped(Owner = null, Group = null, Param2 = null):
+	super(Owner, Group, Param2)
+	return self

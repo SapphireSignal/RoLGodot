@@ -2,3 +2,13 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TPointLightComponent
 extends TVisualizerComponent
+
+
+func Create(Owner = null, Color = null, Radius = null):
+	super(Owner)
+	return self
+
+
+func CreateGrouped(Owner = null, Group = null, Color = null, Radius = null):
+	super(Owner, Group)
+	return self

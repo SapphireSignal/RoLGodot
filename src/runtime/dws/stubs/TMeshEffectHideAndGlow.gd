@@ -2,3 +2,8 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TMeshEffectHideAndGlow
 extends TMeshEffectWithTimekeys
+
+
+func Create(Duration = null, TextureFilename = null):
+	super(Duration, TextureFilename)
+	return self

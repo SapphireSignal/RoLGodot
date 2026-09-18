@@ -2,3 +2,8 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TCameraShakerComponent
 extends TEntityComponent
+
+
+func CreateGrouped(Entity = null, Groups = null):
+	super(Entity, Groups)
+	return self

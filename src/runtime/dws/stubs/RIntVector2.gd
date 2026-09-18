@@ -2,3 +2,13 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name RIntVector2
 extends RefCounted
+
+
+func Create(X = null, Y = null):
+	pass
+	return self
+
+
+func CreateFromVector2(vec = null):
+	pass
+	return self

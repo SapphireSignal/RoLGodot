@@ -116,7 +116,10 @@ it. Its server output is a file with `const ORIGINAL_COMPILE_ERROR` so the runti
 did (`ORIGINAL_COMPILE_ERRORS` in `tools/transpile_scripts.py`).
 
 Also generated: `src/runtime/dws/stubs/<Class>.gd` (a `class_name` stub for each referenced Delphi class and
-its ancestors, skipped once a hand-written file in `src/` declares the name; phase 2 replaces them),
+its ancestors, skipped once a hand-written file in `src/` declares the name; phase 2 replaces them. A stub
+declares its class's Delphi constructors with every parameter defaulted and at least as many parameters as the
+inherited method, since GDScript overrides may only add defaulted parameters; the body runs the inherited
+constructor, see `docs/entity-core.md`),
 `src/content/scripts/script_index.gd` (lower-case original path → file, per side) and `docs/script-api.md`
 (every member the scripts use, per declaring class: the phase 2 work list). `.uid` files of generated scripts
 are git-ignored.

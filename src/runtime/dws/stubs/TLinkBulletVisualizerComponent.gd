@@ -2,3 +2,13 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TLinkBulletVisualizerComponent
 extends TEntityComponent
+
+
+func Create(Owner = null, Texture = null):
+	super(Owner)
+	return self
+
+
+func CreateGrouped(Owner = null, ComponentGroup = null, Texture = null):
+	super(Owner, ComponentGroup)
+	return self

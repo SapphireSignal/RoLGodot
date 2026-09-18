@@ -2,3 +2,18 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TParticleEffectComponent
 extends TVisualizerComponent
+
+
+func Create(Owner = null, ParticlePath = null, SizeNormalization = null):
+	super(Owner)
+	return self
+
+
+func CreateGrouped(Owner = null, Group = null, ParticlePath = null, SizeNormalization = null):
+	super(Owner, Group)
+	return self
+
+
+func CreateGroupedAndActivated(Owner = null, Group = null, ParticlePath = null, SizeNormalization = null):
+	pass
+	return self
