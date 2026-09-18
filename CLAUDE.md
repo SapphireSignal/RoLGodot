@@ -48,3 +48,6 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   `TSerializableEntityComponent`); server-only handlers per side; stubs now no-op the methods scripts call, so
   a real server unit (SmallMeleeGolem) builds and takes armored damage cleanly. 1293 files compile, 58 tests
   green, no errors. Next: step 5, the rest by `docs/script-api.md` (see CONTINUE.md).
+- 2026-09-18: Phase 2 step 5 part 1: `TCommanderIncome{,Default,Loan,Overflow}Component`, `RIncome`, `TTimer` +
+  `TTimeManager` clock; the real server CommanderTemplate computes its income. 1298 files compile, 70 tests
+  green, no errors. Next: `TDynamicZone*Emitter` (see CONTINUE.md).

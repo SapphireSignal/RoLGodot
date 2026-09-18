@@ -12,7 +12,7 @@ Hand-off note for the next session. Read `CLAUDE.md` first, then this.
 - Never read or write the owner's other repos.
 
 ## Where we are
-Phases 0 and 1 done, phase 2 steps 1-4 done (see `docs/port-plan.md`). Verified facts about the original are in
+Phases 0 and 1 done, phase 2 steps 1-4 done, step 5 under way (see `docs/port-plan.md`). Verified facts about the original are in
 `docs/original-architecture.md`. If `reference/` is missing, run `tools\fetch_reference.ps1` (~800 MB download,
 ~3 GB checked out; run it in the background).
 
@@ -41,10 +41,11 @@ components reach `Game` as `GlobalEventbus().Game`. `tests/component_fakes.gd`: 
 `Game.EntityManager`. Stubs now carry no-op versions of the methods the scripts call, so real unit scripts run
 without errors (`tests/test_health_component.gd` builds the server SmallMeleeGolem).
 
-Next:
-5. The rest by `docs/script-api.md`, entity-local first: `TPositionComponent`/`TMovementComponent` need the map
-   and pathfinding, so check first what they pull in; likely order: `TCommanderIncome*` (:531-574, read
-   `RIncome` in `BaseConflict.Types.Shared.pas`), `TDynamicZone*Emitter` (:581), `TGameEventEnumeratorComponent`
-   (:630), `TNexusEarlyVulnerabilityComponent` (:88), then the `TEntityManagerComponent` (:276, needed for the
-   real `Game.EntityManager`; the fakes in `tests/component_fakes.gd` show the interface used so far).
+Step 5 in progress (the rest by `docs/script-api.md`, entity-local first). Done: `TCommanderIncome*` + `RIncome`,
+and `TTimer`/`TTimeManager` clock in `src/runtime/engine/` (tests freeze time with `TTimeManager.FakeTime`).
+Next, in this order (line numbers in `BaseConflict.EntityComponents.Shared.pas`): `TDynamicZone*Emitter` (:581),
+`TGameEventEnumeratorComponent` (:630), `TNexusEarlyVulnerabilityComponent` (:88), then the
+`TEntityManagerComponent` (:276, needed for the real `Game.EntityManager`; the fakes in `tests/component_fakes.gd`
+show the interface used so far). `TPositionComponent`/`TMovementComponent` need the map and pathfinding, so check
+first what they pull in.
 When a hand-written file declares `class_name TFoo`, rerun the transpiler: it drops the stub.

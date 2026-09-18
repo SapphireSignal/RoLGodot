@@ -108,10 +108,22 @@ One file per class, `class_name` = Delphi name (the transpiler then drops its st
 | `t_unit_property_component.gd` | `TUnitPropertyComponent` (`:36`): adds/removes unit properties, or gives them to the owning commander |
 | `t_armor_component.gd` | `TArmorComponent` (`:521`): armor factor/offset on the `var` Amount of `eiTakeDamage` |
 | `t_health_component.gd` | `THealthComponent` (`:173`): damage, heal, overheal, death chain; base `../entity/t_serializable_entity_component.gd` (thin until phase 3) |
+| `t_commander_income*_component.gd` | `TCommanderIncome{,Default,Loan,Overflow}Component` (`:531-574`): the commander's `eiIncome` |
+| `../types/r_income.gd` | `RIncome` (`BaseConflict.Types.Shared.pas:47`), a record: copies in and out of RParams |
+| `../engine/t_timer.gd`, `t_time_manager.gd` | `TTimer` (whole) and the `TTimeManager` clock (`Engine.Helferlein.Windows.pas:985`) |
 
 Tests: `tests/test_unit_property_component.gd`, `test_armor_component.gd`, `test_health_component.gd` (incl. the
-real server `Units\Colorless\SmallMeleeGolem`); `tests/component_fakes.gd` has an event probe and a fake
-`Game.EntityManager` for component tests.
+real server `Units\Colorless\SmallMeleeGolem`), `test_commander_income.gd` (incl. the real server
+`Commander\CommanderTemplate` with a fake Game at the TGame defaults), `test_timer.gd`; `tests/component_fakes.gd`
+has an event probe and a fake `Game.EntityManager` for component tests.
+
+- **Income** (`eiIncome`, global read `[CommanderID]` → `RIncome`): only the components of the entity whose
+  `eiOwnerCommander` matches adjust it. Default (epFirst) adds its group's `eiResourceCost` gold +
+  `eiWelaDamage` × `reIncomeUpgrade`; Loan (epMiddle, EchoesOfTheFuture) multiplies gold by Factor for Duration,
+  then gives no gold for Duration × Factor / 2; Overflow (epLast) turns gold over the cap into wood.
+- **Time**: `TTimer` reads `TTimeManager.GetFloatingTimestamp()` (ms). Tests freeze it with
+  `TTimeManager.FakeTime`. The global pause and `TickTack` come with the game loop (phase 3). `TTimer` keeps the
+  original's quirks: `StartWithRest` behaves like the code, not its comment, and the `Paused` setter is inverted.
 
 - **Damage pipeline** (`eiTakeDamage`, read `[Amount, DamageType, InflictorID]`): `TArmorComponent` (epMiddle)
   rewrites Amount (`Max(1, Factor * Amount - Offset)`, only for Amount > 1 and without `dtIgnoreArmor`), then
@@ -131,5 +143,6 @@ real server `Units\Colorless\SmallMeleeGolem`); `tests/component_fakes.gd` has a
 ## Not ported yet
 
 - Serialisation (`TEntity.Serialize/Deserialize`, `TBlackboard.SaveToStream/LoadFromStream`,
-  `TSerializableEntityComponent`, `TEventbus.InvokeWithRawData`), `TEntity.OwningCommander`, `TTimeManager`
-  (`CreatedTimestamp` uses the engine clock meanwhile): phase 3, with the game loop and client-server sync.
+  `TSerializableEntityComponent`, `TEventbus.InvokeWithRawData`), `TEntity.OwningCommander`, the rest of
+  `TTimeManager` (pause, `TickTack`; `CreatedTimestamp` uses the engine clock meanwhile): phase 3, with the game
+  loop and client-server sync.
