@@ -123,6 +123,7 @@ One file per class, `class_name` = Delphi name (the transpiler then drops its st
 | `t_wela_event_redirecter.gd`, `t_wela_ready_spawned_component.gd` | `TWelaEventRedirecter`, `TWelaReadySpawnedComponent` (`Shared.Wela.pas:832`, `:661`): wela values / readiness from the produced unit's data |
 | `t_entity_manager_component.gd` | `TEntityManagerComponent` (`:276`): `Game.EntityManager`, entity registry and deferred freeing |
 | `../engine/t_timer.gd`, `t_time_manager.gd` | `TTimer` (whole) and the `TTimeManager` clock (`Engine.Helferlein.Windows.pas:985`) |
+| `t_position_component.gd`, `t_movement_component.gd`, `t_pathfinding_component.gd` | `TPositionComponent` (`:98`), `TMovementComponent` (`:108`), `TPathfindingComponent` (`:497`): movement, see "Movement" |
 
 Tests: `tests/test_unit_property_component.gd`, `test_armor_component.gd`, `test_health_component.gd` (incl. the
 real server `Units\Colorless\SmallMeleeGolem`), `test_commander_income.gd` (incl. the real server
@@ -191,6 +192,20 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   `CopyValue` / `CopyIndexedValue` copy once at setup. `TWelaReadySpawnedComponent` writes the wela's
   eiOwnerCommander into that data entity and uses its eiIsReady (legendary checks). A missing data entity reads
   empty (the original crashed).
+- **Movement** (`tests/test_movement_component.gd`, incl. the real server Footman walking on the Single map):
+  `eiMoveTo [RTarget, Range]` starts moving (an equal target while moving returns False, stopping the event);
+  each global `eiIdle` moves by `TTimeManager.ZDiff` (ms, set by the game loop later) × `eiSpeed` (per ms) through
+  `eiMove` (position + front). `udUsePathfinding` (read at eiAfterCreate) picks the mode. Direct: straight to
+  within Range (+ SPATIALEPSILON), server re-syncs the position every 3000 ms. Pathfinding: the server computes a
+  path (max 15, waypoint heuristic only towards a nexus entity) and sends `eiSyncPath [start, target, coords]`;
+  both walk the tile centers, the last tile to the exact target, and stand on reaching the target's *tile*; the
+  server re-paths when the path runs out or its next tile is blocked. The client straightens paths (OptimizePath)
+  and scales its speed to arrive at the same time. `eiStand` reports `eiMoveTargetReached` only if it was moving;
+  eiDie / eiExiled(true) / eiLose stand (the server's eiLose only clears FMoving, silently).
+  `TPathfindingComponent` blocks its tile at eiAfterCreate and on eiStand; changing tile unblocks the old one
+  without blocking the new one; eiStand and freeing drop the computed path. Both find the map as
+  `Game.Map.Pathfinding` and do nothing without it (tests; the original crashed). Not ported: FTarget's network
+  serialisation.
 - `TNexusEarlyVulnerabilityComponent` (`:88`) is not ported: only declared and exposed, nothing creates it
   (listed in `docs/unused-features.md`, with the unused axis and exclude zones).
 - **Time**: `TTimer` reads `TTimeManager.GetFloatingTimestamp()` (ms). Tests freeze it with

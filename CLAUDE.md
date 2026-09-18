@@ -68,3 +68,6 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   polygons, `TWelaTargetConstraint{Grid,BuildTeam,Zone}`) and the pathfinding (A* with time-slot reservations,
   `TPriorityQueue`, `TRingBuffer`); `docs/map.md`. 1331 files compile, 154 tests green, no errors. Next:
   `TPositionComponent` / `TMovementComponent` (see CONTINUE.md).
+- 2026-09-18: Phase 2 step 5 part 11: movement (`TPositionComponent`, `TMovementComponent` direct + pathfinding
+  walk, client path straightening, `TPathfindingComponent` tile blocking; `TTimeManager.ZDiff`); the real Footman
+  walks its path. 1332 files compile, 164 tests green, no errors. Next: pick the next family (see CONTINUE.md).

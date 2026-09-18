@@ -72,8 +72,8 @@ three constraints), `tests/test_pathfinding.gd` (grid, A*, reservations, the dat
 - **Kept quirks** (1:1): `TLane.DistanceToPoint` returns the distance to the last waypoint (its loop overwrites);
   `GetNextWaypoint` ignores the direction; the A* source keeps a stale heuristic from earlier searches; with
   `IgnoreOtherEntities` (units with `udUsePathfinding` off) only permanently blocked tiles are expanded, so such
-  units get a path only to an adjacent target, else an empty one (check what `TMovementComponent` does with that
-  when porting it);
+  units would get a path only to an adjacent target, else an empty one. Unreachable in the game: those units walk
+  straight (`TMovementComponent.IdleDirect`) and never ask for a path;
   `ComputeDebugPath` frees its path, which releases slots even though it reserved none.
 - Skipped, no effect: `TPathfindingTileNeighbour.Create` computes the lane orientation and never uses it.
   Engine options never used: descending priority order (`TPriorityQueue.Order`), `TPathfinding.MaxUnitSize`
@@ -83,5 +83,4 @@ three constraints), `tests/test_pathfinding.gd` (grid, A*, reservations, the dat
 
 - Client debug rendering (`TBuildZone.RenderDebug/RenderEntityGrid/RenderOccupation`, `TLane.DebugRender`),
   the client map (`TClientMap`: terrain, water, vegetation), `TMap.SaveToFile` (map editor).
-- The users: `TMovementComponent` and friends (`BaseConflict.EntityComponents.Shared.pas:660+`), the server's
-  build and spawn logic.
+- The other users: the server's build and spawn logic. (Movement: `docs/entity-core.md`, "Movement".)

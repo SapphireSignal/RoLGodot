@@ -57,6 +57,7 @@ How the list is kept:
 | Resolve by level / resource | `TWelaHelperResolveComponent.ResolveLevel`, `.ResolveResource`, `BaseConflict.EntityComponents.Shared.Wela.pas:2731` | An ability's damage, range, cooldown, spawned unit etc. picked per unit level (or per amount of an integer resource), from values saved under that index. | Yes |
 | Delayed self script | `TWarheadApplyScriptComponent.ApplyToSelfAfterDelay`, same unit `:2345` | Applies a script to the unit itself once a delay is over (e.g. a buff that kicks in N seconds after spawning). | Yes |
 | Float / boolean script parameters | `TWarheadApplyScriptComponent.PassSingleValue`, `.PassBooleanValue` | Passes a fixed float or boolean to the applied script (only integers are passed). | Yes |
+| Paths through other units | `TMovementComponent.ComputeNewPath` `IgnoreOtherEntities`, `BaseConflict.EntityComponents.Shared.pas:671` | A unit that plans a path around the terrain but walks through other units. Unreachable: it is on only for units with `udUsePathfinding` off, and those walk straight (`IdleDirect`) and never compute a path. Broken too (the search then only expands blocked tiles, see `docs/map.md`). | Yes |
 
 ## Developer tools (debug views, not gameplay)
 

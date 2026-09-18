@@ -7,6 +7,9 @@ extends RefCounted
 const L = preload("res://src/runtime/dws/dws_lib.gd")
 
 static var FakeTime = null
+## ZDiff: milliseconds between the last two TickTacks (a single). The original's per-game GameTimeManager.ZDiff;
+## the game loop sets it in phase 3, tests set it by hand.
+static var ZDiff := 0.0
 
 
 ## GetFloatingTimestamp: milliseconds as a double.
