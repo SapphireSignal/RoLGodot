@@ -126,6 +126,8 @@ One file per class, `class_name` = Delphi name (the transpiler then drops its st
 | `t_position_component.gd`, `t_movement_component.gd`, `t_pathfinding_component.gd` | `TPositionComponent` (`:98`), `TMovementComponent` (`:108`), `TPathfindingComponent` (`:497`): movement, see "Movement" |
 | `t_collision_manager_component.gd`, `t_server_collision_manager_component.gd`, `t_collision_component.gd`, `t_wela_ready_enemies_nearby_component.gd` | `TCollisionManagerComponent` (`:443`), `TServerCollisionManagerComponent` (`Server.pas:346`), `TCollisionComponent` (`:474`), `TWelaReadyEnemiesNearbyComponent` (`Shared.Wela.pas:685`): range queries, see "Collision" |
 | `t_wela_targeting*_component.gd`, `t_wela_efficiency*_component.gd`, `../engine/delphi_sort.gd` | `TWelaTargeting{,Radial,RadialAttention,Nexus,Self}Component` and `TWelaEfficiency{,MissingHealth,Created,MaxHealth,DamageType,UnitProperty}Component` (`GameServer/...Server.Welas.pas:40-116`, `:828-885`), Delphi's `TList.Sort`: see "Targeting" |
+| `t_wela_effect*_component.gd`, `t_wela_efficiency_effect_component.gd`, `t_wela_helper_{beacon,init_active_after_game_start,activate_timer}_component.gd` | `TWelaEffect{,Instant,OnlyByChance,Redirecter,PayCost,ActivationAbility,Suicide,TriggerSpellCast,RemoveAfterUse,IncreaseResource,GameEvent,Fire,ResetCooldown,RemoveBeacon}Component`, `TWelaEfficiencyEffectComponent`, `TWelaHelper*` (`...Server.Welas.pas:253-537`, `:781-826`): see "Effects" |
+| `t_warhead*_component.gd` | `TWarhead{,Spotty,SpottyHealth,SpottyDamage,SpottyHeal,SpottyKill,SpottyRemoveBuff,SpottyResource,SpottyWelaStop}Component` (`GameServer/...Server.Warheads.pas:29-215`): see "Warheads" |
 
 Tests: `tests/test_unit_property_component.gd`, `test_armor_component.gd`, `test_health_component.gd` (incl. the
 real server `Units\Colorless\SmallMeleeGolem`), `test_commander_income.gd` (incl. the real server
@@ -246,7 +248,33 @@ has an event probe and a fake `Game.EntityManager` for component tests.
 - **Efficiency** (same test file): `TWelaEfficiency*Component` add to the previous eiEfficiency (epMiddle) in
   their group: missing health, age in ms (`TTimeManager.GetTimeStamp() - CreatedTimestamp`), health cap (Inverse:
   10000 - cap), 1 if the main weapon has a prioritized damage type, 1 if the target has a prioritized unit
-  property (Reverse: 0). The effects (`TWelaEfficiencyEffectComponent`, epFirst) come with the effects family.
+  property (Reverse: 0). The effects (`TWelaEfficiencyEffectComponent`, epFirst) answer first and drop the
+  previous value.
+- **Effects** (server, `tests/test_wela_effects.gd`): `eiFire [ATarget]` called to a wela's group. Order:
+  `TWelaEffectRedirecterComponent` (epFirst, may replace the `var` targets with the ground at the owner),
+  `TWelaEffectOnlyByChanceComponent` (epMiddle, stops the event unless `eiWelaChance >= random`), then every
+  `TWelaEffectComponent` (epLast) whose group the fire was called to runs `Fire` (a groupless fire only reaches
+  groupless effects: `IsLocalCall`). Instant: `eiFireWarhead` to its target group if `eiWarheadTargetPossible` of
+  the called-to group allows; efficiency 1, -1 against upUntargetable. Fire: `eiFire [one target]` per possible
+  target in a ready target group (MultiTargetGroup: first group that fired wins; FireInCreator: all targets on
+  `eiCreator` in `eiCreatorGroup`). PayCost: `eiResourceSubtraction` per cost except `NOT_PAYED_RESOURCES` (a static
+  var here, the game sets it). ActivationAbility writes `eiWelaActive` only on change; its balance = cap test is
+  `RParam.Equal` (type and value). `TWelaHelperInitActiveAfterGameStartComponent` reads `Game.IngameStatus`
+  (`BC.gsPlaying`; no Game = not playing) and frees itself at the first `eiGameTick`; `TWelaHelperActivateTimer`
+  at the first `eiIdle` after its delay. Beacons: `eiWelaSearch [SetUnitProperty]` collects the groups of matching
+  `TWelaHelperBeaconComponent`s (ResetCooldown, RemoveBeacon, the resource warhead use it). The global
+  `eiGameTickTimeToFirstTick` has no blackboard: the game's tick component answers it (phase 3). Not yet: Factory,
+  Replace, Projectile, the link effects and `TWelaEffectLinkPayCostMyselfComponentServer` (they spawn entities or
+  need links), `TWelaEffectStatisticsComponent`, `TWelaEffectWaveSpawnComponent`.
+- **Warheads** (server, `tests/test_warheads.gd`, incl. a real server SmallMeleeGolem hitting another through its
+  instant effect): `eiFireWarhead [ATarget]` in a group runs `FireWarhead` (epLast; RedirectToSelf: the owner).
+  Spotty warheads act on each existing entity target. Health: amount = eiWelaDamage × eiWelaModifier (default 1)
+  of its group (× health balance / cap for the percentage variants); damage asks the owner's `eiWillDealDamage`
+  (non-empty replaces the amount), then the target's `eiTakeDamage`; dealt > 0 → owner `eiDamageDone [dealt,
+  types, target]`; target dead → `eiKillDone [ID]` in its group. Heal: target `eiHeal`, healed > 0 →
+  `eiHealDone`. Kill: `eiKill [owner, owner's commander]` (Exile / Sacrifice first; Remove: only the global
+  `eiDelayedKillEntity`). Resource: amount rounded (banker's) for int resources, see the class comment. Not yet:
+  splash warheads and teleport (need collision queries / spawning).
 - `TNexusEarlyVulnerabilityComponent` (`:88`) is not ported: only declared and exposed, nothing creates it
   (listed in `docs/unused-features.md`, with the unused axis and exclude zones).
 - **Time**: `TTimer` reads `TTimeManager.GetFloatingTimestamp()` (ms). Tests freeze it with

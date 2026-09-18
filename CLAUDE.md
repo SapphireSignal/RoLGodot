@@ -77,3 +77,6 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - 2026-09-18: Phase 2 step 5 part 13: targeting (`TWelaTargeting{,Radial,RadialAttention,Nexus,Self}Component`,
   `DelphiSort` = Delphi's TList.Sort) and `TWelaEfficiency*` (6). 1344 files compile, 183 tests green, no errors.
   Next: the wela effects `TWelaEffect*` (see CONTINUE.md).
+- 2026-09-18: Phase 2 step 5 part 14: wela effects (18: `TWelaEffect*` without spawning/links, efficiency effect,
+  beacon/activation helpers) and spotty warheads (9: damage, heal, kill, resource, remove-buff, wela-stop); a real
+  golem now hits another. 1346 files compile, 221 tests green, no errors. Next: brains (see CONTINUE.md).

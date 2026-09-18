@@ -16,6 +16,7 @@ var _manager: TEntityManagerComponent
 class FakeGame:
 	extends RefCounted
 	var IsShuttingDown := false
+	var IngameStatus := 0  # gsLoading
 	var EntityManager = null
 
 

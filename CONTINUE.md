@@ -66,11 +66,15 @@ Collision is done: the loose quadtree (engine + entity variant), `TCollisionMana
 Targeting is done: `TWelaTargeting{,Radial,RadialAttention,Nexus,Self}Component` and `TWelaEfficiency*`
 (section "Targeting" in `docs/entity-core.md`, `tests/test_wela_targeting.gd`); `src/runtime/engine/delphi_sort.gd`
 is Delphi's `TList.Sort` (use it wherever the original sorts with ties). Global / Rectangle targeting are unused.
-Next: the wela effects (`TWelaEffect*` in `GameServer/BaseConflict.EntityComponents.Server.Welas.pas`, the most
-used stubs; `TWelaEfficiencyEffectComponent` answers eiEfficiency at epFirst, with `GetEfficiencyToTarget` = -1
-unless a subclass overrides it). Start with the base `TWelaEffectComponent` (eiFire) and `TWelaEffectInstantComponent`
-(the SmallMeleeGolem's group 1), then the warheads it fires (`TWarheadSpottyDamageComponent`), then the brains
-(`Server.Brains.pas`: `TBrainApproachComponent`, `TBrainWelaFightComponent`, which answer eiGetLane and call
-eiWelaUpdateTargets / eiWelaValidateTarget).
+Effects and spotty warheads are done: 18 effect/helper classes and 9 warheads (sections "Effects" and "Warheads"
+in `docs/entity-core.md`, `tests/test_wela_effects.gd`, `tests/test_warheads.gd`; the real server SmallMeleeGolem
+now hits another for 8.5). New helpers: `RParam.Equal` (the original's `=`), `BC.gsLoading..gsShutdown`
+(`Game.IngameStatus`, fakes must carry it), `BC.ALL_BUFF_TYPES`. Left of these families (they spawn entities, need
+links or collision queries): `TWelaEffect{Factory,Replace,Projectile}Component`, `TWelaLinkEffect*`,
+`TWelaEffectLinkPayCostMyselfComponentServer`, splash warheads, `TWarheadSpottyTeleportComponent`.
+Next: the brains (`GameServer/BaseConflict.EntityComponents.Server.Brains.pas`): start with `TBrainComponent`,
+`TBrainWelaComponent`, `TBrainWelaFightComponent` and `TBrainApproachComponent` (the SmallMeleeGolem's groups 1 and
+0; they answer eiGetLane, call eiWelaUpdateTargets / eiWelaValidateTarget, fire eiFire), then the think impulses
+(`TThinkImpulse*`) and `TAutoBrain*`. A real-golem test should end with two golems fighting to the death.
 The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.
 When a hand-written file declares `class_name TFoo`, rerun the transpiler: it drops the stub.

@@ -180,3 +180,14 @@ static func AsObject(p) -> Object:
 		return p
 	push_error("RParam.AsObject: %s is not an object" % type_string(typeof(p)))
 	return null
+
+
+## `a = b` (class operator equal): same type and same data; two empties are equal. Port: an int never equals a
+## float (different FType), and 0.0 equals -0.0 (the original compared memory). Arrays raised ENotImplemented.
+static func Equal(a, b) -> bool:
+	if typeof(a) != typeof(b):
+		return false
+	if a is Array:
+		push_error("RParam.equal: Array not implemented yet.")
+		return false
+	return a == b

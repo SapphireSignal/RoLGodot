@@ -9,6 +9,12 @@ const L = preload("res://src/runtime/dws/dws_lib.gd")
 ## APPLICATIONTYPE = {$IFDEF SERVER}nsServer{$ELSE}nsClient{$ENDIF}. The original ran client and server as
 ## separate programs; the port runs both in one process, so each TEventbus carries its side (ApplicationType).
 
+## EnumInGameStatus (BaseConflict.Types.Shared.pas:18): the game's `IngameStatus`.
+enum { gsLoading, gsWarming, gsPlaying, gsShutdown }
+
+## ALL_BUFF_TYPES = [low(EnumBuffType) .. high(EnumBuffType)] (:306)
+const ALL_BUFF_TYPES = [C.btNeutral, C.btPositive, C.btNegative, C.btState, C.btDivine, C.btSummoningSickness]
+
 
 ## RES_INT_RESOURCES : SetResource = [reInteger .. high(EnumResource)]
 static func IsIntResource(ResourceType: int) -> bool:
