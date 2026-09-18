@@ -350,6 +350,13 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   the ends with remote subscriptions at eiAfterCreate (damage redirection at epHigher, before armor). Numbers from the
   turret test: linked at 1500 (LinkTime 500), a volley (3 splash + 15) every 500 ms from 2000, mana 19 → 0 at 20500,
   38 volleys, then the link breaks.
+- **Combat modifiers** (server, `tests/test_combat_modifiers.gd`, incl. real Blind.dws on a golem, the VoidSkeleton's
+  bonus damage, Bleeding.dws and the ObserverDrone): `TWelaReadyNthComponent` (every readiness check counts),
+  `TWelaReadyEntityNearbyComponent` (asks the targeting group's eiWelaUpdateTargets), `TModifierMultiplyDealtDamageComponent`
+  (eiWillDealDamage epMiddle, chains through Previous), `TModifierBlindedComponent` (a fire to the value group rolls,
+  random <= 0.5 misses: stops eiFireWarhead, marks projectiles upProjectileWillMiss), `TBuffTakenDamageMultiplierComponent`
+  (eiTakeDamage epLow = after armor; Flat, Dodge, Reflect, ApplyOnHeal on eiHeal epLower). Delphi's `random` is
+  Godot's RNG; tests seed it and replay the rolls.
 - `TNexusEarlyVulnerabilityComponent` (`:88`) is not ported: only declared and exposed, nothing creates it
   (listed in `docs/unused-features.md`, with the unused axis and exclude zones).
 - **Time**: `TTimer` reads `TTimeManager.GetFloatingTimestamp()` (ms). Tests freeze it with

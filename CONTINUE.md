@@ -12,7 +12,7 @@ Hand-off note for the next session. Read `CLAUDE.md` first, then this.
 - Never read or write the owner's other repos.
 
 ## Where we are
-Phases 0 and 1 done, phase 2 steps 1-4 done, step 5 under way (entity-local families done up to spawning) (see `docs/port-plan.md`). Verified facts about the original are in
+Phases 0 and 1 done, phase 2 steps 1-4 done, step 5 under way (entity-local families done up to links and combat modifiers) (see `docs/port-plan.md`). Verified facts about the original are in
 `docs/original-architecture.md`. If `reference/` is missing, run `tools\fetch_reference.ps1` (~800 MB download,
 ~3 GB checked out; run it in the background).
 
@@ -84,14 +84,16 @@ Spawning is done: `TServerEntityManagerComponent` (the server game's EntityManag
 `TWarheadSpottyTeleportComponent` (sections "Spawning" and "Splash and teleport" in `docs/entity-core.md`,
 `tests/test_spawning.gd`, `tests/test_splash_teleport.gd`). Old test fakes that kill real units now use the server
 entity manager (souls spawn on death). `tools/run_tests.ps1` now fails on any `SCRIPT ERROR` in the test log.
-Next: the link family: `TWelaLinkEffectComponent` (establishes / breaks link entities), `TWelaLinkEffectUnitPropertyComponent`,
-`TLinkEventRedirecter`, `TLinkEffectDamageRedirectionComponent`, `TLinkEffectFireAtProducedUnitsComponent`,
-`TLinkBrainComponent` (`GameServer/...Server.pas:150`), `TWelaEffectLinkPayCostMyselfComponentServer`
-(`...Server.Welas.pas:570-735`). Then the small server rest from the stub list (`src/runtime/dws/stubs/`):
-`TModifier{Blinded,MultiplyDealtDamage}Component`, `TBuffTakenDamageMultiplierComponent`, `TWelaReady{Nth,EntityNearby}Component`,
-`TWelaEffect{IncomePayout,Statistics,WaveSpawn}Component`, `T{Server,}PrimaryTargetComponent`, `TSuicideOnGameEndComponent`,
-`TStatisticsUnitComponent`, `TServerCardPlayStatisticsComponent`; then commander / scenario / tutorial / sandbox
-directors, and phase 3 (the game loop). A real test for links: a real link script (e.g. `Links\...` used by a
-linking unit) establishing, draining and breaking.
+Links are done: the seven link classes (section "Links" in `docs/entity-core.md`, `tests/test_links.gd`, incl. a real
+SmallCasterGolem's Crystal Power link and a real GatlingTurret firing until out of ammo). New: `DelphiDictionary`
+(`src/runtime/engine/`, Delphi's TDictionary with its slot order and remove-while-walking skip; use it wherever the
+original walks or edits a TDictionary) and `RTarget.Hash`.
+The combat modifiers are done: `TModifier{Blinded,MultiplyDealtDamage}Component`, `TBuffTakenDamageMultiplierComponent`,
+`TWelaReady{Nth,EntityNearby}Component` (section "Combat modifiers", `tests/test_combat_modifiers.gd`; random rolls are
+tested by seeding Godot's RNG and replaying the rolls).
+Next, the small server rest from the stub list (`src/runtime/dws/stubs/`): `TWelaEffect{IncomePayout,Statistics,WaveSpawn}Component`,
+`T{Server,}PrimaryTargetComponent`, `TSuicideOnGameEndComponent`, `TStatisticsUnitComponent`,
+`TServerCardPlayStatisticsComponent`; then commander / scenario / tutorial / sandbox directors, and phase 3 (the
+game loop).
 The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.
 When a hand-written file declares `class_name TFoo`, rerun the transpiler: it drops the stub.

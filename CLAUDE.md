@@ -88,3 +88,7 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   replace / projectile effects, `TProjectileEventRedirecter`, spawner and capture-point brains) and splash / teleport
   warheads; a real spawner spawns its squad, a dying golem's soul flies to a gatherer, a real tower splashes. The test
   runner now fails on runtime script errors. 1356 files compile, 261 tests green, no errors. Next: links (CONTINUE.md).
+- 2026-09-18: Phase 2 step 5 parts 17-18: links (7 classes + `DelphiDictionary`, Delphi's TDictionary, and
+  `RTarget.Hash`; a real caster golem's Crystal Power link, a real gatling turret firing until out of ammo) and the
+  combat modifiers (blinded, dealt / taken damage multipliers, Nth / entity-nearby ready). 1361 files compile, 284
+  tests green, no errors. Next: the small server rest from the stub list (see CONTINUE.md).

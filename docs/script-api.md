@@ -470,7 +470,7 @@ Delphi overloads share one GDScript method: see the declarations for their param
 
 ## TServerGame (GameServer/BaseConflict.Game.Server.pas:93)
 
-`ScenarioDirector :=` S, `ScenarioDirector` S, `ServerEntityManager` S
+`ScenarioDirector` S, `ScenarioDirector :=` S, `ServerEntityManager` S
 
 ## TShowOnMinimapComponent (BaseConflict.EntityComponents.Client.GUI.pas:681)
 
