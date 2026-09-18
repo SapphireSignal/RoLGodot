@@ -22,7 +22,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 ## Docs
 - `docs/original-architecture.md`: how the original is built, file formats, gotchas.
 - `docs/port-plan.md`: phases 0-9. `docs/gap-list.md`: user-visible behaviours and their status.
-- `docs/unused-features.md`: things the original can do but never uses; add every one found while porting.
+- `docs/unused-features.md`: things the original can do but never uses (whole classes: `tools/find_unused_classes.py`);
+  add every unused option found while porting.
 - `docs/scripts.md`: how the original runs scripts, the construct survey, the transpiler and its output.
 - `docs/script-api.md` (generated): every class member the scripts use, per class. Phase 2 work list.
 - `docs/entity-core.md`: TEntity/eventbus/blackboard semantics and the conventions for porting components.
