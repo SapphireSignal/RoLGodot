@@ -6,4 +6,5 @@ if not exist "%GODOT%" (
   pause
   exit /b 1
 )
-start "" "%GODOT%" --path "%~dp0"
+rem %~dp0 ends in a backslash, and \" would escape the closing quote: the trailing . keeps the path intact.
+start "" "%GODOT%" --path "%~dp0."
