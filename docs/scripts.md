@@ -76,8 +76,56 @@ Pascal is case-insensitive and the scripts rely on it: 14 identifiers appear in 
    `# <file>:<line>` trail so every line traces back to the source.
 5. Anything the parser does not know stops the conversion with file:line; nothing is skipped silently.
 
+## What the scripts can see (symbol table, `tools/dws/symbols.py`)
+
+Scanned from the interface sections of the Delphi sources (game folders win over `Engine/`, which holds an older
+`TEntity`): `ScriptManager.ExposeClass` (329 classes), `ExposeType` (enums, records), `ExposeConstant` (84),
+`ExposeFunction('Game')`. Members visible to a script = public/published members of the class and its
+ancestors; root classes get `TObject` (`Create`, `Free`, `ClassName`). Two classes are built by hand with
+`ScriptManager.CustomExpose` in `BaseConflict.Entity.pas` and **replace** the Delphi class on the script side:
+`TBlackboard` (`SetValue`, `GetValue`, `SetIndexedValue`, `GetIndexedValue`, `SetIndexedValues`) and `TEventbus`
+(`Trigger`, `TriggerGrouped`, `Write`, `WriteGrouped`), plus `RParam`.
+
+## How the output looks (`tools/dws/emitter.py`)
+
+| DWScript | GDScript |
+| --- | --- |
+| script | `src/content/scripts/{client,server}/<path>.gd`, `extends RefCounted`; globals → member vars, routines → methods with the original names; includes are inlined (templates appear in every script that includes them, as in the original) |
+| `TFoo.Create(E)` / `CreateGrouped` (constructor) | `TFoo.new().Create(E)`: the runtime's constructors are instance methods returning `self` |
+| `.FireAtGround` (parameterless method) | `.FireAtGround()`; the symbol table decides method vs property |
+| names in any case | the declared spelling (`eiAttentionRange` → `C.eiAttentionrange`, as in the Delphi enum) |
+| enum values, exposed constants | `C.<name>` (`src/runtime/dws/dws_const.gd`, generated) |
+| Math.dws, built-ins | `L.<name>` (`src/runtime/dws/dws_lib.gd`, hand-written): `L.i/ii/f/ff`, `L.Div`, `L.Round` (half to even), `L.Random`, `L.Game()` ... |
+| `RVector3.Create(x, y, z)`, `RVector2`, `RIntVector2` | `Vector3(x, y, z)` etc.; `.X` on them → `.x` |
+| `/` | float division (`float(a) / b` unless an operand is a float) |
+| `div`, `mod`, `and`/`or`/`not` on integers | `L.Div`, `%`, `&`/`|`/`~`; on booleans `and`/`or`/`not` |
+| `Result`, `FunctionName := x` | local `var Result`, `return Result` at the end (no script uses `exit`) |
+| `for i := a to b do` | `for _for_i in range(a, (b) + 1): i = _for_i` (bounds evaluated once, like Pascal) |
+| `array + [x]` | Array concatenation (dynamic arrays); other set operators stop the conversion |
+| int literal where a float is declared | `1.0` (also inside `[...]` passed to `TArray<single>`) |
+| `{@UBL_Health} 100` | `100`, with `{@UBL_Health}` in the line's trailing comment |
+| every statement | trailing `# <line>`; every routine a `# <file>:<line>` header |
+
+Value types get GDScript type hints (int, float, bool, String, Vector*, Array) so Pascal's conversions happen;
+objects stay untyped. GDScript does not check member names on objects at compile time, so the emitter checks
+every member against the symbol table instead, using the static types it can follow (declared types,
+constructor results, method result types).
+
+`AI/MegaRootDude.dws` assigns an undeclared `ArcherDrop` in `Prepare`: the original **server** cannot compile
+it. Its server output is a file with `const ORIGINAL_COMPILE_ERROR` so the runtime fails where the original
+did (`ORIGINAL_COMPILE_ERRORS` in `tools/transpile_scripts.py`).
+
+Also generated: `src/runtime/dws/stubs/<Class>.gd` (a `class_name` stub for each referenced Delphi class and
+its ancestors, skipped once a hand-written file in `src/` declares the name; phase 2 replaces them),
+`src/content/scripts/script_index.gd` (lower-case original path → file, per side) and `docs/script-api.md`
+(every member the scripts use, per declaring class: the phase 2 work list). `.uid` files of generated scripts
+are git-ignored.
+
 ## Tools
 
-- `tools/dws/lexer.py`: tokenizer (keeps `{$...}` directives and `{@...}` markers as tokens).
-- `tools/dws/preprocess.py`: `#define`, conditionals, includes, as in the original.
+- `python tools/transpile_scripts.py`: regenerates everything above (`--check`: verify it is up to date,
+  `--only X`: just scripts whose path contains X). Run it after changing anything in `tools/dws/`.
+- `tools/dws/lexer.py`, `preprocess.py`, `parser.py`, `symbols.py`, `emitter.py`: the pipeline.
+- `tools/tests/test_dws.py`: transpiler unit tests on snippets (no `reference/` needed); `tests/test_scripts.gd`
+  runs generated code. Both run in `tools/run_tests.ps1`.
 - `tools/survey_scripts.py`: the survey above; exit code 1 if any file fails to tokenize or preprocess.

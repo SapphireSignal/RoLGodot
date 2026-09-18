@@ -22,7 +22,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 ## Docs
 - `docs/original-architecture.md`: how the original is built, file formats, gotchas.
 - `docs/port-plan.md`: phases 0-9. `docs/gap-list.md`: user-visible behaviours and their status.
-- `docs/scripts.md`: how the original runs scripts, the construct survey, transpiler decisions.
+- `docs/scripts.md`: how the original runs scripts, the construct survey, the transpiler and its output.
+- `docs/script-api.md` (generated): every class member the scripts use, per class. Phase 2 work list.
 
 ## Status
 - 2026-09-18: Phase 0 (foundation) done: source pinned, reference cloned, architecture researched, Godot
@@ -30,3 +31,6 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - 2026-09-18: Phase 1 steps 1-2 done: script engine read, lexer + preprocessor (`tools/dws/`), survey
   (`tools/survey_scripts.py`, all 509 scripts preprocess for CLIENT and SERVER), `docs/scripts.md`.
   Next: parser + GDScript emitter (step 3).
+- 2026-09-18: Phase 1 done: `python tools/transpile_scripts.py` turns all 500 scripts × 2 sides into
+  `src/content/scripts/`, plus `dws_const.gd`, class stubs and `docs/script-api.md` (phase 2 work list).
+  1277 files compile, tests green. Next: phase 2, entity core (see CONTINUE.md).

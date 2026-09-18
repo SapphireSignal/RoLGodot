@@ -60,8 +60,8 @@ Folders: `Units/{White,Black,Green,Blue,Colorless,Golems,Neutral,Scenario}`, `Sp
 ## Cards
 
 `BaseConflict.Constants.Cards.pas` registers every card by GUID:
-`CardInfoManager.AddCard(guid, TCardInfo.Create(type, colors, scriptPath, n))`, with type `ctSpawner`,
-`ctDrop`, ... **?** meaning of the last argument (league / tier). The sandbox deck the local game server hands
+`CardInfoManager.AddCard(guid, TCardInfo.Create(CardType, Colors, Filename, Techlevel))`, with type `ctSpawner`,
+`ctDrop`, ...; the last argument is the card's tech level / tier (declaration at line 94). The sandbox deck the local game server hands
 out is in `GameServer/BaseConflict.Game.Server.pas` (`Commander.Cards.Add(...)`).
 
 ## Assets and formats
@@ -85,5 +85,4 @@ Gotchas:
   on case-insensitive Windows; converters must resolve paths case-insensitively and emit one canonical case.
 
 ## Open questions (**?**)
-- `TCardInfo.Create` last argument.
 - Networking: the port runs the game-server simulation in-process for local play. Multiplayer later, if wanted.

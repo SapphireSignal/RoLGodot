@@ -19,6 +19,18 @@ function Invoke-Godot([string[]]$GodotArgs, [string]$LogName) {
     return $p.ExitCode
 }
 
+# Transpiler unit tests; with reference/ present also check the generated scripts are up to date
+$pyCode = 0
+& python -m unittest discover -s (Join-Path $root 'tools\tests')
+if ($LASTEXITCODE -ne 0) { $pyCode = 1 }
+if (Test-Path (Join-Path $root 'reference\rise-of-legions\Scripts')) {
+    & python (Join-Path $root 'tools\transpile_scripts.py') --check
+    if ($LASTEXITCODE -ne 0) { $pyCode = 1 }
+} else {
+    Write-Host 'reference/ missing: skipped the generated-scripts check'
+}
+
 $null = Invoke-Godot @('--import') 'import.log'
 $code = Invoke-Godot @('--script', 'res://tests/run_tests.gd') 'tests.log'
+if ($code -eq 0) { $code = $pyCode }
 exit $code

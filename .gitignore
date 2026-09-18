@@ -3,6 +3,9 @@
 
 # Godot
 .godot/
+# uids of generated scripts: nothing refers to them by uid, Godot recreates them on import
+/src/content/scripts/**/*.uid
+/src/runtime/dws/stubs/*.uid
 *.import.tmp
 /android/
 

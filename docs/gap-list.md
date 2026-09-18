@@ -22,6 +22,7 @@ Status: ⬜ missing · 🟨 partial · ✅ matches original (checked against the
 | Minimap | `BaseConflict.Classes.MiniMap.pas` | ⬜ |
 | Unit skins (Default, Machine, Underworld, Woodlands, ...) | mesh folders, `Entity.SkinID` | ⬜ |
 | Tooltips with ability keywords | `TTooltipUnitAbilityComponent` | ⬜ |
+| Scripted AI `MegaRootDude` never runs: its server script does not compile (undeclared `ArcherDrop`); the port keeps the error | `Scripts/AI/MegaRootDude.dws` | 🟨 transpiled as the error; runtime reporting in phase 2 |
 
 ## Presentation
 | Behaviour | Source | Status |

@@ -12,20 +12,22 @@ Hand-off note for the next session. Read `CLAUDE.md` first, then this.
 - Never read or write the owner's other repos.
 
 ## Where we are
-Phase 0 done (see `docs/port-plan.md`). Verified facts about the original are in
+Phases 0 and 1 done (see `docs/port-plan.md`). Verified facts about the original are in
 `docs/original-architecture.md`. If `reference/` is missing, run `tools\fetch_reference.ps1` (~800 MB download,
 ~3 GB checked out; run it in the background).
 
-Phase 1 steps 1-2 done: `docs/scripts.md` holds how the original compiles and runs scripts (defines,
-`#define` quirk, includes, `InheritsFrom`), the construct survey and the transpiler decisions (one output per
-side, canonical name spelling, `Math.dws` hand-ported). Front end: `tools/dws/lexer.py`,
-`tools/dws/preprocess.py`; survey: `python tools/survey_scripts.py --json logs/script_survey.json`.
+Phase 1: `docs/scripts.md` explains the pipeline and the output. `python tools/transpile_scripts.py` regenerates
+`src/content/scripts/{client,server}/` (committed), `src/runtime/dws/dws_const.gd`, the class stubs in
+`src/runtime/dws/stubs/` and `docs/script-api.md`. `tools/run_tests.ps1` runs the transpiler unit tests, checks
+the generated files are up to date (when `reference/` exists) and runs the Godot compile sweep + tests.
 
-## Next: phase 1, the script transpiler
-3. Write `tools/dws/parser.py` (AST for the subset in `docs/scripts.md`) and `tools/transpile_scripts.py`:
-   preprocess per side → parse → emit `src/content/scripts/{client,server}/<path>.gd`, keeping entry points.
-   Unsupported constructs stop with file:line, never skipped silently. Build the symbol table for canonical
-   spellings from the Pascal declarations of the exposed classes and enums.
-4. Test: every generated file passes the compile sweep (it needs stub component classes, which become the
-   phase 2 work list: the survey's `classes` and `members`).
-Open question to resolve on the way: the last argument of `TCardInfo.Create` in `BaseConflict.Constants.Cards.pas`.
+## Next: phase 2, the entity core
+Port by hand from `BaseConflict.Entity.pas` (method by method, Delphi names kept):
+1. `TEntity`, `TBlackboard` (script side = the `CustomExpose` methods, see `docs/scripts.md`), `TEventbus`
+   (events, priorities, groups), `TEntityComponent` (constructors `Create`/`CreateGrouped` are instance methods
+   returning `self`: the transpiler emits `TFoo.new().CreateGrouped(...)`).
+2. The script runner: `CreateFromScript` with `InheritsFrom` / `InheritsFromPreceding`, `ApplyScript`,
+   `ApplyScriptReturnGroups`, `L.game_resolver`, the `ORIGINAL_COMPILE_ERROR` files (`script_index.gd` maps paths).
+3. Unit tests mirroring the Pascal behaviour (event order, grouped values).
+When a hand-written file declares `class_name TFoo`, rerun the transpiler: it drops the stub.
+Delphi overloads (e.g. `TBlackboard.SetValue`) need one GDScript method that dispatches on the value's type.

@@ -92,6 +92,14 @@ def tokenize(text: str, file: str = '<string>') -> list[Token]:
                         parts.append(text[j])
                         j += 1
                     i = j + 1
+                elif text.startswith('#$', i):   # #$0D: hex char code (Delphi sources)
+                    j = i + 2
+                    while j < n and text[j] in '0123456789abcdefABCDEF':
+                        j += 1
+                    if j == i + 2:
+                        raise LexError(f'{file}:{line}: stray #$')
+                    parts.append(chr(int(text[i + 2:j], 16)))
+                    i = j
                 else:
                     j = i + 1
                     while j < n and text[j].isdigit():
