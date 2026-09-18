@@ -53,10 +53,13 @@ and `TTimer`/`TTimeManager` clock in `src/runtime/engine/` (tests freeze time wi
 `TWelaHelperResolveComponent`, `TWarhead{,Link}ApplyScriptComponent` (`tests/test_warhead_apply_script.gd`);
 `TEntityDataCache` (`src/runtime/classes/`, carried by the global bus as `TEventbus.EntityDataCache`),
 `TWelaEventRedirecter`, `TWelaReadySpawnedComponent` (`tests/test_entity_data_cache.gd`, incl. the real
-`Commander\CommanderMethods` AddDrop). `Shared.Wela.pas` is now done except what waits for the map / targeting.
-Next: the map's build zones (needed by `TWelaTargetConstraint{Grid,BuildTeam,Zone}`,
-`TEntityManagerComponent.OnSetGridFieldBlocking` / `OnReplaceEntity`, `RTarget.GetBuildZone`, build targets):
-find `TBuildZone` / `TMap` in the original first and check what they pull in.
-`TPositionComponent`/`TMovementComponent` need the map and pathfinding, so check first what they pull in.
+`Commander\CommanderMethods` AddDrop). `Shared.Wela.pas` is now done except what waits for targeting.
+The map and pathfinding are done: read `docs/map.md` (maps are converted by `tools/convert_maps.py` into
+`src/content/maps/`, build zones come from the scenario scripts, lanes are hard-coded, A* ties break last in,
+first out). All 21 used target constraints are ported.
+Next: `TPositionComponent` / `TMovementComponent` and friends (`BaseConflict.EntityComponents.Shared.pas:660+`,
+they call `Map.Pathfinding.ComputePath` etc.): read them first and check what else they pull in (eiSyncPath,
+unit data such as `udUsePathfinding`, the brains); pick the next family from `docs/script-api.md` if they need
+the game loop.
 The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.
 When a hand-written file declares `class_name TFoo`, rerun the transpiler: it drops the stub.

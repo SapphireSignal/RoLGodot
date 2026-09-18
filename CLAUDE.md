@@ -27,6 +27,7 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - `docs/scripts.md`: how the original runs scripts, the construct survey, the transpiler and its output.
 - `docs/script-api.md` (generated): every class member the scripts use, per class. Phase 2 work list.
 - `docs/entity-core.md`: TEntity/eventbus/blackboard semantics and the conventions for porting components.
+- `docs/map.md`: map data (zones), build zones, lanes, pathfinding, the priority-queue tie rule.
 
 ## Status
 - 2026-09-18: Phase 0 (foundation) done: source pinned, reference cloned, architecture researched, Godot
@@ -63,3 +64,7 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - 2026-09-18: Phase 2 step 5 parts 7-8: `TWelaHelperResolveComponent`, `TWarhead{,Link}ApplyScriptComponent`;
   `TEntityDataCache` (on the global bus) + `TWelaEventRedirecter` + `TWelaReadySpawnedComponent`. 1312 files
   compile, 137 tests green, no errors. Next: the map's build zones (see CONTINUE.md).
+- 2026-09-18: Phase 2 step 5 parts 9-10: the map (`TMap` from converted `.bcm` JSON, build zones, lanes, zone
+  polygons, `TWelaTargetConstraint{Grid,BuildTeam,Zone}`) and the pathfinding (A* with time-slot reservations,
+  `TPriorityQueue`, `TRingBuffer`); `docs/map.md`. 1331 files compile, 154 tests green, no errors. Next:
+  `TPositionComponent` / `TMovementComponent` (see CONTINUE.md).

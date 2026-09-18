@@ -1,0 +1,133 @@
+{
+ "Source": "Maps/Single/Single.bcm",
+ "TeamCount": 2,
+ "PlayerCount": 4,
+ "MapBoundaries": {
+  "Left": -150,
+  "Top": -150,
+  "Right": 150,
+  "Bottom": 150
+ },
+ "Zones": {
+  "Spell1": [
+   {
+    "Subtractive": false,
+    "Closed": true,
+    "Nodes": [
+     [
+      -104,
+      -11
+     ],
+     [
+      104,
+      -11
+     ],
+     [
+      104,
+      -35
+     ],
+     [
+      -104,
+      -35
+     ]
+    ]
+   }
+  ],
+  "Camera": [
+   {
+    "Subtractive": false,
+    "Closed": true,
+    "Nodes": [
+     [
+      -107,
+      0
+     ],
+     [
+      -107,
+      -56
+     ],
+     [
+      107,
+      -56
+     ],
+     [
+      107,
+      0
+     ]
+    ]
+   }
+  ],
+  "Drop": [
+   {
+    "Subtractive": false,
+    "Closed": true,
+    "Nodes": [
+     [
+      -104,
+      -12
+     ],
+     [
+      104,
+      -12
+     ],
+     [
+      104,
+      -34
+     ],
+     [
+      -104,
+      -34
+     ]
+    ]
+   }
+  ],
+  "Walkzone": [
+   {
+    "Subtractive": false,
+    "Closed": true,
+    "Nodes": [
+     [
+      -107,
+      -36
+     ],
+     [
+      107,
+      -36
+     ],
+     [
+      107,
+      -10
+     ],
+     [
+      -107,
+      -10
+     ]
+    ]
+   }
+  ],
+  "Spell2": [
+   {
+    "Subtractive": false,
+    "Closed": true,
+    "Nodes": [
+     [
+      -104,
+      -11
+     ],
+     [
+      104,
+      -11
+     ],
+     [
+      104,
+      -35
+     ],
+     [
+      -104,
+      -35
+     ]
+    ]
+   }
+  ]
+ }
+}

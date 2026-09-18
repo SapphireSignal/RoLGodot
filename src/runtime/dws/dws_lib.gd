@@ -69,6 +69,25 @@ static func Trunc(x: float) -> int:
 	return int(x)
 
 
+## System.Math.SameValue(A, B: Single; Epsilon = 0): with Epsilon 0 values within a relative 1E-4
+## (SingleResolution = 1E-7 * FuzzFactor 1000, at least 1E-4 absolute) count as the same.
+static func SameValue(A: float, B: float, Epsilon: float = 0.0) -> bool:
+	if Epsilon == 0:
+		Epsilon = maxf(minf(absf(A), absf(B)) * 1E-4, 1E-4)
+	if A > B:
+		return (A - B) <= Epsilon
+	return (B - A) <= Epsilon
+
+
+## System.Math.CompareValue(A, B: Single; Epsilon = 0): -1 (LessThanValue), 0 (EqualsValue) or 1 (GreaterThanValue).
+static func CompareValue(A: float, B: float, Epsilon: float = 0.0) -> int:
+	if SameValue(A, B, Epsilon):
+		return 0
+	if A < B:
+		return -1
+	return 1
+
+
 ## Random without arguments: a float in [0, 1).
 static func Random() -> float:
 	return randf()

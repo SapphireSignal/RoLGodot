@@ -115,7 +115,7 @@ One file per class, `class_name` = Delphi name (the transpiler then drops its st
 | `t_modifier_*component.gd` | `TModifier{,DamageType,WelaTargetCount,Resource,MultiplyCooldown,ArmorType,WelaDamage,WelaRange,Cost}Component` (`Shared.Wela.pas:32-207`) |
 | `t_wela_ready_*component.gd` | `TWelaReady{,Cost,Cooldown,AfterGameStart,AfterGameEvent,ResourceCompare,UnitProperty,Creator,EventCompare}Component` (`Shared.Wela.pas:575-767`) |
 | `../types/t_game_timer.gd` | `TGameTimer` (`BaseConflict.Types.Shared.pas:54`): TTimer with `StartingTime` |
-| `t_wela_target_constraint_*component.gd`, `t_wela_trigger_check_*component.gd` | `TWelaTargetConstraint*` (18 of 21 used) and `TWelaTriggerCheck{TakeDamage,NotSelf,TakeDamageThreshold}Component` (`Shared.Wela.pas:222-560`) |
+| `t_wela_target_constraint_*component.gd`, `t_wela_trigger_check_*component.gd` | `TWelaTargetConstraint*` (all 21 used; Grid/BuildTeam/Zone in `docs/map.md`) and `TWelaTriggerCheck{TakeDamage,NotSelf,TakeDamageThreshold}Component` (`Shared.Wela.pas:222-560`) |
 | `../types/r_target.gd`, `a_target.gd`, `r_target_validity.gd` | `RTarget`, `ATarget` helpers, `RTargetValidity` (`BaseConflict.Types.Target.pas`) |
 | `t_wela_helper_resolve_component.gd` | `TWelaHelperResolveComponent` (`Shared.Wela.pas:941`): wela values per team / level / tier |
 | `t_warhead_apply_script_component.gd`, `t_warhead_link_apply_script_component.gd` | `TWarheadApplyScriptComponent` / `TWarheadLinkApplyScriptComponent` (`Shared.Wela.pas:855`, `:918`): apply a script to targets / link destinations |
