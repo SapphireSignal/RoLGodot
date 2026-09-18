@@ -24,7 +24,7 @@ class FakeEntityManager:
 	extends RefCounted
 	var Nexus = null
 
-	func TryGetNexusNextEnemy(_Position, _TeamID):
+	func TryGetNexusNextEnemy(_Position, _TeamID = 0):
 		return Nexus
 
 

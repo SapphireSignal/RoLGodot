@@ -15,6 +15,14 @@ enum { gsLoading, gsWarming, gsPlaying, gsShutdown }
 ## ALL_BUFF_TYPES = [low(EnumBuffType) .. high(EnumBuffType)] (:306)
 const ALL_BUFF_TYPES = [C.btNeutral, C.btPositive, C.btNegative, C.btState, C.btDivine, C.btSummoningSickness]
 
+## THINK_TIME_INTERVAL (:62): ms between two thoughts of a TThinkImpulseTimerComponent.
+const THINK_TIME_INTERVAL = 250
+## UNIT_PROPERTIES_PREVENT_THINKING / _MOVEMENT (:294-295), sorted like DSet.Make.
+static var UNIT_PROPERTIES_PREVENT_THINKING: Array = DSet.Make([C.upSummoningSickness, C.upStunned, C.upFrozen,
+	C.upBanished, C.upPetrified])
+static var UNIT_PROPERTIES_PREVENT_MOVEMENT: Array = DSet.Make([C.upRooted, C.upGrounded, C.upLifted,
+	C.upImmobilized])
+
 
 ## RES_INT_RESOURCES : SetResource = [reInteger .. high(EnumResource)]
 static func IsIntResource(ResourceType: int) -> bool:

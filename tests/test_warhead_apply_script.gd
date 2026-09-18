@@ -20,6 +20,7 @@ class FakeBuildZones:
 class FakeMap:
 	extends RefCounted
 	var BuildZones := FakeBuildZones.new()
+	var Lanes := TLaneManager.new().Create()
 
 
 class FakeGame:

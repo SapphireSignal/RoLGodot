@@ -46,7 +46,7 @@ class FakeEntityManager:
 	extends RefCounted
 	var Entities := {}
 
-	func TryGetNexusNextEnemy(_Position, _TeamID):
+	func TryGetNexusNextEnemy(_Position, _TeamID = 0):
 		return null
 
 	func TryGetEntityByID(ID: int):

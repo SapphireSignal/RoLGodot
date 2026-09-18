@@ -15,7 +15,7 @@ var _unit: TEntity
 class FakeEntityManager:
 	extends RefCounted
 
-	func TryGetNexusNextEnemy(_Position, _TeamID):
+	func TryGetNexusNextEnemy(_Position, _TeamID = 0):
 		return null
 
 

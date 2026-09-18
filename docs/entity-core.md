@@ -128,6 +128,7 @@ One file per class, `class_name` = Delphi name (the transpiler then drops its st
 | `t_wela_targeting*_component.gd`, `t_wela_efficiency*_component.gd`, `../engine/delphi_sort.gd` | `TWelaTargeting{,Radial,RadialAttention,Nexus,Self}Component` and `TWelaEfficiency{,MissingHealth,Created,MaxHealth,DamageType,UnitProperty}Component` (`GameServer/...Server.Welas.pas:40-116`, `:828-885`), Delphi's `TList.Sort`: see "Targeting" |
 | `t_wela_effect*_component.gd`, `t_wela_efficiency_effect_component.gd`, `t_wela_helper_{beacon,init_active_after_game_start,activate_timer}_component.gd` | `TWelaEffect{,Instant,OnlyByChance,Redirecter,PayCost,ActivationAbility,Suicide,TriggerSpellCast,RemoveAfterUse,IncreaseResource,GameEvent,Fire,ResetCooldown,RemoveBeacon}Component`, `TWelaEfficiencyEffectComponent`, `TWelaHelper*` (`...Server.Welas.pas:253-537`, `:781-826`): see "Effects" |
 | `t_warhead*_component.gd` | `TWarhead{,Spotty,SpottyHealth,SpottyDamage,SpottyHeal,SpottyKill,SpottyRemoveBuff,SpottyResource,SpottyWelaStop}Component` (`GameServer/...Server.Warheads.pas:29-215`): see "Warheads" |
+| `t_think_*_component.gd`, `t_brain*_component.gd`, `t_auto_brain*.gd`, `../classes/t_delayed_event_handler.gd`, `../types/r_commander_ability_target.gd` | every used class of `GameServer/...Server.Brains.pas` (8 think impulses / block, 21 brains, 20 auto-brains), `TDelayedEventHandler` (`...Classes.Server.pas:93`), `RCommanderAbilityTarget` (`BaseConflict.Types.Target.pas:115`): see "Brains" |
 
 Tests: `tests/test_unit_property_component.gd`, `test_armor_component.gd`, `test_health_component.gd` (incl. the
 real server `Units\Colorless\SmallMeleeGolem`), `test_commander_income.gd` (incl. the real server
@@ -275,6 +276,30 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   `eiHealDone`. Kill: `eiKill [owner, owner's commander]` (Exile / Sacrifice first; Remove: only the global
   `eiDelayedKillEntity`). Resource: amount rounded (banker's) for int resources, see the class comment. Not yet:
   splash warheads and teleport (need collision queries / spawning).
+- **Brains** (server, `tests/test_brains.gd`, incl. two real server SmallMeleeGolems fighting to the death): a
+  think impulse triggers `eiThink` then `eiThinkChain` in its group (groupless for most units). eiThink (epMiddle)
+  runs every brain that `CanThink` (no `UNIT_PROPERTIES_PREVENT_THINKING` unless passive, eiWelaActive of its group
+  not false, ThinksLocal: a local call). The chain runs brains by priority until one returns False: action
+  (epHigher, locked while a delayed shot waits and for max(1, action point, action duration)), targeting brains
+  (epHigh; preemptive ones epMiddle), selftarget / saved / ground / targetless (epMiddle), approach / wait / flee
+  (epLow), overwatch (epLower), lane (epLast, always consumes). Passive brains (all auto-brains) run their chain
+  inside eiThink. Impulses: Timer (every `THINK_TIME_INTERVAL` 250 ms from creation, at once after
+  eiMoveTargetReached; not exiled or dead), Once (first idle, or at eiAfterCreate / eiDeploy; frees itself), Now,
+  GameTick, Immediate, Fire (eiFire in its own group), TimerCooldown (eiCooldown). Welas fire `eiFire`, or
+  `eiPreFire` when Blocking / Preemptive: `TBrainActionComponent` then fires at `eiWelaActionpoint` through a
+  `TDelayedEventHandler` in `Game.DelayedEvents` (a `TIntPriorityQueue`; `TDelayedEventHandler.ProcessDueEvents` is
+  TServerGame.Idle's loop, before the global eiIdle; equal times come out last in, first out) and re-checks
+  readiness and targets then (else `eiCancelFire`). Targeting brains keep a target list that the group's targeting
+  changes in place and announce `eiWelaSetMainTarget`. Numbers from the golem test: 250 ms think + 533 ms action
+  point = first hit at 783 ms, then every 1750 ms (ready 1167 ms after a shot, next think on the 250 ms grid); both
+  golems strike in the same frame, so the 8th exchange kills both (the dead one's pending shot still lands: the
+  server entity manager removes a unit one frame later). Quirks kept: `TAutoBrainOnDeathComponent.FireAtKiller`
+  never changes the target (Delphi overloads: the override is never reached from CheckAndFire; `Fire()` /
+  `FireTargets(Targets)` here); the commander brain's target-count assert is dropped (release build). Port notes:
+  the original's `Fire(Amount, TargetEntity)` of the deal-damage brain is `FireDamage`; without
+  `Game.DelayedEvents` delayed shots / projectile retargets are dropped. `eiDelayedKillEntity` waits for the server
+  entity manager (phase 3). Unused and not ported: see `docs/unused-features.md` (link / kill / will-deal-damage /
+  on-hit / commander-target / projectile / instant-chain brains).
 - `TNexusEarlyVulnerabilityComponent` (`:88`) is not ported: only declared and exposed, nothing creates it
   (listed in `docs/unused-features.md`, with the unused axis and exclude zones).
 - **Time**: `TTimer` reads `TTimeManager.GetFloatingTimestamp()` (ms). Tests freeze it with

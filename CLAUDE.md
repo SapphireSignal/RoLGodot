@@ -80,3 +80,7 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - 2026-09-18: Phase 2 step 5 part 14: wela effects (18: `TWelaEffect*` without spawning/links, efficiency effect,
   beacon/activation helpers) and spotty warheads (9: damage, heal, kill, resource, remove-buff, wela-stop); a real
   golem now hits another. 1346 files compile, 221 tests green, no errors. Next: brains (see CONTINUE.md).
+- 2026-09-18: Phase 2 step 5 part 15: the brains (every used class of `...Server.Brains.pas`: 8 think impulses /
+  block, 21 brains, 20 auto-brains) + `TDelayedEventHandler`, `RCommanderAbilityTarget`; two real golems now fight
+  to the death (both fall at the 8th exchange, 13033 ms). 1351 files compile, 232 tests green, no errors. Next: the
+  spawning family (see CONTINUE.md).

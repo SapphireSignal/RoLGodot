@@ -72,9 +72,16 @@ now hits another for 8.5). New helpers: `RParam.Equal` (the original's `=`), `BC
 (`Game.IngameStatus`, fakes must carry it), `BC.ALL_BUFF_TYPES`. Left of these families (they spawn entities, need
 links or collision queries): `TWelaEffect{Factory,Replace,Projectile}Component`, `TWelaLinkEffect*`,
 `TWelaEffectLinkPayCostMyselfComponentServer`, splash warheads, `TWarheadSpottyTeleportComponent`.
-Next: the brains (`GameServer/BaseConflict.EntityComponents.Server.Brains.pas`): start with `TBrainComponent`,
-`TBrainWelaComponent`, `TBrainWelaFightComponent` and `TBrainApproachComponent` (the SmallMeleeGolem's groups 1 and
-0; they answer eiGetLane, call eiWelaUpdateTargets / eiWelaValidateTarget, fire eiFire), then the think impulses
-(`TThinkImpulse*`) and `TAutoBrain*`. A real-golem test should end with two golems fighting to the death.
+The brains are done: every used class of `...Server.Brains.pas` (section "Brains" in `docs/entity-core.md`,
+`tests/test_brains.gd`; two real server golems now fight to the death through the real think loop). New:
+`TDelayedEventHandler` (`src/runtime/classes/`, queue = `Game.DelayedEvents`, a `TIntPriorityQueue`;
+`ProcessDueEvents` is TServerGame.Idle's loop), `RCommanderAbilityTarget` (`src/runtime/types/`), `BC.THINK_TIME_INTERVAL`
+and `BC.UNIT_PROPERTIES_PREVENT_{THINKING,MOVEMENT}`. Test fakes of the game now need `Map.Lanes` (a real
+`TLaneManager`) and `DelayedEvents` when real units think.
+Next: the spawning family. `TServerEntityManagerComponent` (`GameServer/BaseConflict.EntityComponents.Server.pas:357`:
+`SpawnUnit*`, eiDelayedKillEntity = kill at the next Idle, eiLose), then what spawns through it:
+`TWelaEffect{Factory,Replace,Projectile}Component`, `TBrainSpawnerComponent`, the splash warheads (collision queries
+exist now) and `TWarheadSpottyTeleportComponent`. A real test: a golem's projectile-less death spawns its soul
+(`TWelaEffectFactoryComponent` in GROUP_SOUL), or a ranged golem's projectile flies and hits.
 The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.
 When a hand-written file declares `class_name TFoo`, rerun the transpiler: it drops the stub.
