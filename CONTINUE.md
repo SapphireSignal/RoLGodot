@@ -59,9 +59,13 @@ The map and pathfinding are done: read `docs/map.md` (maps are converted by `too
 first out). All 21 used target constraints are ported.
 Movement is done: `TPositionComponent`, `TMovementComponent`, `TPathfindingComponent` (section "Movement" in
 `docs/entity-core.md`, `tests/test_movement_component.gd`); the frame step is `TTimeManager.ZDiff` until the game
-loop. Next: the spatial queries, `TCollisionManagerComponent` + `TCollisionComponent`
-(`BaseConflict.EntityComponents.Shared.pas:443-495`, the loose quadtree in `Engine.Collision`), which answer
-`eiEntitiesInRange` / `eiClosestEntityInRange` for targeting, `TWelaReadyEnemiesNearbyComponent` and the brains.
-Read them first; if the quadtree is big, port only what they use.
+loop.
+Collision is done: the loose quadtree (engine + entity variant), `TCollisionManagerComponent`,
+`TServerCollisionManagerComponent` (+ `RTargetWithEfficiency`), `TCollisionComponent`,
+`TWelaReadyEnemiesNearbyComponent` (section "Collision" in `docs/entity-core.md`, `tests/test_collision.gd`).
+Next: the targeting welas that use these queries, `TWelaTargetingComponent` and its radial subclasses
+(`TWelaTargetingRadialComponent`, `...RadialAttentionComponent`: `Shared.Wela.pas` + `GameServer/...Server.Welas.pas`,
+115 / 59 server scripts). Read their base and the `eiWelaTargetPossible` / `eiEnemiesInRangeEfficiency` callers
+first; then the wela effects (`TWelaEffect*`, the most used stubs) as the following family.
 The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.
 When a hand-written file declares `class_name TFoo`, rerun the transpiler: it drops the stub.

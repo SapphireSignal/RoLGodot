@@ -71,3 +71,6 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - 2026-09-18: Phase 2 step 5 part 11: movement (`TPositionComponent`, `TMovementComponent` direct + pathfinding
   walk, client path straightening, `TPathfindingComponent` tile blocking; `TTimeManager.ZDiff`); the real Footman
   walks its path. 1332 files compile, 164 tests green, no errors. Next: pick the next family (see CONTINUE.md).
+- 2026-09-18: Phase 2 step 5 part 12: collision (loose quadtree with per-team counts, `TCollisionManagerComponent`
+  + server variant, `TCollisionComponent`, `TWelaReadyEnemiesNearbyComponent`); range queries answer in the
+  original's tree order. 1342 files compile, 173 tests green, no errors. Next: targeting welas (see CONTINUE.md).

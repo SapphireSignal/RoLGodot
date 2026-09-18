@@ -124,6 +124,7 @@ One file per class, `class_name` = Delphi name (the transpiler then drops its st
 | `t_entity_manager_component.gd` | `TEntityManagerComponent` (`:276`): `Game.EntityManager`, entity registry and deferred freeing |
 | `../engine/t_timer.gd`, `t_time_manager.gd` | `TTimer` (whole) and the `TTimeManager` clock (`Engine.Helferlein.Windows.pas:985`) |
 | `t_position_component.gd`, `t_movement_component.gd`, `t_pathfinding_component.gd` | `TPositionComponent` (`:98`), `TMovementComponent` (`:108`), `TPathfindingComponent` (`:497`): movement, see "Movement" |
+| `t_collision_manager_component.gd`, `t_server_collision_manager_component.gd`, `t_collision_component.gd`, `t_wela_ready_enemies_nearby_component.gd` | `TCollisionManagerComponent` (`:443`), `TServerCollisionManagerComponent` (`Server.pas:346`), `TCollisionComponent` (`:474`), `TWelaReadyEnemiesNearbyComponent` (`Shared.Wela.pas:685`): range queries, see "Collision" |
 
 Tests: `tests/test_unit_property_component.gd`, `test_armor_component.gd`, `test_health_component.gd` (incl. the
 real server `Units\Colorless\SmallMeleeGolem`), `test_commander_income.gd` (incl. the real server
@@ -152,8 +153,8 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   answers reads that touch its ReadyGroup; interval = eiCooldown - eiWelaActionpoint; the server writes the start
   to `eiCooldownStartingTime`, the client's timer reads it from there on every check. Helpers in `BC`:
   `ResourceCompare` (int resources compare with `Round(Reference)`), `ResourceAdd`, `ResourcePercentage`.
-  `TWelaReadySpawnedComponent`: see "Data cache" below. Not yet: `TWelaReadyEnemiesNearbyComponent` (needs
-  `eiEntitiesInRange` and targets). `TWelaReadyBooleanComponent` / `AfterGameTime` are unused.
+  `TWelaReadySpawnedComponent`: see "Data cache" below; `TWelaReadyEnemiesNearbyComponent`: see "Collision".
+  `TWelaReadyBooleanComponent` / `AfterGameTime` are unused.
 - **Targets** (`tests/test_wela_target_constraints.gd`, incl. two real server SmallMeleeGolems in a real
   entity manager): an ATarget is an Array of RTarget (treat both as values: `Clone`). RTarget methods that read
   the original's `Game` global take the Game as a parameter (`GetTargetEntity(Game)`, `GetTargetPosition(Game)`);
@@ -206,6 +207,23 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   without blocking the new one; eiStand and freeing drop the computed path. Both find the map as
   `Game.Map.Pathfinding` and do nothing without it (tests; the original crashed). Not ported: FTarget's network
   serialisation.
+- **Collision** (`tests/test_collision.gd`, incl. the real client Lanetower's enemies-nearby check):
+  `TCollisionManagerComponent` (`Game.CollisionManager`, on the game entity; the server uses
+  `TServerCollisionManagerComponent`) keeps a loose quadtree (`src/runtime/engine/t_loose_quad_tree*.gd` +
+  the entity variant `src/runtime/classes/t_entity_loose_*.gd`) over `Game.Map.MapBoundaries`, nodes down to
+  width 16 (Single/Classic map: leaves 9.375 wide), each node counting its entities per team (0-5).
+  `TCollisionComponent` (script: `Create(Entity)`) registers the owner as a circle of `CollisionRadius` (0.5 if
+  none, with an error) and follows eiPosition / eiTeamID; eiExiled takes it out and back; eiDie sends the global
+  `eiRemoveComponent` for itself. Global reads `[Pos, Range, SourceTeamID, TargetTeamConstraint, Filter]`:
+  `eiEntitiesInRange` → Array of TEntity or null, `eiClosestEntityInRange` → TEntity or null (strict `<`: first
+  found wins a tie), server `eiEnemiesInRangeEfficiency` → Array of `RTargetWithEfficiency` (Filter rates, < 0
+  drops) or null. Filter = `Callable(Entity)` or null. Circles touch at `distance <= r1 + r2`. Result order is the
+  tree order (children top-left, top-right, bottom-left, bottom-right; a node's items in list order, removal
+  swaps the last item into the gap, moving or re-teaming re-adds at the end); it decides ties, so it is ported
+  exactly. Range must be a float (`AsSingle` bit-casts ints). Quirks kept: a center outside the root is counted
+  but stored nowhere; removal leaves `HasItems` stale above the parent node (only makes queries descend more).
+  Distances are doubles (original singles). `TWelaReadyEnemiesNearbyComponent`: ready while an enemy within
+  eiWelaRange of ValueGroup passes eiWelaTargetPossible of CheckGroup.
 - `TNexusEarlyVulnerabilityComponent` (`:88`) is not ported: only declared and exposed, nothing creates it
   (listed in `docs/unused-features.md`, with the unused axis and exclude zones).
 - **Time**: `TTimer` reads `TTimeManager.GetFloatingTimestamp()` (ms). Tests freeze it with
