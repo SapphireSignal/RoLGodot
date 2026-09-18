@@ -125,6 +125,7 @@ One file per class, `class_name` = Delphi name (the transpiler then drops its st
 | `../engine/t_timer.gd`, `t_time_manager.gd` | `TTimer` (whole) and the `TTimeManager` clock (`Engine.Helferlein.Windows.pas:985`) |
 | `t_position_component.gd`, `t_movement_component.gd`, `t_pathfinding_component.gd` | `TPositionComponent` (`:98`), `TMovementComponent` (`:108`), `TPathfindingComponent` (`:497`): movement, see "Movement" |
 | `t_collision_manager_component.gd`, `t_server_collision_manager_component.gd`, `t_collision_component.gd`, `t_wela_ready_enemies_nearby_component.gd` | `TCollisionManagerComponent` (`:443`), `TServerCollisionManagerComponent` (`Server.pas:346`), `TCollisionComponent` (`:474`), `TWelaReadyEnemiesNearbyComponent` (`Shared.Wela.pas:685`): range queries, see "Collision" |
+| `t_wela_targeting*_component.gd`, `t_wela_efficiency*_component.gd`, `../engine/delphi_sort.gd` | `TWelaTargeting{,Radial,RadialAttention,Nexus,Self}Component` and `TWelaEfficiency{,MissingHealth,Created,MaxHealth,DamageType,UnitProperty}Component` (`GameServer/...Server.Welas.pas:40-116`, `:828-885`), Delphi's `TList.Sort`: see "Targeting" |
 
 Tests: `tests/test_unit_property_component.gd`, `test_armor_component.gd`, `test_health_component.gd` (incl. the
 real server `Units\Colorless\SmallMeleeGolem`), `test_commander_income.gd` (incl. the real server
@@ -224,6 +225,28 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   but stored nowhere; removal leaves `HasItems` stale above the parent node (only makes queries descend more).
   Distances are doubles (original singles). `TWelaReadyEnemiesNearbyComponent`: ready while an enemy within
   eiWelaRange of ValueGroup passes eiWelaTargetPossible of CheckGroup.
+- **Targeting** (server, `tests/test_wela_targeting.gd`, incl. two real server SmallMeleeGolems finding each
+  other): `eiWelaUpdateTargets [Targets]` (trigger in the wela's group) changes the caller's Array of RTarget in
+  place; `eiWelaValidateTarget [RTarget or empty]` (read) answers a bool. A target is possible when it exists, is
+  not exiled and passes eiWelaTargetPossible (validation: of `SetValidateGroup`, default own group); its
+  efficiency is eiEfficiency `[Entity]` read in the group (+0.01 for the `SetTargetTeamConstraintPriority` team),
+  -1 if not possible. Radial: fills free slots (eiWelaTargetCount, default 1; `MaxNewTargetCount`) from
+  `eiEnemiesInRangeEfficiency` at range (eiWelaRange or `RangeFromEvent`) + own radius (unless
+  `IgnoreOwnCollisionradius`), sorted only when there are more candidates than slots: efficiency high first, then
+  not upLowPrio, then nearest (`PrioritizeMostDistant` / `PrioritizeMiddleDistant`); `Cone` drops units whose
+  circle is outside the cone; validation adds the target's radius and needs efficiency >= 0. RadialAttention
+  replaces the list with the one unit to approach (least `TLane.GetWeightedDistance` of eiGetLane, else nearest)
+  among possible units within eiAttentionrange × 1.2, if it is within eiAttentionrange; its validation (and
+  Nexus', Self's) needs efficiency > 0, so a group without efficiency components never keeps its target. Nexus:
+  `TryGetNexusNextEnemy` (farthest, quirk). Self: the owner. Random picks (`PicksRandomTargets[WithRepetition]`)
+  take the prioritized team first. New targets get `eiWelaYoureMyTarget [Owner]`. Sorting uses `DelphiSort`
+  (Delphi 10.1's quicksort; assumed, the snapshot has no RTL) so ties keep the original's order. `Contains` uses
+  `RTarget.Equal` (the original compared record memory, garbage fields included). Global / Rectangle targeting are
+  unused (`docs/unused-features.md`).
+- **Efficiency** (same test file): `TWelaEfficiency*Component` add to the previous eiEfficiency (epMiddle) in
+  their group: missing health, age in ms (`TTimeManager.GetTimeStamp() - CreatedTimestamp`), health cap (Inverse:
+  10000 - cap), 1 if the main weapon has a prioritized damage type, 1 if the target has a prioritized unit
+  property (Reverse: 0). The effects (`TWelaEfficiencyEffectComponent`, epFirst) come with the effects family.
 - `TNexusEarlyVulnerabilityComponent` (`:88`) is not ported: only declared and exposed, nothing creates it
   (listed in `docs/unused-features.md`, with the unused axis and exclude zones).
 - **Time**: `TTimer` reads `TTimeManager.GetFloatingTimestamp()` (ms). Tests freeze it with
@@ -250,5 +273,5 @@ has an event probe and a fake `Game.EntityManager` for component tests.
 - Serialisation (`TEntity.Serialize/Deserialize`, `TBlackboard.SaveToStream/LoadFromStream`,
   `TSerializableEntityComponent`, `TEventbus.InvokeWithRawData`, `TEntityManagerComponent.InvokeEventOnEntity`),
   `TEntity.OwningCommander`, the per-game pausable clock (`GameTimeManager`; `TGameTimer` uses `TTimeManager` meanwhile), the rest of
-  `TTimeManager` (pause, `TickTack`; `CreatedTimestamp` uses the engine clock meanwhile): phase 3, with the game
+  `TTimeManager` (pause, `TickTack`): phase 3, with the game
   loop and client-server sync.

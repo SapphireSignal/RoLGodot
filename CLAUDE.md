@@ -74,3 +74,6 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - 2026-09-18: Phase 2 step 5 part 12: collision (loose quadtree with per-team counts, `TCollisionManagerComponent`
   + server variant, `TCollisionComponent`, `TWelaReadyEnemiesNearbyComponent`); range queries answer in the
   original's tree order. 1342 files compile, 173 tests green, no errors. Next: targeting welas (see CONTINUE.md).
+- 2026-09-18: Phase 2 step 5 part 13: targeting (`TWelaTargeting{,Radial,RadialAttention,Nexus,Self}Component`,
+  `DelphiSort` = Delphi's TList.Sort) and `TWelaEfficiency*` (6). 1344 files compile, 183 tests green, no errors.
+  Next: the wela effects `TWelaEffect*` (see CONTINUE.md).

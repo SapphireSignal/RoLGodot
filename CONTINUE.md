@@ -63,9 +63,14 @@ loop.
 Collision is done: the loose quadtree (engine + entity variant), `TCollisionManagerComponent`,
 `TServerCollisionManagerComponent` (+ `RTargetWithEfficiency`), `TCollisionComponent`,
 `TWelaReadyEnemiesNearbyComponent` (section "Collision" in `docs/entity-core.md`, `tests/test_collision.gd`).
-Next: the targeting welas that use these queries, `TWelaTargetingComponent` and its radial subclasses
-(`TWelaTargetingRadialComponent`, `...RadialAttentionComponent`: `Shared.Wela.pas` + `GameServer/...Server.Welas.pas`,
-115 / 59 server scripts). Read their base and the `eiWelaTargetPossible` / `eiEnemiesInRangeEfficiency` callers
-first; then the wela effects (`TWelaEffect*`, the most used stubs) as the following family.
+Targeting is done: `TWelaTargeting{,Radial,RadialAttention,Nexus,Self}Component` and `TWelaEfficiency*`
+(section "Targeting" in `docs/entity-core.md`, `tests/test_wela_targeting.gd`); `src/runtime/engine/delphi_sort.gd`
+is Delphi's `TList.Sort` (use it wherever the original sorts with ties). Global / Rectangle targeting are unused.
+Next: the wela effects (`TWelaEffect*` in `GameServer/BaseConflict.EntityComponents.Server.Welas.pas`, the most
+used stubs; `TWelaEfficiencyEffectComponent` answers eiEfficiency at epFirst, with `GetEfficiencyToTarget` = -1
+unless a subclass overrides it). Start with the base `TWelaEffectComponent` (eiFire) and `TWelaEffectInstantComponent`
+(the SmallMeleeGolem's group 1), then the warheads it fires (`TWarheadSpottyDamageComponent`), then the brains
+(`Server.Brains.pas`: `TBrainApproachComponent`, `TBrainWelaFightComponent`, which answer eiGetLane and call
+eiWelaUpdateTargets / eiWelaValidateTarget).
 The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.
 When a hand-written file declares `class_name TFoo`, rerun the transpiler: it drops the stub.

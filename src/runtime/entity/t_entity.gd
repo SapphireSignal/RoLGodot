@@ -109,7 +109,7 @@ func Create(GlobalEventbus = null, ID: int = 0) -> TEntity:
 		FEventbus.ApplicationType = FGlobalEventbus.ApplicationType
 	FBlackboard = TBlackboard.new().Create(self)
 	FGroupsInUse = []
-	FCreatedTimestamp = Time.get_ticks_msec()  # TimeManager.GetTimeStamp: TTimeManager is ported in phase 3
+	FCreatedTimestamp = TTimeManager.GetTimeStamp()
 	# {$IFDEF SERVER} low(integer) {$ENDIF} {$IFDEF CLIENT} high(integer) {$ENDIF}
 	FCurrentComponentID = -2147483648 if IsServer() else 2147483647
 	TResourceManagerComponent.new().CreateGroupedAll(self)
