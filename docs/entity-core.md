@@ -128,7 +128,8 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   Radial: `eiWelaRange` of its group around the owner, owner's team or TeamID <= -1. Axis: dot of the direction
   from its point with its normal >= 0 (`SetPosition` normalizes the point, as in the original).
 - **Game events** (`eiGameEvent`, global read `[Name]`): an Array of the owners listening to that name, or empty.
-- `TNexusEarlyVulnerabilityComponent` (`:88`) is not ported: only declared and exposed, nothing creates it.
+- `TNexusEarlyVulnerabilityComponent` (`:88`) is not ported: only declared and exposed, nothing creates it
+  (listed in `docs/unused-features.md`, with the unused axis and exclude zones).
 - **Time**: `TTimer` reads `TTimeManager.GetFloatingTimestamp()` (ms). Tests freeze it with
   `TTimeManager.FakeTime`. The global pause and `TickTack` come with the game loop (phase 3). `TTimer` keeps the
   original's quirks: `StartWithRest` behaves like the code, not its comment, and the `Paused` setter is inverted.
