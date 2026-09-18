@@ -51,3 +51,5 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - 2026-09-18: Phase 2 step 5 part 1: `TCommanderIncome{,Default,Loan,Overflow}Component`, `RIncome`, `TTimer` +
   `TTimeManager` clock; the real server CommanderTemplate computes its income. 1298 files compile, 70 tests
   green, no errors. Next: `TDynamicZone*Emitter` (see CONTINUE.md).
+- 2026-09-18: Phase 2 step 5 part 2: `TDynamicZone{,Radial,Axis}EmitterComponent`, `TGameEventEnumeratorComponent`.
+  1300 files compile, 75 tests green, no errors. Next: `TEntityManagerComponent` (see CONTINUE.md).

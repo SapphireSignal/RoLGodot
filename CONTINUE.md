@@ -42,10 +42,9 @@ components reach `Game` as `GlobalEventbus().Game`. `tests/component_fakes.gd`: 
 without errors (`tests/test_health_component.gd` builds the server SmallMeleeGolem).
 
 Step 5 in progress (the rest by `docs/script-api.md`, entity-local first). Done: `TCommanderIncome*` + `RIncome`,
-and `TTimer`/`TTimeManager` clock in `src/runtime/engine/` (tests freeze time with `TTimeManager.FakeTime`).
-Next, in this order (line numbers in `BaseConflict.EntityComponents.Shared.pas`): `TDynamicZone*Emitter` (:581),
-`TGameEventEnumeratorComponent` (:630), `TNexusEarlyVulnerabilityComponent` (:88), then the
-`TEntityManagerComponent` (:276, needed for the real `Game.EntityManager`; the fakes in `tests/component_fakes.gd`
-show the interface used so far). `TPositionComponent`/`TMovementComponent` need the map and pathfinding, so check
+and `TTimer`/`TTimeManager` clock in `src/runtime/engine/` (tests freeze time with `TTimeManager.FakeTime`);
+`TDynamicZone*Emitter`, `TGameEventEnumeratorComponent` (`TNexusEarlyVulnerabilityComponent` is unused: skipped).
+Next: `TEntityManagerComponent` (`BaseConflict.EntityComponents.Shared.pas:276`, needed for the real
+`Game.EntityManager`; the fakes in `tests/component_fakes.gd` show the interface used so far). `TPositionComponent`/`TMovementComponent` need the map and pathfinding, so check
 first what they pull in.
 When a hand-written file declares `class_name TFoo`, rerun the transpiler: it drops the stub.

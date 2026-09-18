@@ -110,17 +110,25 @@ One file per class, `class_name` = Delphi name (the transpiler then drops its st
 | `t_health_component.gd` | `THealthComponent` (`:173`): damage, heal, overheal, death chain; base `../entity/t_serializable_entity_component.gd` (thin until phase 3) |
 | `t_commander_income*_component.gd` | `TCommanderIncome{,Default,Loan,Overflow}Component` (`:531-574`): the commander's `eiIncome` |
 | `../types/r_income.gd` | `RIncome` (`BaseConflict.Types.Shared.pas:47`), a record: copies in and out of RParams |
+| `t_dynamic_zone_*emitter_component.gd` | `TDynamicZone{,Radial,Axis}EmitterComponent` (`:581-614`): answer `eiInDynamicZone` |
+| `t_game_event_enumerator_component.gd` | `TGameEventEnumeratorComponent` (`:630`): lists its owner for `eiGameEvent` |
 | `../engine/t_timer.gd`, `t_time_manager.gd` | `TTimer` (whole) and the `TTimeManager` clock (`Engine.Helferlein.Windows.pas:985`) |
 
 Tests: `tests/test_unit_property_component.gd`, `test_armor_component.gd`, `test_health_component.gd` (incl. the
 real server `Units\Colorless\SmallMeleeGolem`), `test_commander_income.gd` (incl. the real server
-`Commander\CommanderTemplate` with a fake Game at the TGame defaults), `test_timer.gd`; `tests/component_fakes.gd`
+`Commander\CommanderTemplate` with a fake Game at the TGame defaults), `test_timer.gd`, `test_dynamic_zone.gd`; `tests/component_fakes.gd`
 has an event probe and a fake `Game.EntityManager` for component tests.
 
 - **Income** (`eiIncome`, global read `[CommanderID]` → `RIncome`): only the components of the entity whose
   `eiOwnerCommander` matches adjust it. Default (epFirst) adds its group's `eiResourceCost` gold +
   `eiWelaDamage` × `reIncomeUpgrade`; Loan (epMiddle, EchoesOfTheFuture) multiplies gold by Factor for Duration,
   then gives no gold for Duration × Factor / 2; Overflow (epLast) turns gold over the cap into wood.
+- **Dynamic zones** (`eiInDynamicZone`, global read `[Position, TeamID, Zones]`): empty = no emitter covers it,
+  `true` = covered, `false` = an `Exclude()` emitter covers it; once false, later emitters cannot make it true.
+  Radial: `eiWelaRange` of its group around the owner, owner's team or TeamID <= -1. Axis: dot of the direction
+  from its point with its normal >= 0 (`SetPosition` normalizes the point, as in the original).
+- **Game events** (`eiGameEvent`, global read `[Name]`): an Array of the owners listening to that name, or empty.
+- `TNexusEarlyVulnerabilityComponent` (`:88`) is not ported: only declared and exposed, nothing creates it.
 - **Time**: `TTimer` reads `TTimeManager.GetFloatingTimestamp()` (ms). Tests freeze it with
   `TTimeManager.FakeTime`. The global pause and `TickTack` come with the game loop (phase 3). `TTimer` keeps the
   original's quirks: `StartWithRest` behaves like the code, not its comment, and the `Paused` setter is inverted.
