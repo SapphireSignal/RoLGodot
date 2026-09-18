@@ -2,3 +2,13 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TWelaEfficiencyUnitPropertyComponent
 extends TWelaEfficiencyComponent
+
+
+func Prioritize(UnitProperties = null):
+	# not ported yet: no-op
+	return self
+
+
+func Reverse():
+	# not ported yet: no-op
+	return self

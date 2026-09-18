@@ -2,3 +2,28 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TModifierWelaRangeComponent
 extends TModifierComponent
+
+
+func ActivateOnStand():
+	# not ported yet: no-op
+	return self
+
+
+func AddModifier():
+	# not ported yet: no-op
+	return self
+
+
+func DeactivateOnMoveTo():
+	# not ported yet: no-op
+	return self
+
+
+func ScaleWithStage():
+	# not ported yet: no-op
+	return self
+
+
+func ScaleWithTime():
+	# not ported yet: no-op
+	return self

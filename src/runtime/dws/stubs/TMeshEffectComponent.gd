@@ -7,3 +7,43 @@ extends TEntityComponent
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func ActivateOnDie():
+	# not ported yet: no-op
+	return self
+
+
+func ActivateOnFire():
+	# not ported yet: no-op
+	return self
+
+
+func ActivateOnLose():
+	# not ported yet: no-op
+	return self
+
+
+func ActivateOnPreFire():
+	# not ported yet: no-op
+	return self
+
+
+func ActivateOnWelaUnitProduced():
+	# not ported yet: no-op
+	return self
+
+
+func ApplyToFireTarget():
+	# not ported yet: no-op
+	return self
+
+
+func SetEffect(Effect = null):
+	# not ported yet: no-op
+	return self
+
+
+func TargetGroup(Group = null):
+	# not ported yet: no-op
+	return self

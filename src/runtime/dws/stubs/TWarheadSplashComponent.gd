@@ -7,3 +7,23 @@ extends TWarheadComponent
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func IgnoreMainTargets():
+	# not ported yet: no-op
+	return self
+
+
+func LineFromOwner(LineWidth = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetValidateGroup(Group = null):
+	# not ported yet: no-op
+	return self
+
+
+func TargetsGroundAndAir():
+	# not ported yet: no-op
+	return self

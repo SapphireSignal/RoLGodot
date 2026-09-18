@@ -7,3 +7,13 @@ extends TWelaReadyComponent
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func ReadyIfNoTargets():
+	# not ported yet: no-op
+	return self
+
+
+func TargetingGroup(Group = null):
+	# not ported yet: no-op
+	return self

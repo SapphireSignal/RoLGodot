@@ -2,3 +2,38 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TWelaTargetConstraintResourceComponent
 extends TWelaTargetConstraintComponent
+
+
+func CheckFull():
+	# not ported yet: no-op
+	return self
+
+
+func CheckHasResource():
+	# not ported yet: no-op
+	return self
+
+
+func CheckNotFull():
+	# not ported yet: no-op
+	return self
+
+
+func CheckResource(ResourceID = null):
+	# not ported yet: no-op
+	return self
+
+
+func Comparator(Comparator = null):
+	# not ported yet: no-op
+	return self
+
+
+func CompareCapToReference():
+	# not ported yet: no-op
+	return self
+
+
+func Reference(Reference = null):
+	# not ported yet: no-op
+	return self

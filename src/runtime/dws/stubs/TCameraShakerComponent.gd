@@ -7,3 +7,118 @@ extends TEntityComponent
 func CreateGrouped(Entity = null, Groups = null):
 	super(Entity, Groups)
 	return self
+
+
+func ActivateNow():
+	# not ported yet: no-op
+	return self
+
+
+func ActivateOnCreate():
+	# not ported yet: no-op
+	return self
+
+
+func ActivateOnDie():
+	# not ported yet: no-op
+	return self
+
+
+func ActivateOnFire():
+	# not ported yet: no-op
+	return self
+
+
+func ActivateOnFireWarhead():
+	# not ported yet: no-op
+	return self
+
+
+func ActivateOnFree():
+	# not ported yet: no-op
+	return self
+
+
+func ActivateOnLose():
+	# not ported yet: no-op
+	return self
+
+
+func Delay(DelayTime = null):
+	# not ported yet: no-op
+	return self
+
+
+func Duration(DurationMs = null):
+	# not ported yet: no-op
+	return self
+
+
+func Global():
+	# not ported yet: no-op
+	return self
+
+
+func Invert():
+	# not ported yet: no-op
+	return self
+
+
+func NoFade():
+	# not ported yet: no-op
+	return self
+
+
+func PresetRotationLight():
+	# not ported yet: no-op
+	return self
+
+
+func PresetRotationMedium():
+	# not ported yet: no-op
+	return self
+
+
+func PresetRotationStrong():
+	# not ported yet: no-op
+	return self
+
+
+func PresetVectorLight():
+	# not ported yet: no-op
+	return self
+
+
+func PresetVectorMedium():
+	# not ported yet: no-op
+	return self
+
+
+func PresetVectorStrong():
+	# not ported yet: no-op
+	return self
+
+
+func RotationShaker(Yaw = null, Pitch = null, Roll = null):
+	# not ported yet: no-op
+	return self
+
+
+func StopOnFree():
+	# not ported yet: no-op
+	return self
+
+
+func Strength(Radius = null):
+	# not ported yet: no-op
+	return self
+
+
+func VectorShaker(VectorX = null, VectorY = null, VectorZ = null):
+	# not ported yet: no-op
+	return self
+
+
+func Waves(Waves = null):
+	# not ported yet: no-op
+	return self

@@ -44,3 +44,7 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - 2026-09-18: Phase 2 step 3 done: `TResourceManagerComponent` on every entity (balance/cap/cost, transactions,
   reset), `RResourceCost`; card league/level now reach the scripts; scripts' `Game()` follows the running
   script's side. 1289 files compile, 39 tests green, no errors. Next: step 4, entity-local shared components.
+- 2026-09-18: Phase 2 step 4 done: `TUnitPropertyComponent`, `TArmorComponent`, `THealthComponent` (+ thin
+  `TSerializableEntityComponent`); server-only handlers per side; stubs now no-op the methods scripts call, so
+  a real server unit (SmallMeleeGolem) builds and takes armored damage cleanly. 1293 files compile, 58 tests
+  green, no errors. Next: step 5, the rest by `docs/script-api.md` (see CONTINUE.md).

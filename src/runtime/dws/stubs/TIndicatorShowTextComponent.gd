@@ -7,3 +7,53 @@ extends TSpelltargetVisualizerComponent
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func Clamp(Minimum = null, Maximum = null):
+	# not ported yet: no-op
+	return self
+
+
+func Color(Color = null):
+	# not ported yet: no-op
+	return self
+
+
+func ColorAtCap(Color = null):
+	# not ported yet: no-op
+	return self
+
+
+func CursorOffset(X = null, Y = null):
+	# not ported yet: no-op
+	return self
+
+
+func FixedCap(Value = null):
+	# not ported yet: no-op
+	return self
+
+
+func NoCap():
+	# not ported yet: no-op
+	return self
+
+
+func ResourceFromCommander():
+	# not ported yet: no-op
+	return self
+
+
+func ResourceGroup(Group = null):
+	# not ported yet: no-op
+	return self
+
+
+func ShowResource(Resource = null):
+	# not ported yet: no-op
+	return self
+
+
+func SpelltargetVisualizer():
+	# not ported yet: no-op
+	return self

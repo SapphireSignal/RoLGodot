@@ -2,3 +2,8 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TModifierWelaTargetCountComponent
 extends TModifierComponent
+
+
+func ScaleWithResource(Resource = null):
+	# not ported yet: no-op
+	return self

@@ -7,3 +7,168 @@ extends TEntityComponent
 func Create(Owner = null):
 	super(Owner)
 	return self
+
+
+func AddActions(A1 = null, A2 = null, A3 = null, A4 = null, A5 = null, A6 = null, A7 = null, A8 = null, A9 = null, A10 = null, A11 = null):
+	# not ported yet: no-op
+	return self
+
+
+func AddStepCamPos(X = null, Y = null, Range = null):
+	# not ported yet: no-op
+	return self
+
+
+func AddStepClientInit():
+	# not ported yet: no-op
+	return self
+
+
+func AddStepGameEvent(GameEvent = null):
+	# not ported yet: no-op
+	return self
+
+
+func AddStepGameTick(GameTick = null):
+	# not ported yet: no-op
+	return self
+
+
+func AddStepNever():
+	# not ported yet: no-op
+	return self
+
+
+func AddStepNewEntity(MustHave = null):
+	# not ported yet: no-op
+	return self
+
+
+func AddStepTimer(Interval = null):
+	# not ported yet: no-op
+	return self
+
+
+func AddStepUIDsDead(UIDs = null):
+	# not ported yet: no-op
+	return self
+
+
+func AllowMultiCardPlay():
+	# not ported yet: no-op
+	return self
+
+
+func BuildElementGroup(GroupName = null, Elements = null):
+	# not ported yet: no-op
+	return self
+
+
+func BuildKeybindingGroup(GroupName = null, Keybindings = null):
+	# not ported yet: no-op
+	return self
+
+
+func ClearGroupLock(GroupName = null):
+	# not ported yet: no-op
+	return self
+
+
+func ClearGroupStates(GroupName = null):
+	# not ported yet: no-op
+	return self
+
+
+func ClearTutorialHint():
+	# not ported yet: no-op
+	return self
+
+
+func ClearWorldObjects():
+	# not ported yet: no-op
+	return self
+
+
+func GotoStep(StepLabel = null):
+	# not ported yet: no-op
+	return self
+
+
+func GroundText(X = null, Text = null):
+	# not ported yet: no-op
+	return self
+
+
+func HideGroup(GroupName = null):
+	# not ported yet: no-op
+	return self
+
+
+func IfGameEventGotoStep(GameEvent = null, TargetLabel = null):
+	# not ported yet: no-op
+	return self
+
+
+func IfLastEntityDiesGotoStep(TargetLabel = null):
+	# not ported yet: no-op
+	return self
+
+
+func IfTimerGotoStep(Interval = null, TargetLabel = null):
+	# not ported yet: no-op
+	return self
+
+
+func LockCamera():
+	# not ported yet: no-op
+	return self
+
+
+func LockGroup(GroupName = null):
+	# not ported yet: no-op
+	return self
+
+
+func MoveCamera(X = null, Y = null):
+	# not ported yet: no-op
+	return self
+
+
+func MoveCameraOverTime(X = null, Y = null, Time = null):
+	# not ported yet: no-op
+	return self
+
+
+func PassiveText(Text = null, ButtonText = null):
+	# not ported yet: no-op
+	return self
+
+
+func PreventMultiCardPlay():
+	# not ported yet: no-op
+	return self
+
+
+func SendGameevent(Eventname = null):
+	# not ported yet: no-op
+	return self
+
+
+func StepLabel(StepLabel = null):
+	# not ported yet: no-op
+	return self
+
+
+func StepTriggerCount(StepTriggerCount = null):
+	# not ported yet: no-op
+	return self
+
+
+func UnlockCamera():
+	# not ported yet: no-op
+	return self
+
+
+func UnlockGroup(GroupName = null):
+	# not ported yet: no-op
+	return self

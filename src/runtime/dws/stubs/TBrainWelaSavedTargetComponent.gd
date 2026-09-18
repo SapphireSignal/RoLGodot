@@ -7,3 +7,8 @@ extends TBrainWelaComponent
 func CreateGrouped(Entity = null, Group = null):
 	super(Entity, Group)
 	return self
+
+
+func FireAtIndex(Index = null):
+	# not ported yet: no-op
+	return self

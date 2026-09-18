@@ -7,3 +7,8 @@ extends TMeshEffect
 func Create(ShaderName = null, TextureFilename = null):
 	super()
 	return self
+
+
+func SetTexture(TextureFilename = null):
+	# not ported yet: no-op
+	return self

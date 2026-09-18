@@ -2,3 +2,13 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TTutorialDirectorActionTutorialHint
 extends TTutorialDirectorAction
+
+
+func ButtonText(ButtonText = null):
+	# not ported yet: no-op
+	return self
+
+
+func Text(Text = null):
+	# not ported yet: no-op
+	return self

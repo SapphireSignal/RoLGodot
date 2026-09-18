@@ -12,3 +12,68 @@ func Create(Owner = null):
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func Color(ForcedColor = null):
+	# not ported yet: no-op
+	return self
+
+
+func Invert():
+	# not ported yet: no-op
+	return self
+
+
+func InvertDirection():
+	# not ported yet: no-op
+	return self
+
+
+func Offset(X = null, Y = null, Z = null):
+	# not ported yet: no-op
+	return self
+
+
+func Opacity(s = null):
+	# not ported yet: no-op
+	return self
+
+
+func ScaleWith(Event = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetLinearBlend():
+	# not ported yet: no-op
+	return self
+
+
+func SetRadius(Radius = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetTexture(TextureName = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetThickness(Thickness = null):
+	# not ported yet: no-op
+	return self
+
+
+func ShowAsTeam(TeamID = null):
+	# not ported yet: no-op
+	return self
+
+
+func ShowsGameEvent(GameEvent = null, Duration = null):
+	# not ported yet: no-op
+	return self
+
+
+func ShowsResource(Resource = null):
+	# not ported yet: no-op
+	return self

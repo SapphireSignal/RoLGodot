@@ -7,3 +7,8 @@ extends TEntityComponent
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func IsPermanent():
+	# not ported yet: no-op
+	return self

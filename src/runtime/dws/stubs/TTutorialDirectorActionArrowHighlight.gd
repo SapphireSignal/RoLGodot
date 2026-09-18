@@ -7,3 +7,48 @@ extends TTutorialDirectorAction
 func Create():
 	super()
 	return self
+
+
+func Element(ElementUID = null):
+	# not ported yet: no-op
+	return self
+
+
+func ElementAnchor(Anchor = null):
+	# not ported yet: no-op
+	return self
+
+
+func LoadElementFromGroup(GroupName = null):
+	# not ported yet: no-op
+	return self
+
+
+func NoBackdrop():
+	# not ported yet: no-op
+	return self
+
+
+func Text(Text = null):
+	# not ported yet: no-op
+	return self
+
+
+func WindowAnchor(Anchor = null):
+	# not ported yet: no-op
+	return self
+
+
+func WindowButton(ButtonText = null):
+	# not ported yet: no-op
+	return self
+
+
+func WorldPoint(PointX = null, PointY = null, PointZ = null):
+	# not ported yet: no-op
+	return self
+
+
+func WorldRadius(Radius = null):
+	# not ported yet: no-op
+	return self

@@ -12,3 +12,8 @@ func Create(Owner = null):
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func FiresAtCreate(Group = null):
+	# not ported yet: no-op
+	return self

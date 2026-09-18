@@ -7,3 +7,18 @@ extends TMeshEffectGeneric
 func Create(Duration = null, Param1 = null):
 	super(Duration, Param1)
 	return self
+
+
+func AddKey(TimeKey = null, Value = null):
+	# not ported yet: no-op
+	return self
+
+
+func AddNextTimeLine():
+	# not ported yet: no-op
+	return self
+
+
+func AddPermaKey(Value = null):
+	# not ported yet: no-op
+	return self

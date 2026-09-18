@@ -12,3 +12,98 @@ func Create(Owner = null, EventPath = null):
 func CreateGrouped(Owner = null, Group = null, EventPath = null):
 	super(Owner, Group)
 	return self
+
+
+func BindParameterToResource(ParameterName = null, Resource = null):
+	# not ported yet: no-op
+	return self
+
+
+func CheckGroup(CheckGroup = null):
+	# not ported yet: no-op
+	return self
+
+
+func CheckOption(Option = null):
+	# not ported yet: no-op
+	return self
+
+
+func Delay(DelayMs = null):
+	# not ported yet: no-op
+	return self
+
+
+func IsLoop():
+	# not ported yet: no-op
+	return self
+
+
+func IsPiece():
+	# not ported yet: no-op
+	return self
+
+
+func StopGroup(StopGroup = null):
+	# not ported yet: no-op
+	return self
+
+
+func StopOnFire():
+	# not ported yet: no-op
+	return self
+
+
+func StopOnFree():
+	# not ported yet: no-op
+	return self
+
+
+func TriggerNow():
+	# not ported yet: no-op
+	return self
+
+
+func TriggerOnCreate():
+	# not ported yet: no-op
+	return self
+
+
+func TriggerOnDie():
+	# not ported yet: no-op
+	return self
+
+
+func TriggerOnFire():
+	# not ported yet: no-op
+	return self
+
+
+func TriggerOnFireWarhead():
+	# not ported yet: no-op
+	return self
+
+
+func TriggerOnFree():
+	# not ported yet: no-op
+	return self
+
+
+func TriggerOnLose():
+	# not ported yet: no-op
+	return self
+
+
+func TriggerOnLoseHealth():
+	# not ported yet: no-op
+	return self
+
+
+func TriggerOnPreFire():
+	# not ported yet: no-op
+	return self
+
+
+func UsePositionOfTarget():
+	# not ported yet: no-op
+	return self

@@ -7,3 +7,33 @@ extends TObject
 func Create(ID = null):
 	super()
 	return self
+
+
+func Block(CoordX = null, CoordY = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetFront(FrontX = null, FrontY = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetPosition(PosX = null, PosY = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetSize(SizeX = null, SizeY = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetSpawnTarget(PosX = null, PosY = null, NormalX = null, NormalY = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetTeam(TeamID = null):
+	# not ported yet: no-op
+	return self

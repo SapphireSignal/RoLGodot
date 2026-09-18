@@ -7,3 +7,58 @@ extends TEntityComponent
 func CreateGrouped(Owner = null, Group = null, ScriptToApply = null):
 	super(Owner, Group)
 	return self
+
+
+func ApplyToProducedUnits():
+	# not ported yet: no-op
+	return self
+
+
+func ApplyToSelfAtCreate():
+	# not ported yet: no-op
+	return self
+
+
+func Methodname(Methodname = null):
+	# not ported yet: no-op
+	return self
+
+
+func OverrideLastParameterGroup(Group = null):
+	# not ported yet: no-op
+	return self
+
+
+func PassDirectionToTarget():
+	# not ported yet: no-op
+	return self
+
+
+func PassIntValue(Value = null):
+	# not ported yet: no-op
+	return self
+
+
+func PassOffsetToOwner():
+	# not ported yet: no-op
+	return self
+
+
+func PassResource(Resource = null):
+	# not ported yet: no-op
+	return self
+
+
+func PassSameTeam():
+	# not ported yet: no-op
+	return self
+
+
+func PassSavedTargetPosition(Index = null):
+	# not ported yet: no-op
+	return self
+
+
+func PassValueFromEvent(Event = null):
+	# not ported yet: no-op
+	return self

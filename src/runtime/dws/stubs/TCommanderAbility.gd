@@ -2,3 +2,18 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TCommanderAbility
 extends TEntityComponent
+
+
+func CardInfo(CardInfo = null):
+	# not ported yet: no-op
+	return self
+
+
+func ChargeGroup(ChargeGroup = null):
+	# not ported yet: no-op
+	return self
+
+
+func IsMultiMode(MultiModes = null):
+	# not ported yet: no-op
+	return self

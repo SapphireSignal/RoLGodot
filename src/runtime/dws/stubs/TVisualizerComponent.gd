@@ -12,3 +12,123 @@ func Create(Owner = null):
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func BindToSubPosition(ZoneName = null):
+	# not ported yet: no-op
+	return self
+
+
+func BindToSubPositionGroup(ZoneName = null, TargetGroup = null):
+	# not ported yet: no-op
+	return self
+
+
+func FixedHeightGround():
+	# not ported yet: no-op
+	return self
+
+
+func FixedOffsetGround():
+	# not ported yet: no-op
+	return self
+
+
+func FixedOrientation(FrontX = null, FrontY = null, FrontZ = null):
+	# not ported yet: no-op
+	return self
+
+
+func FixedOrientationAngle(FrontX = null, FrontY = null, FrontZ = null):
+	# not ported yet: no-op
+	return self
+
+
+func FixedOrientationDefault():
+	# not ported yet: no-op
+	return self
+
+
+func IgnoreModelSize():
+	# not ported yet: no-op
+	return self
+
+
+func IgnoreSize():
+	# not ported yet: no-op
+	return self
+
+
+func IsPiece():
+	# not ported yet: no-op
+	return self
+
+
+func MaxScale(Maximum = null):
+	# not ported yet: no-op
+	return self
+
+
+func ScaleRange(Minimum = null, Maximum = null):
+	# not ported yet: no-op
+	return self
+
+
+func ScaleWith(Event = null):
+	# not ported yet: no-op
+	return self
+
+
+func ScaleWithResource(Resource = null, ScaleFactorMin = null, ScaleFactorMax = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetModelOffset(OffsetX = null, OffsetY = null, OffsetZ = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetModelRotationOffset(Offset = null):
+	# not ported yet: no-op
+	return self
+
+
+func ShowAsTeam(FixTeamID = null):
+	# not ported yet: no-op
+	return self
+
+
+func SwapXZBindMatrix():
+	# not ported yet: no-op
+	return self
+
+
+func VisibleWithOption(Option = null):
+	# not ported yet: no-op
+	return self
+
+
+func VisibleWithResource(ResourceID = null):
+	# not ported yet: no-op
+	return self
+
+
+func VisibleWithUnitPropertyMustHave(Properties = null):
+	# not ported yet: no-op
+	return self
+
+
+func VisibleWithUnitPropertyMustNotHave(Properties = null):
+	# not ported yet: no-op
+	return self
+
+
+func VisibleWithWelaReady():
+	# not ported yet: no-op
+	return self
+
+
+func VisibleWithWelaReadyGrouped(Group = null):
+	# not ported yet: no-op
+	return self

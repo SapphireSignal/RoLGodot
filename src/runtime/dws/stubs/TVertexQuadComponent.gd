@@ -12,3 +12,23 @@ func Create(Owner = null, Texture = null, Width = null, Height = null):
 func CreateGrouped(Owner = null, Group = null, Texture = null, Width = null, Height = null):
 	super(Owner, Group)
 	return self
+
+
+func Additive():
+	# not ported yet: no-op
+	return self
+
+
+func CameraOriented():
+	# not ported yet: no-op
+	return self
+
+
+func Color(Color = null):
+	# not ported yet: no-op
+	return self
+
+
+func ScreenSpace():
+	# not ported yet: no-op
+	return self

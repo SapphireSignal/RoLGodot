@@ -12,3 +12,48 @@ func Create(Owner = null, Texture = null):
 func CreateGrouped(Owner = null, ComponentGroup = null, Texture = null):
 	super(Owner, ComponentGroup)
 	return self
+
+
+func Color(Color = null):
+	# not ported yet: no-op
+	return self
+
+
+func ImpactParticleEffect(FilePath = null):
+	# not ported yet: no-op
+	return self
+
+
+func ImpactSize(Size = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetBulletSpawnCooldown(Cooldown = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetEndposJitter(EndposJitter = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetLength(Length = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetSpeed(Speed = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetWidth(Width = null):
+	# not ported yet: no-op
+	return self
+
+
+func ToGround():
+	# not ported yet: no-op
+	return self

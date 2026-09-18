@@ -2,3 +2,23 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TWelaTargetConstraintBooleanComponent
 extends TWelaTargetConstraintComponent
+
+
+func GroupA(Group = null):
+	# not ported yet: no-op
+	return self
+
+
+func GroupB(Group = null):
+	# not ported yet: no-op
+	return self
+
+
+func OperatorAnd():
+	# not ported yet: no-op
+	return self
+
+
+func OperatorOr():
+	# not ported yet: no-op
+	return self

@@ -2,3 +2,13 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TClickCollisionComponent
 extends TEntityComponent
+
+
+func LowPriority():
+	# not ported yet: no-op
+	return self
+
+
+func SetCapsule(Origin = null, Endpoint = null, Radius = null):
+	# not ported yet: no-op
+	return self

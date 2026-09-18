@@ -12,3 +12,13 @@ func Create(Owner = null, Color = null, Radius = null):
 func CreateGrouped(Owner = null, Group = null, Color = null, Radius = null):
 	super(Owner, Group)
 	return self
+
+
+func Negate():
+	# not ported yet: no-op
+	return self
+
+
+func SetLightShape(Shape = null):
+	# not ported yet: no-op
+	return self

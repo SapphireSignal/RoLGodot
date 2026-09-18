@@ -2,3 +2,18 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TWelaEffectReplaceComponent
 extends TWelaEffectComponent
+
+
+func KeepResource(Resource = null):
+	# not ported yet: no-op
+	return self
+
+
+func KeepTakenDamage():
+	# not ported yet: no-op
+	return self
+
+
+func SetNewTeam(NewTeam = null):
+	# not ported yet: no-op
+	return self

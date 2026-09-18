@@ -7,3 +7,33 @@ extends TEntityComponent
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func ApplyFront():
+	# not ported yet: no-op
+	return self
+
+
+func AttachToDestination():
+	# not ported yet: no-op
+	return self
+
+
+func AttachToSource():
+	# not ported yet: no-op
+	return self
+
+
+func Offset(OffsetX = null, OffsetY = null, OffsetZ = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetSubPosition(SubPosition = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetSubPositionGroup(SubPosition = null, Group = null):
+	# not ported yet: no-op
+	return self

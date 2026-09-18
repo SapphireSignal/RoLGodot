@@ -7,3 +7,38 @@ extends TEntityComponent
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func Factor(X = null, Y = null, Z = null):
+	# not ported yet: no-op
+	return self
+
+
+func FadeIn(Time = null):
+	# not ported yet: no-op
+	return self
+
+
+func Phase(Phase = null):
+	# not ported yet: no-op
+	return self
+
+
+func Radius(Radius = null):
+	# not ported yet: no-op
+	return self
+
+
+func RadiusFromEvent(ScaleEvent = null):
+	# not ported yet: no-op
+	return self
+
+
+func RotationSpeed(RotationSpeedX = null, RotationSpeedY = null, RotationSpeedZ = null):
+	# not ported yet: no-op
+	return self
+
+
+func TargetGroup(Group = null):
+	# not ported yet: no-op
+	return self

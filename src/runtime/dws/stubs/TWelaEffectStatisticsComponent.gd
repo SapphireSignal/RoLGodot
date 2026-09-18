@@ -2,3 +2,113 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TWelaEffectStatisticsComponent
 extends TEntityComponent
+
+
+func CheckDamageType(DamageType = null):
+	# not ported yet: no-op
+	return self
+
+
+func CheckMaxTargets():
+	# not ported yet: no-op
+	return self
+
+
+func CheckNth(Nth = null):
+	# not ported yet: no-op
+	return self
+
+
+func CheckResourceEmpty(Resource = null):
+	# not ported yet: no-op
+	return self
+
+
+func CheckResourceMax(Resource = null):
+	# not ported yet: no-op
+	return self
+
+
+func CheckUnitPropertyMustHave(UnitProperties = null):
+	# not ported yet: no-op
+	return self
+
+
+func CheckUnitPropertyMustHaveAny(UnitProperties = null):
+	# not ported yet: no-op
+	return self
+
+
+func Name(WelaName = null):
+	# not ported yet: no-op
+	return self
+
+
+func TakeOwnerFromTarget():
+	# not ported yet: no-op
+	return self
+
+
+func TriggerGlobalOnKillDone():
+	# not ported yet: no-op
+	return self
+
+
+func TriggerOnCreate():
+	# not ported yet: no-op
+	return self
+
+
+func TriggerOnDamageDone():
+	# not ported yet: no-op
+	return self
+
+
+func TriggerOnDamageDoneTargets():
+	# not ported yet: no-op
+	return self
+
+
+func TriggerOnDie():
+	# not ported yet: no-op
+	return self
+
+
+func TriggerOnDuration():
+	# not ported yet: no-op
+	return self
+
+
+func TriggerOnFire():
+	# not ported yet: no-op
+	return self
+
+
+func TriggerOnHeal():
+	# not ported yet: no-op
+	return self
+
+
+func TriggerOnHealDone():
+	# not ported yet: no-op
+	return self
+
+
+func TriggerOnKill():
+	# not ported yet: no-op
+	return self
+
+
+func TriggerOnKillDone():
+	# not ported yet: no-op
+	return self
+
+
+func TriggerOnKilled():
+	# not ported yet: no-op
+	return self
+
+
+func TriggerOnTakeDamage():
+	# not ported yet: no-op
+	return self

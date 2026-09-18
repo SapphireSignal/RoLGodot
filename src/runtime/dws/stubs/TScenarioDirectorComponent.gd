@@ -7,3 +7,103 @@ extends TEntityComponent
 func Create(Owner = null):
 	super(Owner)
 	return self
+
+
+func AddKIPlayer(GridID = null, PosX = null, PosY = null):
+	# not ported yet: no-op
+	return self
+
+
+func AddUnitsToSpawnerSubset(GameTick = null, UnitSubset = null):
+	# not ported yet: no-op
+	return self
+
+
+func ChangeGoldIncome(GameTick = null, GoldIncome = null):
+	# not ported yet: no-op
+	return self
+
+
+func ChangeUnitSpawnerSubset(GameTick = null, UnitSubset = null):
+	# not ported yet: no-op
+	return self
+
+
+func ChangeWood(GameTick = null, Wood = null):
+	# not ported yet: no-op
+	return self
+
+
+func ChangeWoodIncome(GameTick = null, WoodIncome = null):
+	# not ported yet: no-op
+	return self
+
+
+func ChooseUnitFaction(UnitFaction = null):
+	# not ported yet: no-op
+	return self
+
+
+func DisableMirroring():
+	# not ported yet: no-op
+	return self
+
+
+func EnableMirroring():
+	# not ported yet: no-op
+	return self
+
+
+func RegisterBossWave(Identifier = null, FixedUnits = null, DynamicUnits = null):
+	# not ported yet: no-op
+	return self
+
+
+func RegisterBossWaveAtTime(GameTick = null, Identifier = null, FixedUnits = null, DynamicUnits = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetLeague(League = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetTeam(TeamID = null):
+	# not ported yet: no-op
+	return self
+
+
+func SpawnGuards(PosX = null, PosY = null, FixedUnits = null, DynamicUnits = null, GoldValue = null):
+	# not ported yet: no-op
+	return self
+
+
+func SpawnRandomBossWave(GameTick = null, GoldValue = null):
+	# not ported yet: no-op
+	return self
+
+
+func SpawnUnit(PositionX = null, PositionY = null, PatternFileName = null):
+	# not ported yet: no-op
+	return self
+
+
+func SpawnUnitWithoutLimitedLifetime(PositionX = null, PositionY = null, PatternFileName = null, SpawnedEntity = null):
+	# not ported yet: no-op
+	return self
+
+
+func SpawnUnitWithoutLimitedLifetimeAndReturnEntity(PositionX = null, PositionY = null, PatternFileName = null):
+	# not ported yet: no-op
+	return null
+
+
+func SpawnUnitWithoutLimitedLifetimeWithFront(PositionX = null, PositionY = null, FrontX = null, FrontY = null, PatternFileName = null):
+	# not ported yet: no-op
+	return self
+
+
+func UnregisterBossWaveAtTime(GameTick = null, Identifier = null):
+	# not ported yet: no-op
+	return self

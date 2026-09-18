@@ -7,3 +7,13 @@ extends TBrainComponent
 func CreateGrouped(Entity = null, Group = null):
 	super(Entity, Group)
 	return self
+
+
+func SetIdleGroup(IdleGroup = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetTeamGroup(TeamID = null, PositiveGroup = null, NegativeGroup = null):
+	# not ported yet: no-op
+	return self

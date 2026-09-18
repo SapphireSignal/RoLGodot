@@ -2,3 +2,18 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TAutoBrainBilateralComponent
 extends TBrainComponent
+
+
+func CheckSelfForTargetsInGroup(Group = null):
+	# not ported yet: no-op
+	return self
+
+
+func FireSelfInGroup(Group = null):
+	# not ported yet: no-op
+	return self
+
+
+func FireTargetsInGroup(Group = null):
+	# not ported yet: no-op
+	return self

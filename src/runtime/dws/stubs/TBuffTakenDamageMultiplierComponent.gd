@@ -2,3 +2,28 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TBuffTakenDamageMultiplierComponent
 extends TEntityComponent
+
+
+func ApplyOnHeal():
+	# not ported yet: no-op
+	return self
+
+
+func DamageTypeMustHave(DamageTypes = null):
+	# not ported yet: no-op
+	return self
+
+
+func DamageTypeMustHaveAny(DamageTypes = null):
+	# not ported yet: no-op
+	return self
+
+
+func DamageTypeMustNotHave(DamageTypes = null):
+	# not ported yet: no-op
+	return self
+
+
+func DodgeDamage():
+	# not ported yet: no-op
+	return self

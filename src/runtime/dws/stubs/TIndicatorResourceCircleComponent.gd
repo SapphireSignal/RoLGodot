@@ -7,3 +7,8 @@ extends TIndicatorCooldownCircleComponent
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func Padding(Angle = null):
+	# not ported yet: no-op
+	return self

@@ -2,3 +2,33 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TWelaEffectFireComponent
 extends TWelaEffectComponent
+
+
+func FireInCreator():
+	# not ported yet: no-op
+	return self
+
+
+func MultiTargetGroup(Group = null):
+	# not ported yet: no-op
+	return self
+
+
+func RandomizeGroundtarget(MinRange = null, MaxRange = null):
+	# not ported yet: no-op
+	return self
+
+
+func RedirectToGround():
+	# not ported yet: no-op
+	return self
+
+
+func RedirectToSelf():
+	# not ported yet: no-op
+	return self
+
+
+func TargetGroup(Group = null):
+	# not ported yet: no-op
+	return self

@@ -2,3 +2,28 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TModifierWelaDamageComponent
 extends TModifierComponent
+
+
+func Divide():
+	# not ported yet: no-op
+	return self
+
+
+func FactorForUnitProperty(UnitProperties = null, Factor = null):
+	# not ported yet: no-op
+	return self
+
+
+func Multiply():
+	# not ported yet: no-op
+	return self
+
+
+func ResourceGroup(Group = null):
+	# not ported yet: no-op
+	return self
+
+
+func ScaleWithResource(ResType = null):
+	# not ported yet: no-op
+	return self

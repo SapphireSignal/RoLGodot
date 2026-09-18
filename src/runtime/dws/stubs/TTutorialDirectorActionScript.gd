@@ -7,3 +7,13 @@ extends TTutorialDirectorAction
 func Create():
 	super()
 	return self
+
+
+func Entity(EntityUID = null):
+	# not ported yet: no-op
+	return self
+
+
+func Scriptfile(Filename = null):
+	# not ported yet: no-op
+	return self

@@ -7,3 +7,13 @@ extends TWelaTargetConstraintComponent
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func CheckGroup(Group = null):
+	# not ported yet: no-op
+	return self
+
+
+func MustNotHave(Types = null):
+	# not ported yet: no-op
+	return self

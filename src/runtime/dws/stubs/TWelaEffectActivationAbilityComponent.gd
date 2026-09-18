@@ -7,3 +7,33 @@ extends TWelaEffectComponent
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func CheckNotFull(ResType = null):
+	# not ported yet: no-op
+	return self
+
+
+func OnlyAfterGameStart():
+	# not ported yet: no-op
+	return self
+
+
+func SetActivationGroup(ActivationGroup = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetCheckGroup(CheckGroup = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetsActive():
+	# not ported yet: no-op
+	return self
+
+
+func TriggerOnReachResourceCap(ResType = null):
+	# not ported yet: no-op
+	return self

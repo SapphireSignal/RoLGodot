@@ -7,3 +7,28 @@ extends TWarheadComponent
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func AsProjectile():
+	# not ported yet: no-op
+	return self
+
+
+func Offset(Range = null):
+	# not ported yet: no-op
+	return self
+
+
+func OffsetByCollisionRadius():
+	# not ported yet: no-op
+	return self
+
+
+func ToCoordinate(CoordinateX = null, CoordinateY = null):
+	# not ported yet: no-op
+	return self
+
+
+func ToNexus():
+	# not ported yet: no-op
+	return self

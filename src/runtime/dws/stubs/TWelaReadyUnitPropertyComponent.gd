@@ -2,3 +2,18 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TWelaReadyUnitPropertyComponent
 extends TWelaReadyComponent
+
+
+func ChecksCommander():
+	# not ported yet: no-op
+	return self
+
+
+func MustHave(Properties = null):
+	# not ported yet: no-op
+	return self
+
+
+func MustNotHave(Properties = null):
+	# not ported yet: no-op
+	return self

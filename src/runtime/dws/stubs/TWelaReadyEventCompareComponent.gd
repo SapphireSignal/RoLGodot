@@ -7,3 +7,18 @@ extends TWelaReadyComponent
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func ComparedEvent(EventIdentifier = null):
+	# not ported yet: no-op
+	return self
+
+
+func ReferenceValue(ReferenceValue = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetComparator(Comparator = null):
+	# not ported yet: no-op
+	return self

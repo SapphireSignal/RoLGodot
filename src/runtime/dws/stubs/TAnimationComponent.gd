@@ -7,3 +7,33 @@ extends TEntityComponent
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func AbilityGroup(Group = null):
+	# not ported yet: no-op
+	return self
+
+
+func AlternatingAttack():
+	# not ported yet: no-op
+	return self
+
+
+func HasAntiAirAttack():
+	# not ported yet: no-op
+	return self
+
+
+func IsLink():
+	# not ported yet: no-op
+	return self
+
+
+func SecondAttackGroup(Group = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetAnimationSpeed(identifier = null, AnimationLength = null):
+	# not ported yet: no-op
+	return self

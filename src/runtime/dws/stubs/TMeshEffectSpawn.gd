@@ -7,3 +7,18 @@ extends TMeshEffect
 func Create():
 	super()
 	return self
+
+
+func Legendary():
+	# not ported yet: no-op
+	return self
+
+
+func OverrideColor(Color = null):
+	# not ported yet: no-op
+	return self
+
+
+func OverrideEffectTime(Interval = null):
+	# not ported yet: no-op
+	return self

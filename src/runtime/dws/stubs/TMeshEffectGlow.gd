@@ -7,3 +7,8 @@ extends TMeshEffectWithTimekeys
 func Create(Duration = null, Param1 = null):
 	super(Duration, Param1)
 	return self
+
+
+func FixedColorIdentity(ColorIdentity = null):
+	# not ported yet: no-op
+	return self

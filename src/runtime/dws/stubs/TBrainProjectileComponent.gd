@@ -2,3 +2,23 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TBrainProjectileComponent
 extends TBrainComponent
+
+
+func Bounces(TargetGroup = null):
+	# not ported yet: no-op
+	return self
+
+
+func CantBeReflected():
+	# not ported yet: no-op
+	return self
+
+
+func NoTargetChecks():
+	# not ported yet: no-op
+	return self
+
+
+func SetNotFollowingTarget():
+	# not ported yet: no-op
+	return self

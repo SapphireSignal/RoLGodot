@@ -7,3 +7,18 @@ extends TMeshEffectGeneric
 func Create(Param0 = null, Param1 = null):
 	super(Param0, Param1)
 	return self
+
+
+func Smooth(Step = null):
+	# not ported yet: no-op
+	return self
+
+
+func Span(Span = null):
+	# not ported yet: no-op
+	return self
+
+
+func Speed(Speed = null):
+	# not ported yet: no-op
+	return self

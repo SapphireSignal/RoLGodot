@@ -7,3 +7,93 @@ extends TEntityComponent
 func CreateGrouped(Owner = null, ComponentGroup = null):
 	super(Owner, ComponentGroup)
 	return self
+
+
+func BindEndOffset(EndOffsetX = null, EndOffsetY = null, EndOffsetZ = null):
+	# not ported yet: no-op
+	return self
+
+
+func BindStartOffset(StartOffsetX = null, StartOffsetY = null, StartOffsetZ = null):
+	# not ported yet: no-op
+	return self
+
+
+func BindStartToSubPositionGroup(ZoneName = null, TargetGroup = null):
+	# not ported yet: no-op
+	return self
+
+
+func Planar():
+	# not ported yet: no-op
+	return self
+
+
+func ScaleWidth(ScaleWidth = null):
+	# not ported yet: no-op
+	return self
+
+
+func ScaleWith(Resource = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetEndposJitter(EndposJitter = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetLength(Length = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetLongitudinalSpeed(LongitudinalSpeed = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetOpacity(Opacity = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetRaycount(Count = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetRotationSpeed(RotationSpeed = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetStartWidth(Width = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetWidth(Width = null):
+	# not ported yet: no-op
+	return self
+
+
+func SizeKeypointsLength(Values = null):
+	# not ported yet: no-op
+	return self
+
+
+func SizeKeypointsWidth(Values = null):
+	# not ported yet: no-op
+	return self
+
+
+func SizeTimes(Values = null):
+	# not ported yet: no-op
+	return self
+
+
+func Texture(FilePath = null):
+	# not ported yet: no-op
+	return self

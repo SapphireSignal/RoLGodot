@@ -7,3 +7,28 @@ extends TWelaTargetingComponent
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func Cone(DirectionX = null, DirectionZ = null, Angle = null):
+	# not ported yet: no-op
+	return self
+
+
+func IgnoreOwnCollisionradius():
+	# not ported yet: no-op
+	return self
+
+
+func PrioritizeMiddleDistant():
+	# not ported yet: no-op
+	return self
+
+
+func PrioritizeMostDistant():
+	# not ported yet: no-op
+	return self
+
+
+func RangeFromEvent(EventIdentifier = null):
+	# not ported yet: no-op
+	return self

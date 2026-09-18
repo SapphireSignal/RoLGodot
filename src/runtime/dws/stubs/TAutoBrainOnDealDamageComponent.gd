@@ -2,3 +2,23 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TAutoBrainOnDealDamageComponent
 extends TAutoBrainComponent
+
+
+func AddAmountAtWrite():
+	# not ported yet: no-op
+	return self
+
+
+func DontFire():
+	# not ported yet: no-op
+	return self
+
+
+func RedirectToSource():
+	# not ported yet: no-op
+	return self
+
+
+func WriteAmountTo(Event = null):
+	# not ported yet: no-op
+	return self

@@ -2,3 +2,18 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TWarheadSpottyKillComponent
 extends TWarheadSpottyComponent
+
+
+func Exile():
+	# not ported yet: no-op
+	return self
+
+
+func Remove():
+	# not ported yet: no-op
+	return self
+
+
+func Sacrifice():
+	# not ported yet: no-op
+	return self

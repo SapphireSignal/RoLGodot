@@ -7,3 +7,8 @@ extends TEntityComponent
 func CreateGrouped(Owner = null, ComponentGroup = null):
 	super(Owner, ComponentGroup)
 	return self
+
+
+func Delay(Duration = null):
+	# not ported yet: no-op
+	return self

@@ -2,3 +2,13 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TAutoBrainOnTakeDamageComponent
 extends TAutoBrainBilateralComponent
+
+
+func ModifiesAmount():
+	# not ported yet: no-op
+	return self
+
+
+func TriggersAfterDamage():
+	# not ported yet: no-op
+	return self

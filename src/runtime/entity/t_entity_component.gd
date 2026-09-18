@@ -36,7 +36,7 @@ class TSubscribedEvent:
 		EventType = event_type
 
 
-## class var FComponentSubscriptionPatterns: script -> Array of [Event, EventType, Priority, Scope, Method, ParameterCount]
+## class var FComponentSubscriptionPatterns: [script, IsServerSide] -> Array of [Event, EventType, Priority, Scope, Method, ParameterCount]
 static var FComponentSubscriptionPatterns := {}
 
 var FComponentGroup: Array = []
@@ -263,11 +263,17 @@ func SubscribeEvent(Event: int, EventType: int, EventPriority: int, EventHandler
 	DeploySubscribedEvent(TSubscribedEvent.new(Event, EventHandler, ParameterCount, TargetEventbus, EventPriority, EventType))
 
 
-## The class's subscription patterns, built once per class from _DeclareEvents.
+## Port: the side the component is built for, so _DeclareEvents can list {$IFDEF SERVER} handlers only
+## `if IsServerSide():`. The owner decides (FOwner is set before SubscribeEvents).
+func IsServerSide() -> bool:
+	return FOwner != null and FOwner.IsServer()
+
+
+## The class's subscription patterns, built once per class and side from _DeclareEvents.
 func _SubscriptionPatterns() -> Array:
-	var script: Script = get_script()
-	if FComponentSubscriptionPatterns.has(script):
-		return FComponentSubscriptionPatterns[script]
+	var key := [get_script(), IsServerSide()]
+	if FComponentSubscriptionPatterns.has(key):
+		return FComponentSubscriptionPatterns[key]
 	var declared: Array = []
 	_DeclareEvents(declared)
 	var patterns: Array = []
@@ -284,7 +290,7 @@ func _SubscriptionPatterns() -> Array:
 				break
 		if not replaced:
 			patterns.append(pattern)
-	FComponentSubscriptionPatterns[script] = patterns
+	FComponentSubscriptionPatterns[key] = patterns
 	return patterns
 
 

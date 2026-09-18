@@ -7,3 +7,8 @@ extends TWelaTargetConstraintComponent
 func CreateGrouped(Owner = null, Group = null, Zone = null, Prefix = null):
 	super(Owner, Group)
 	return self
+
+
+func SetPadding(Padding = null):
+	# not ported yet: no-op
+	return self

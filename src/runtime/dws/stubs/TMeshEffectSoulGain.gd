@@ -7,3 +7,13 @@ extends TMeshEffectWithTimekeys
 func Create(Duration = null, Param1 = null):
 	super(Duration, Param1)
 	return self
+
+
+func Color(Color = null):
+	# not ported yet: no-op
+	return self
+
+
+func Radius(Radius = null):
+	# not ported yet: no-op
+	return self

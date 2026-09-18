@@ -7,3 +7,13 @@ extends TEntityComponent
 func Create(Owner = null):
 	super(Owner)
 	return self
+
+
+func OrderValue(OrderValue = null):
+	# not ported yet: no-op
+	return self
+
+
+func SizeY(SizeY = null):
+	# not ported yet: no-op
+	return self

@@ -7,3 +7,8 @@ extends TMeshEffectGeneric
 func Create(Param0 = null, Param1 = null):
 	super(Param0, Param1)
 	return self
+
+
+func Color(Color = null):
+	# not ported yet: no-op
+	return self

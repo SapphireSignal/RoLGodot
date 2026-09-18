@@ -7,3 +7,13 @@ extends TEntityDisplayComponent
 func Create(Owner = null):
 	super(Owner)
 	return self
+
+
+func HideIfEmpty():
+	# not ported yet: no-op
+	return self
+
+
+func ShowResource(ResourceType = null):
+	# not ported yet: no-op
+	return self

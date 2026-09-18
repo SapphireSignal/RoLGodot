@@ -7,3 +7,8 @@ extends TBrainComponent
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func Blocking():
+	# not ported yet: no-op
+	return self

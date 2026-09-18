@@ -12,7 +12,7 @@ Hand-off note for the next session. Read `CLAUDE.md` first, then this.
 - Never read or write the owner's other repos.
 
 ## Where we are
-Phases 0 and 1 done, phase 2 steps 1-3 done (see `docs/port-plan.md`). Verified facts about the original are in
+Phases 0 and 1 done, phase 2 steps 1-4 done (see `docs/port-plan.md`). Verified facts about the original are in
 `docs/original-architecture.md`. If `reference/` is missing, run `tools\fetch_reference.ps1` (~800 MB download,
 ~3 GB checked out; run it in the background).
 
@@ -34,10 +34,17 @@ Step 3 done: `TResourceManagerComponent` in `src/runtime/components/` (section "
 `Units\Neutral\NexusLevel1` and client `Units\Black\VoidSkeletonDrop` with a fake `Game`). The scripts' `Game()`
 now resolves to the running script's bus (`TEntity.ScriptGame`).
 
+Step 4 done: `TUnitPropertyComponent`, `TArmorComponent`, `THealthComponent` (thin
+`TSerializableEntityComponent` base in `src/runtime/entity/`). New conventions in `docs/entity-core.md`: `out`
+parameters return the value or null, `{$IFDEF SERVER}` handlers go under `if IsServerSide():` in `_DeclareEvents`,
+components reach `Game` as `GlobalEventbus().Game`. `tests/component_fakes.gd`: event probe + fake
+`Game.EntityManager`. Stubs now carry no-op versions of the methods the scripts call, so real unit scripts run
+without errors (`tests/test_health_component.gd` builds the server SmallMeleeGolem).
+
 Next:
-4. The entity-local shared components of `BaseConflict.EntityComponents.Shared.pas` that need no game loop:
-   `TUnitPropertyComponent` (:36), `TArmorComponent` (:521), `THealthComponent` (:173, a
-   `TSerializableEntityComponent`: port that base as a thin class, serialisation stays phase 3). One file each
-   in `src/runtime/components/`, a test file each, expectations from the Pascal.
-5. Then the rest by `docs/script-api.md` (Position/Movement, Collision, CommanderIncome*, ...).
+5. The rest by `docs/script-api.md`, entity-local first: `TPositionComponent`/`TMovementComponent` need the map
+   and pathfinding, so check first what they pull in; likely order: `TCommanderIncome*` (:531-574, read
+   `RIncome` in `BaseConflict.Types.Shared.pas`), `TDynamicZone*Emitter` (:581), `TGameEventEnumeratorComponent`
+   (:630), `TNexusEarlyVulnerabilityComponent` (:88), then the `TEntityManagerComponent` (:276, needed for the
+   real `Game.EntityManager`; the fakes in `tests/component_fakes.gd` show the interface used so far).
 When a hand-written file declares `class_name TFoo`, rerun the transpiler: it drops the stub.

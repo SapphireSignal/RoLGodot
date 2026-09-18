@@ -149,6 +149,11 @@ static func AsIntVector2(p) -> Vector2i:
 	return Vector2i.ZERO
 
 
+## AsEnumType<T> for the one-byte enums (EnumArmorType, ...): the first byte of the union, empty = ord 0.
+static func AsEnumType(p) -> int:
+	return AsInteger(p) & 0xFF
+
+
 ## AsSetType<T> / AsType<SetX>: a set is an Array of ints; empty RParam = empty set.
 static func AsSet(p) -> Array:
 	if p == null:

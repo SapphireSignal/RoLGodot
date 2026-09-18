@@ -7,3 +7,23 @@ extends TWelaEffectComponent
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func ConsumesAll():
+	# not ported yet: no-op
+	return self
+
+
+func ConvertResource(FromResource = null, ToResource = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetPayingGroup(Group = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetPayingGroupForType(ResourceType = null, Group = null):
+	# not ported yet: no-op
+	return self

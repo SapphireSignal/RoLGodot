@@ -2,3 +2,18 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TStateDisplayComponent
 extends TEntityDisplayComponent
+
+
+func CheckWelaIsReadyInGroup(TargetGroup = null):
+	# not ported yet: no-op
+	return self
+
+
+func ReverseWelaIsReadyCheck():
+	# not ported yet: no-op
+	return self
+
+
+func Texture(TexturePath = null):
+	# not ported yet: no-op
+	return self

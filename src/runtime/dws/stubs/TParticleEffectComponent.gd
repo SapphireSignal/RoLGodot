@@ -17,3 +17,88 @@ func CreateGrouped(Owner = null, Group = null, ParticlePath = null, SizeNormaliz
 func CreateGroupedAndActivated(Owner = null, Group = null, ParticlePath = null, SizeNormalization = null):
 	pass
 	return self
+
+
+func ActivateAtFireTarget():
+	# not ported yet: no-op
+	return self
+
+
+func ActivateNow():
+	# not ported yet: no-op
+	return self
+
+
+func ActivateOnCreate():
+	# not ported yet: no-op
+	return self
+
+
+func ActivateOnDie():
+	# not ported yet: no-op
+	return self
+
+
+func ActivateOnFire():
+	# not ported yet: no-op
+	return self
+
+
+func ActivateOnFireDelayed(DeferTime = null):
+	# not ported yet: no-op
+	return self
+
+
+func ActivateOnFireWarhead():
+	# not ported yet: no-op
+	return self
+
+
+func ActivateOnFree():
+	# not ported yet: no-op
+	return self
+
+
+func ActivateOnLose():
+	# not ported yet: no-op
+	return self
+
+
+func ActivateOnPreFire():
+	# not ported yet: no-op
+	return self
+
+
+func ActivateOnWelaActivate():
+	# not ported yet: no-op
+	return self
+
+
+func ClonesToTarget():
+	# not ported yet: no-op
+	return self
+
+
+func DeactivateOnFire():
+	# not ported yet: no-op
+	return self
+
+
+func DeactivateOnTime(StopTime = null):
+	# not ported yet: no-op
+	return self
+
+
+func Delay(DeferTime = null):
+	# not ported yet: no-op
+	return self
+
+
+func EmitFromAllBones():
+	# not ported yet: no-op
+	return self
+
+
+func PlaceAtSavedTarget():
+	# not ported yet: no-op
+	return self

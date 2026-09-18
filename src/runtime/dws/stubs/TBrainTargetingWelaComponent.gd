@@ -7,3 +7,8 @@ extends TBrainWelaComponent
 func CreateGrouped(Owner = null, ControlledWelaID = null):
 	super(Owner, ControlledWelaID)
 	return self
+
+
+func Preemptive():
+	# not ported yet: no-op
+	return self

@@ -7,3 +7,13 @@ extends TMeshEffectWithTimekeys
 func Create(Duration = null, Param1 = null):
 	super(Duration, Param1)
 	return self
+
+
+func PowFactor(PowFactor = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetFixedCenter(X = null, Y = null, Z = null):
+	# not ported yet: no-op
+	return self

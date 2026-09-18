@@ -2,3 +2,13 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TWelaEventRedirecter
 extends TEntityComponent
+
+
+func CopyIndexedValue(Event = null, SourceGroup = null, Resource = null, TargetGroup = null):
+	# not ported yet: no-op
+	return self
+
+
+func CopyValue(Event = null, SourceGroup = null, TargetGroup = null):
+	# not ported yet: no-op
+	return self

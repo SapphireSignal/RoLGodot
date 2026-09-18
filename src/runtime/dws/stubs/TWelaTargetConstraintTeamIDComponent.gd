@@ -2,3 +2,13 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TWelaTargetConstraintTeamIDComponent
 extends TWelaTargetConstraintComponent
+
+
+func Invert():
+	# not ported yet: no-op
+	return self
+
+
+func SetTargetTeam(TeamID = null):
+	# not ported yet: no-op
+	return self

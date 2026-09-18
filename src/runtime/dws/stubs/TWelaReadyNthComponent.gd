@@ -2,3 +2,13 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TWelaReadyNthComponent
 extends TWelaReadyComponent
+
+
+func Nth(Nth = null):
+	# not ported yet: no-op
+	return self
+
+
+func Times(Times = null):
+	# not ported yet: no-op
+	return self

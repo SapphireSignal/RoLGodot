@@ -69,6 +69,13 @@ Tests: `tests/test_entity_core.gd` (every expectation is derived from the Pascal
 - **Overloads** become one method dispatching on argument type or a `null` default
   (`CardLevel()` / `CardLevel(Byte)` / `CardLevel(TArray<Byte>)`).
 - **Exceptions** (`raise`, `MakeException`) become `push_error`; the event continues.
+- **`out` parameters**: `TryGetFoo(x, out Y): Boolean` becomes `TryGetFoo(x)` returning `Y` or `null`
+  (`Game.EntityManager.TryGetEntityByID(ID)`, `TryGetOwningCommander(Entity)`).
+- **`{$IFDEF SERVER}` handlers**: list them in `_DeclareEvents` under `if IsServerSide():` (the subscription
+  patterns are cached per class *and* side); `{$IFDEF SERVER}` code in a body also tests `IsServerSide()`.
+- **`Game` in components** (the per-process global): `GlobalEventbus().Game`. The original never checks it for
+  nil where it uses `Game.EntityManager`; the port treats a missing `Game` (tests, no game loop yet) as "found
+  nothing".
 - **Two sides in one process**: the original ran client and server as separate programs. Here each `TEventbus`
   has `ApplicationType` (`nsServer`/`nsClient`, replaces `APPLICATIONTYPE`) and `Game` (replaces the `Game`
   global); an entity takes both from its global bus (`TEntity.IsServer()` for `{$IFDEF SERVER}` code paths).
@@ -98,6 +105,20 @@ One file per class, `class_name` = Delphi name (the transpiler then drops its st
 | --- | --- |
 | `t_resource_manager_component.gd` | `TResourceManagerComponent` (`BaseConflict.EntityComponents.Shared.pas:386`), on every entity |
 | `../types/r_resource_cost.gd` | `RResourceCost` + `AResourceCostHelper` (`BaseConflict.Types.Shared.pas:32`) |
+| `t_unit_property_component.gd` | `TUnitPropertyComponent` (`:36`): adds/removes unit properties, or gives them to the owning commander |
+| `t_armor_component.gd` | `TArmorComponent` (`:521`): armor factor/offset on the `var` Amount of `eiTakeDamage` |
+| `t_health_component.gd` | `THealthComponent` (`:173`): damage, heal, overheal, death chain; base `../entity/t_serializable_entity_component.gd` (thin until phase 3) |
+
+Tests: `tests/test_unit_property_component.gd`, `test_armor_component.gd`, `test_health_component.gd` (incl. the
+real server `Units\Colorless\SmallMeleeGolem`); `tests/component_fakes.gd` has an event probe and a fake
+`Game.EntityManager` for component tests.
+
+- **Damage pipeline** (`eiTakeDamage`, read `[Amount, DamageType, InflictorID]`): `TArmorComponent` (epMiddle)
+  rewrites Amount (`Max(1, Factor * Amount - Offset)`, only for Amount > 1 and without `dtIgnoreArmor`), then
+  `THealthComponent.OnDamage` (epLower, server) takes overheal first, then health, and returns the damage dealt.
+- **Death chain** (server): health < 1 → `eiKill` → `OnKill` (resolves a projectile killer to its creator) →
+  `eiDie` → `OnDie`: killer gets `eiYouHaveKilledMeShameOnYou`, `eiIsAlive := False` (health 0), `eiInstaDie` if
+  the unit was at full health when last hit/healed, `eiDelayedKillEntity` on the global bus. Also on `eiIdle`.
 
 - **Resources**: balance / cap / cost are blackboard values of `eiResourceBalance` / `eiResourceCap` /
   `eiResourceCost` indexed by `EnumResource`, under the group the event was called to (`CurrentEvent_CalledToGroup`).

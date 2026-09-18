@@ -2,3 +2,83 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TAnimatorComponent
 extends TEntityComponent
+
+
+func ActivateOnDie():
+	# not ported yet: no-op
+	return self
+
+
+func ActivateOnFire():
+	# not ported yet: no-op
+	return self
+
+
+func ActivateOnLose():
+	# not ported yet: no-op
+	return self
+
+
+func Duration(TimeMs = null):
+	# not ported yet: no-op
+	return self
+
+
+func FreeGroupAfter():
+	# not ported yet: no-op
+	return self
+
+
+func HideAfter(TimeKey = null):
+	# not ported yet: no-op
+	return self
+
+
+func HideUntil(TimeKey = null):
+	# not ported yet: no-op
+	return self
+
+
+func PlayAnimation(TimeKey = null, AnimationName = null, AnimationLength = null):
+	# not ported yet: no-op
+	return self
+
+
+func PositionKeypointsX(Values = null):
+	# not ported yet: no-op
+	return self
+
+
+func PositionKeypointsY(Values = null):
+	# not ported yet: no-op
+	return self
+
+
+func PositionKeypointsZ(Values = null):
+	# not ported yet: no-op
+	return self
+
+
+func PositionTimes(Values = null):
+	# not ported yet: no-op
+	return self
+
+
+func SizeKeypoints(Values = null):
+	# not ported yet: no-op
+	return self
+
+
+func SizeKeypointsXZ(Values = null):
+	# not ported yet: no-op
+	return self
+
+
+func SizeKeypointsY(Values = null):
+	# not ported yet: no-op
+	return self
+
+
+func SizeTimes(Values = null):
+	# not ported yet: no-op
+	return self

@@ -7,3 +7,28 @@ extends TWelaEffectComponent
 func CreateGrouped(Entity = null, Group = null):
 	super(Entity, Group)
 	return self
+
+
+func IsSpawner():
+	# not ported yet: no-op
+	return self
+
+
+func PassCardValues():
+	# not ported yet: no-op
+	return self
+
+
+func PassTargets():
+	# not ported yet: no-op
+	return self
+
+
+func SetSpawnedTeam(TeamID = null):
+	# not ported yet: no-op
+	return self
+
+
+func SpreadSpawns():
+	# not ported yet: no-op
+	return self

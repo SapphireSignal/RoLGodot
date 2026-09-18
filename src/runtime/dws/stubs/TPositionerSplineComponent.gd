@@ -7,3 +7,53 @@ extends TEntityComponent
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func BindToSubPosition(Name = null, TargetGroup = null):
+	# not ported yet: no-op
+	return self
+
+
+func BindToTargetSubPosition(Name = null):
+	# not ported yet: no-op
+	return self
+
+
+func BothTangents(HorizontalRotation = null, VerticalRotation = null, Weight = null):
+	# not ported yet: no-op
+	return self
+
+
+func BothTangentsAfterReached(HorizontalRotation = null, VerticalRotation = null, Weight = null):
+	# not ported yet: no-op
+	return self
+
+
+func EndTangent(HorizontalRotation = null, VerticalRotation = null, Weight = null):
+	# not ported yet: no-op
+	return self
+
+
+func MaxDistanceScaling(MaxDistanceScaling = null):
+	# not ported yet: no-op
+	return self
+
+
+func OrientStartWithTarget():
+	# not ported yet: no-op
+	return self
+
+
+func StartOffset(OffsetX = null, OffsetY = null, OffsetZ = null):
+	# not ported yet: no-op
+	return self
+
+
+func StartTangent(HorizontalRotation = null, VerticalRotation = null, Weight = null):
+	# not ported yet: no-op
+	return self
+
+
+func StartTangentRandom(HorizontalRotation = null, VerticalRotation = null, Weight = null):
+	# not ported yet: no-op
+	return self

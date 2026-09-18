@@ -7,3 +7,23 @@ extends TTutorialDirectorAction
 func Create():
 	super()
 	return self
+
+
+func Color(Color = null):
+	# not ported yet: no-op
+	return self
+
+
+func Position(X = null, Y = null, Z = null):
+	# not ported yet: no-op
+	return self
+
+
+func Size(Width = null, Height = null):
+	# not ported yet: no-op
+	return self
+
+
+func Up(X = null, Y = null, Z = null):
+	# not ported yet: no-op
+	return self

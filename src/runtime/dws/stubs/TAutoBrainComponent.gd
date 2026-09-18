@@ -7,3 +7,28 @@ extends TBrainComponent
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func FireAtCommander():
+	# not ported yet: no-op
+	return self
+
+
+func FireAtGround():
+	# not ported yet: no-op
+	return self
+
+
+func FireAtSelf():
+	# not ported yet: no-op
+	return self
+
+
+func FireAtTarget():
+	# not ported yet: no-op
+	return self
+
+
+func FireInGroup(Group = null):
+	# not ported yet: no-op
+	return self

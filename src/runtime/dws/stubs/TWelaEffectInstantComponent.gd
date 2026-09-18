@@ -7,3 +7,8 @@ extends TWelaEfficiencyEffectComponent
 func CreateGrouped(Entity = null, Group = null):
 	super(Entity, Group)
 	return self
+
+
+func TargetGroup(Group = null):
+	# not ported yet: no-op
+	return self

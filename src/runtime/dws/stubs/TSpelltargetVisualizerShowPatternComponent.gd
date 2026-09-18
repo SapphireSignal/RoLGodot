@@ -7,3 +7,8 @@ extends TSpelltargetVisualizerComponent
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func ShowForIndex(Index = null):
+	# not ported yet: no-op
+	return self

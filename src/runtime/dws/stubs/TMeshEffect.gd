@@ -7,3 +7,18 @@ extends TObject
 func Create():
 	super()
 	return self
+
+
+func Additive():
+	# not ported yet: no-op
+	return self
+
+
+func AssignToEntity(Entity = null):
+	# not ported yet: no-op
+	pass
+
+
+func OverrideColorIdentity(ColorIdentity = null):
+	# not ported yet: no-op
+	return self

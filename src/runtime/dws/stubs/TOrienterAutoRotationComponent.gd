@@ -7,3 +7,23 @@ extends TEntityComponent
 func CreateGrouped(Entity = null, Group = null):
 	super(Entity, Group)
 	return self
+
+
+func RandomOffset(X = null, Y = null, Z = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetSpeed(RotationSpeed = null):
+	# not ported yet: no-op
+	return self
+
+
+func SpeedJitter(X = null, Y = null, Z = null):
+	# not ported yet: no-op
+	return self
+
+
+func StopAt(Limit = null):
+	# not ported yet: no-op
+	return self

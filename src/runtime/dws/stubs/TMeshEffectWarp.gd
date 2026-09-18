@@ -7,3 +7,8 @@ extends TMeshEffectWithTimekeys
 func Create(TextureFilename = null, Duration = null):
 	super(TextureFilename, Duration)
 	return self
+
+
+func Smooth(Step = null):
+	# not ported yet: no-op
+	return self

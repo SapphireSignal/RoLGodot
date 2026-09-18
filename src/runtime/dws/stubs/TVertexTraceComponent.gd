@@ -7,3 +7,78 @@ extends TVisualizerComponent
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func ActivateNow():
+	# not ported yet: no-op
+	return self
+
+
+func ActivateOnFire():
+	# not ported yet: no-op
+	return self
+
+
+func Additive():
+	# not ported yet: no-op
+	return self
+
+
+func Color(Color = null):
+	# not ported yet: no-op
+	return self
+
+
+func DeactivateAfterTime(TimeMs = null):
+	# not ported yet: no-op
+	return self
+
+
+func DeactivateOnMoveTo():
+	# not ported yet: no-op
+	return self
+
+
+func FadeLength(FadeLength = null):
+	# not ported yet: no-op
+	return self
+
+
+func FadeWidening(FadeWidening = null):
+	# not ported yet: no-op
+	return self
+
+
+func LocalSpace():
+	# not ported yet: no-op
+	return self
+
+
+func MaxLength(MaxLength = null):
+	# not ported yet: no-op
+	return self
+
+
+func RollUpSpeed(RollUpSpeed = null):
+	# not ported yet: no-op
+	return self
+
+
+func SamplingDistance(SamplingDistance = null):
+	# not ported yet: no-op
+	return self
+
+
+func Texture(Filename = null):
+	# not ported yet: no-op
+	return self
+
+
+func TexturePerDistance(TexturePerDistance = null):
+	# not ported yet: no-op
+	return self
+
+
+func Width(Width = null):
+	# not ported yet: no-op
+	return self

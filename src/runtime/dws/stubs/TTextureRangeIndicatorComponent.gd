@@ -12,3 +12,58 @@ func Create(Owner = null):
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func Cone(DirectionX = null, DirectionZ = null):
+	# not ported yet: no-op
+	return self
+
+
+func DrawCircle(Thickness = null):
+	# not ported yet: no-op
+	return self
+
+
+func DrawOnShowSpawnZone(Zones = null):
+	# not ported yet: no-op
+	return self
+
+
+func HideInCaptureMode():
+	# not ported yet: no-op
+	return self
+
+
+func Offset(OffsetX = null, OffsetZ = null):
+	# not ported yet: no-op
+	return self
+
+
+func Opacity(Opacity = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetTexture(TextureName = null):
+	# not ported yet: no-op
+	return self
+
+
+func ShowTeamColor():
+	# not ported yet: no-op
+	return self
+
+
+func ShowWeaponRange():
+	# not ported yet: no-op
+	return self
+
+
+func Size(Size = null):
+	# not ported yet: no-op
+	return self
+
+
+func Slice(SliceFrom = null, SliceTo = null):
+	# not ported yet: no-op
+	return self

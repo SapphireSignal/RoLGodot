@@ -7,3 +7,33 @@ extends TEntityComponent
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func MaxNewTargetCount(Count = null):
+	# not ported yet: no-op
+	return self
+
+
+func PicksRandomTargets():
+	# not ported yet: no-op
+	return self
+
+
+func PicksRandomTargetsWithRepetition():
+	# not ported yet: no-op
+	return self
+
+
+func SetTargetTeamConstraint(Value = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetTargetTeamConstraintPriority(Value = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetValidateGroup(Group = null):
+	# not ported yet: no-op
+	return self

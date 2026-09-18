@@ -2,3 +2,18 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TWarheadSpottyRemoveBuffComponent
 extends TWarheadSpottyComponent
+
+
+func All():
+	# not ported yet: no-op
+	return self
+
+
+func MustHaveAny(TargetBuffs = null):
+	# not ported yet: no-op
+	return self
+
+
+func MustNotHave(TargetBuffs = null):
+	# not ported yet: no-op
+	return self

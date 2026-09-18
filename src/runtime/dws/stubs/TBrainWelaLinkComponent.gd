@@ -7,3 +7,13 @@ extends TBrainTargetingWelaComponent
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func LinkTime(Time = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetBuildCheckGroup(Group = null):
+	# not ported yet: no-op
+	return self

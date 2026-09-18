@@ -2,3 +2,53 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TWelaReadyResourceCompareComponent
 extends TWelaReadyComponent
+
+
+func CheckEmpty():
+	# not ported yet: no-op
+	return self
+
+
+func CheckFull():
+	# not ported yet: no-op
+	return self
+
+
+func CheckNotEmpty():
+	# not ported yet: no-op
+	return self
+
+
+func CheckNotFull():
+	# not ported yet: no-op
+	return self
+
+
+func CheckingGroup(Group = null):
+	# not ported yet: no-op
+	return self
+
+
+func ChecksCommander():
+	# not ported yet: no-op
+	return self
+
+
+func ComparedResource(Resource = null):
+	# not ported yet: no-op
+	return self
+
+
+func ReferenceIsAbsolute():
+	# not ported yet: no-op
+	return self
+
+
+func ReferenceValue(ReferenceValue = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetComparator(Comparator = null):
+	# not ported yet: no-op
+	return self

@@ -7,3 +7,13 @@ extends TEntityComponent
 func CreateGrouped(Owner = null, ComponentGroup = null, ReadyAtStart = null):
 	super(Owner, ComponentGroup)
 	return self
+
+
+func Cooldown(CooldownMs = null):
+	# not ported yet: no-op
+	return self
+
+
+func Once():
+	# not ported yet: no-op
+	return self

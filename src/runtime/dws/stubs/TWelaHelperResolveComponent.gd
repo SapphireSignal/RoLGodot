@@ -2,3 +2,18 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TWelaHelperResolveComponent
 extends TEntityComponent
+
+
+func ResolveCurrentTier():
+	# not ported yet: no-op
+	return self
+
+
+func ResolveTeamID():
+	# not ported yet: no-op
+	return self
+
+
+func ResolveTier():
+	# not ported yet: no-op
+	return self

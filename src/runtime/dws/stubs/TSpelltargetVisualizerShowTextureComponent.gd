@@ -7,3 +7,23 @@ extends TSpelltargetVisualizerComponent
 func CreateGrouped(Owner = null, Group = null):
 	super(Owner, Group)
 	return self
+
+
+func Additive(ForIndex = null):
+	# not ported yet: no-op
+	return self
+
+
+func NoValidChecks():
+	# not ported yet: no-op
+	return self
+
+
+func SetSize(Size = null, ForIndex = null):
+	# not ported yet: no-op
+	return self
+
+
+func SetTexture(TexturePath = null, ForIndex = null):
+	# not ported yet: no-op
+	return self

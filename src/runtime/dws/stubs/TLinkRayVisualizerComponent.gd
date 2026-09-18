@@ -7,3 +7,8 @@ extends TVertexRayVisualizerComponent
 func CreateGrouped(Owner = null, ComponentGroup = null):
 	super(Owner, ComponentGroup)
 	return self
+
+
+func SetDestSubPosition(SubPosition = null):
+	# not ported yet: no-op
+	return self

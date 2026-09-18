@@ -26,6 +26,20 @@ static func Intersects(a: Array, b: Array) -> bool:
 	return false
 
 
+## `A + B`, a new set.
+static func Union(a: Array, b: Array) -> Array:
+	return Make(a + b)
+
+
+## `A - B`, a new set.
+static func Difference(a: Array, b: Array) -> Array:
+	var result: Array = []
+	for v in Make(a):
+		if not b.has(v):
+			result.append(v)
+	return result
+
+
 ## `A = B`
 static func Equal(a: Array, b: Array) -> bool:
 	return Make(a) == Make(b)

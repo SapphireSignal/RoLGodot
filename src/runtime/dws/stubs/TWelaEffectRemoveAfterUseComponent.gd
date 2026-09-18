@@ -2,3 +2,8 @@
 # Phase 2 replaces it with the real class (delete this file when a real one declares the name).
 class_name TWelaEffectRemoveAfterUseComponent
 extends TWelaEffectComponent
+
+
+func TargetGroup(TargetGroup = null):
+	# not ported yet: no-op
+	return self

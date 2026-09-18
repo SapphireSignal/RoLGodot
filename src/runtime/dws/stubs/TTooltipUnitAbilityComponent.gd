@@ -12,3 +12,38 @@ func Create(Owner = null, AbilityName = null):
 func CreateGrouped(Owner = null, Group = null, AbilityName = null):
 	super(Owner, Group)
 	return self
+
+
+func IsCardDescription():
+	# not ported yet: no-op
+	return self
+
+
+func Keyword(Keyword = null):
+	# not ported yet: no-op
+	return self
+
+
+func PassInteger(Key = null, Value = null, SpanClass = null):
+	# not ported yet: no-op
+	return self
+
+
+func PassPercentage(Key = null, Value = null, SpanClass = null):
+	# not ported yet: no-op
+	return self
+
+
+func PassSingle(Key = null, IntegralPart = null, FractionalPart = null, SpanClass = null):
+	# not ported yet: no-op
+	return self
+
+
+func PassSingleAsInteger(Key = null, Value = null, SpanClass = null):
+	# not ported yet: no-op
+	return self
+
+
+func PassString(Key = null, Value = null, SpanClass = null):
+	# not ported yet: no-op
+	return self
