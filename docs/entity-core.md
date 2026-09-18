@@ -112,6 +112,7 @@ One file per class, `class_name` = Delphi name (the transpiler then drops its st
 | `../types/r_income.gd` | `RIncome` (`BaseConflict.Types.Shared.pas:47`), a record: copies in and out of RParams |
 | `t_dynamic_zone_*emitter_component.gd` | `TDynamicZone{,Radial,Axis}EmitterComponent` (`:581-614`): answer `eiInDynamicZone` |
 | `t_game_event_enumerator_component.gd` | `TGameEventEnumeratorComponent` (`:630`): lists its owner for `eiGameEvent` |
+| `t_entity_manager_component.gd` | `TEntityManagerComponent` (`:276`): `Game.EntityManager`, entity registry and deferred freeing |
 | `../engine/t_timer.gd`, `t_time_manager.gd` | `TTimer` (whole) and the `TTimeManager` clock (`Engine.Helferlein.Windows.pas:985`) |
 
 Tests: `tests/test_unit_property_component.gd`, `test_armor_component.gd`, `test_health_component.gd` (incl. the
@@ -128,6 +129,13 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   Radial: `eiWelaRange` of its group around the owner, owner's team or TeamID <= -1. Axis: dot of the direction
   from its point with its normal >= 0 (`SetPosition` normalizes the point, as in the original).
 - **Game events** (`eiGameEvent`, global read `[Name]`): an Array of the owners listening to that name, or empty.
+- **Entity manager** (`tests/test_entity_manager.gd`): `eiNewEntity` (sent by `TEntity.Deploy`) registers,
+  `GenerateUniqueID` counts from 2. `eiKillEntity` unregisters at once and frees at the next `Idle` (called by the
+  game loop); `eiRemoveComponent` / `eiRemoveComponentGroup` / `FreeEntity` are deferred to `Idle` too.
+  `eiReplaceEntity` re-keys the entity and its pending kills and updates `Game.Map.BuildZones`;
+  `eiSetGridFieldBlocking` needs `Game.Map` as well (both untested until the map exists). Quirk kept:
+  `NexusNext` / `NexusNextEnemy` return the *farthest* nexus (`bestDistance < distance`). The registry is an
+  insertion-ordered Dictionary (original: hash order). `InvokeEventOnEntity` waits for `InvokeWithRawData`.
 - `TNexusEarlyVulnerabilityComponent` (`:88`) is not ported: only declared and exposed, nothing creates it
   (listed in `docs/unused-features.md`, with the unused axis and exclude zones).
 - **Time**: `TTimer` reads `TTimeManager.GetFloatingTimestamp()` (ms). Tests freeze it with
@@ -152,6 +160,7 @@ has an event probe and a fake `Game.EntityManager` for component tests.
 ## Not ported yet
 
 - Serialisation (`TEntity.Serialize/Deserialize`, `TBlackboard.SaveToStream/LoadFromStream`,
-  `TSerializableEntityComponent`, `TEventbus.InvokeWithRawData`), `TEntity.OwningCommander`, the rest of
+  `TSerializableEntityComponent`, `TEventbus.InvokeWithRawData`, `TEntityManagerComponent.InvokeEventOnEntity`),
+  `TEntity.OwningCommander`, the rest of
   `TTimeManager` (pause, `TickTack`; `CreatedTimestamp` uses the engine clock meanwhile): phase 3, with the game
   loop and client-server sync.

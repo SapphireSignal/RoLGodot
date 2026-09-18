@@ -55,3 +55,5 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   green, no errors. Next: `TDynamicZone*Emitter` (see CONTINUE.md).
 - 2026-09-18: Phase 2 step 5 part 2: `TDynamicZone{,Radial,Axis}EmitterComponent`, `TGameEventEnumeratorComponent`.
   1300 files compile, 75 tests green, no errors. Next: `TEntityManagerComponent` (see CONTINUE.md).
+- 2026-09-18: Phase 2 step 5 part 3: `TEntityManagerComponent` (registry, deferred freeing, nexus queries).
+  1302 files compile, 84 tests green, no errors. Next: `TModifier*Component` (see CONTINUE.md).
