@@ -18,14 +18,21 @@ var _probe: WarheadProbe
 class FakeMap:
 	extends RefCounted
 	var MapBoundaries := Rect2(-150, -150, 300, 300)
+	var Lanes := TLaneManager.new().Create()
+
+	func ClampToZone(_Zone: String, Position: Vector2) -> Vector2:
+		return Position
 
 
 class FakeGame:
 	extends RefCounted
 	var IsShuttingDown := false
+	var IsSandbox := false
 	var IngameStatus: int = BC.gsLoading
+	var League := 1
 	var Map := FakeMap.new()
 	var EntityManager = null
+	var ServerEntityManager = null
 	var CollisionManager = null
 
 
@@ -140,8 +147,9 @@ func _setup() -> void:
 	_bus.ApplicationType = C.nsServer
 	_bus.Game = FakeGame.new()
 	_game_entity = TEntity.new().Create(_bus, 1)
-	_manager = TEntityManagerComponent.new().Create(_game_entity)
+	_manager = TServerEntityManagerComponent.new().Create(_game_entity)
 	_bus.Game.EntityManager = _manager
+	_bus.Game.ServerEntityManager = _manager
 	_bus.Game.CollisionManager = TServerCollisionManagerComponent.new().Create(_game_entity)
 	_owner = _unit(1)
 	_owner.Blackboard.SetValue(C.eiWelaDamage, [1], 10.0)
@@ -152,6 +160,7 @@ func _setup() -> void:
 func after_each() -> void:
 	if _game_entity != null:
 		_bus.Game.CollisionManager = null
+		_bus.Game.ServerEntityManager = null
 		_game_entity.Free()  # frees the manager and every deployed entity
 		_bus.Game = null
 		_bus.Free()

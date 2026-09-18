@@ -23,6 +23,39 @@ static var UNIT_PROPERTIES_PREVENT_THINKING: Array = DSet.Make([C.upSummoningSic
 static var UNIT_PROPERTIES_PREVENT_MOVEMENT: Array = DSet.Make([C.upRooted, C.upGrounded, C.upLifted,
 	C.upImmobilized])
 
+## Game statistic identifiers (:73-96), counted by TGameStatisticManager.
+const GSE_UNIT_SPAWN_PREFIX = "unit_spawns_"
+const GSE_UNIT_KILL_PREFIX = "unit_kills_"
+const GSE_UNIT_DEATH_PREFIX = "unit_deaths_"
+const GSE_WELA_TRIGGER_PREFIX = "wela_triggers_"
+const GSE_WELA_TARGET_PREFIX = "wela_targets_"
+const GSE_WELA_SPAWN_PREFIX = "wela_spawns_"
+const GSE_WELA_KILL_PREFIX = "wela_kills_"
+const GSE_WELA_DEATH_PREFIX = "wela_deaths_"
+const GSE_WELA_DURATION_PREFIX = "wela_duration_"
+const GSE_WELA_GAIN_DAMAGE_PREFIX = "wela_gain_damage_"
+const GSE_WELA_DEALT_DAMAGE_PREFIX = "wela_dealt_damage_"
+const GSE_CARD_PLAY_PREFIX = "card_play_"
+const GSE_CARD_PLAY_COLOR_PREFIX = "card_play_color_"
+const GSE_GLOBAL_KILLS = "global_kills"
+const GSE_GLOBAL_INSTAKILLS = "global_instakills"
+const GSE_GLOBAL_GAIN_DAMAGE = "global_gain_damage"
+const GSE_GLOBAL_DEATHS = "global_deaths"
+const GSE_GLOBAL_INSTADEATHS = "global_instadeaths"
+const GSE_GLOBAL_SPAWNS = "global_spawns"
+const GSE_GLOBAL_SPAWNERS = "global_spawners"
+const GSE_GLOBAL_DROPS = "global_drops"
+const GSE_GLOBAL_BUILDINGS = "global_buildings"
+const GSE_GLOBAL_SPELLS = "global_spells"
+
+## BaseConflict.Constants.Cards.pas:206-216
+const MAX_LEVEL = 5
+const FILE_IDENTIFIER_DROP = "Drop"
+const FILE_IDENTIFIER_SPAWNER = "Spawner"
+const FILE_IDENTIFIER_BUILDING = "Building"
+const FILE_IDENTIFIER_GOLEMS = "Golems"
+const FILE_IDENTIFIER_SPELL = "Spell"
+
 
 ## RES_INT_RESOURCES : SetResource = [reInteger .. high(EnumResource)]
 static func IsIntResource(ResourceType: int) -> bool:

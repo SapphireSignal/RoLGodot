@@ -129,6 +129,8 @@ One file per class, `class_name` = Delphi name (the transpiler then drops its st
 | `t_wela_effect*_component.gd`, `t_wela_efficiency_effect_component.gd`, `t_wela_helper_{beacon,init_active_after_game_start,activate_timer}_component.gd` | `TWelaEffect{,Instant,OnlyByChance,Redirecter,PayCost,ActivationAbility,Suicide,TriggerSpellCast,RemoveAfterUse,IncreaseResource,GameEvent,Fire,ResetCooldown,RemoveBeacon}Component`, `TWelaEfficiencyEffectComponent`, `TWelaHelper*` (`...Server.Welas.pas:253-537`, `:781-826`): see "Effects" |
 | `t_warhead*_component.gd` | `TWarhead{,Spotty,SpottyHealth,SpottyDamage,SpottyHeal,SpottyKill,SpottyRemoveBuff,SpottyResource,SpottyWelaStop}Component` (`GameServer/...Server.Warheads.pas:29-215`): see "Warheads" |
 | `t_think_*_component.gd`, `t_brain*_component.gd`, `t_auto_brain*.gd`, `../classes/t_delayed_event_handler.gd`, `../types/r_commander_ability_target.gd` | every used class of `GameServer/...Server.Brains.pas` (8 think impulses / block, 21 brains, 20 auto-brains), `TDelayedEventHandler` (`...Classes.Server.pas:93`), `RCommanderAbilityTarget` (`BaseConflict.Types.Target.pas:115`): see "Brains" |
+| `t_server_entity_manager_component.gd`, `../classes/t_game_statistic_manager.gd`, `t_wela_effect_{factory,replace,projectile}_component.gd`, `t_projectile_event_redirecter.gd`, `t_brain_{spawner,capture_point}_component.gd` | `TServerEntityManagerComponent` (`GameServer/...Server.pas:358`), `TGameStatisticManager` (`...Classes.Server.pas:20`), `TWelaEffect{Factory,Replace,Projectile}Component`, `TProjectileEventRedirecter` (`...Server.Welas.pas:337-564`, `:660`), `TBrain{Spawner,CapturePoint}Component` (`...Server.Brains.Special.pas`): see "Spawning" |
+| `t_warhead_splash*_component.gd`, `t_warhead_spotty_teleport_component.gd` | `TWarheadSplash{,Health,Damage,Heal}Component`, `TWarheadSpottyTeleportComponent` (`...Server.Warheads.pas:66`, `:222-279`): see "Splash and teleport" |
 
 Tests: `tests/test_unit_property_component.gd`, `test_armor_component.gd`, `test_health_component.gd` (incl. the
 real server `Units\Colorless\SmallMeleeGolem`), `test_commander_income.gd` (incl. the real server
@@ -264,9 +266,9 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   (`BC.gsPlaying`; no Game = not playing) and frees itself at the first `eiGameTick`; `TWelaHelperActivateTimer`
   at the first `eiIdle` after its delay. Beacons: `eiWelaSearch [SetUnitProperty]` collects the groups of matching
   `TWelaHelperBeaconComponent`s (ResetCooldown, RemoveBeacon, the resource warhead use it). The global
-  `eiGameTickTimeToFirstTick` has no blackboard: the game's tick component answers it (phase 3). Not yet: Factory,
-  Replace, Projectile, the link effects and `TWelaEffectLinkPayCostMyselfComponentServer` (they spawn entities or
-  need links), `TWelaEffectStatisticsComponent`, `TWelaEffectWaveSpawnComponent`.
+  `eiGameTickTimeToFirstTick` has no blackboard: the game's tick component answers it (phase 3). Factory, Replace,
+  Projectile: see "Spawning". Not yet: the link effects and `TWelaEffectLinkPayCostMyselfComponentServer` (need
+  links), `TWelaEffectStatisticsComponent`, `TWelaEffectWaveSpawnComponent`.
 - **Warheads** (server, `tests/test_warheads.gd`, incl. a real server SmallMeleeGolem hitting another through its
   instant effect): `eiFireWarhead [ATarget]` in a group runs `FireWarhead` (epLast; RedirectToSelf: the owner).
   Spotty warheads act on each existing entity target. Health: amount = eiWelaDamage × eiWelaModifier (default 1)
@@ -274,8 +276,8 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   (non-empty replaces the amount), then the target's `eiTakeDamage`; dealt > 0 → owner `eiDamageDone [dealt,
   types, target]`; target dead → `eiKillDone [ID]` in its group. Heal: target `eiHeal`, healed > 0 →
   `eiHealDone`. Kill: `eiKill [owner, owner's commander]` (Exile / Sacrifice first; Remove: only the global
-  `eiDelayedKillEntity`). Resource: amount rounded (banker's) for int resources, see the class comment. Not yet:
-  splash warheads and teleport (need collision queries / spawning).
+  `eiDelayedKillEntity`). Resource: amount rounded (banker's) for int resources, see the class comment. Splash and
+  teleport: see "Splash and teleport".
 - **Brains** (server, `tests/test_brains.gd`, incl. two real server SmallMeleeGolems fighting to the death): a
   think impulse triggers `eiThink` then `eiThinkChain` in its group (groupless for most units). eiThink (epMiddle)
   runs every brain that `CanThink` (no `UNIT_PROPERTIES_PREVENT_THINKING` unless passive, eiWelaActive of its group
@@ -297,9 +299,42 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   never changes the target (Delphi overloads: the override is never reached from CheckAndFire; `Fire()` /
   `FireTargets(Targets)` here); the commander brain's target-count assert is dropped (release build). Port notes:
   the original's `Fire(Amount, TargetEntity)` of the deal-damage brain is `FireDamage`; without
-  `Game.DelayedEvents` delayed shots / projectile retargets are dropped. `eiDelayedKillEntity` waits for the server
-  entity manager (phase 3). Unused and not ported: see `docs/unused-features.md` (link / kill / will-deal-damage /
+  `Game.DelayedEvents` delayed shots / projectile retargets are dropped. Unused and not ported: see `docs/unused-features.md` (link / kill / will-deal-damage /
   on-hit / commander-target / projectile / instant-chain brains).
+- **Spawning** (server, `tests/test_spawning.gd`, incl. a real VoidSkeletonSpawner on a build field spawning its
+  squad, and a dying real golem's soul flying to a soul gatherer): `TServerEntityManagerComponent` is the server
+  game's `EntityManager` and `ServerEntityManager`. `eiDelayedKillEntity` → `eiKillEntity` at the next `Idle`
+  (unregistered), freed at the one after. `SpawnUnit(Position, Front, Pattern, League, Level, TeamID, Commander = -1,
+  Creator, Callback, PreProcessing, PostProcessing)` or the scripts' `SpawnUnit(X, Y, Pattern, TeamID)`:
+  `INHERIT_FROM_GAME` = `Game.League` / `BC.MAX_LEVEL`; non-spawners are clamped to the walk zone
+  (`Game.Map.ClampToZone`); `Game.Statistics.UnitSpawned`; the initializer writes team, position, front, commander
+  (if >= 0), creator (+ its `ScriptFileName`), card league / level, then PreProcessing (the entity has ID 0 still);
+  then the ID, Callback, sandbox overwatch (`Game.IsSandbox` + `Game.Overwatch[Clearable]`), `eiAfterCreate`, global
+  `eiSendEntities [[Entity]]`, `Deploy`, PostProcessing. `SpawnSpawner` places a 1x1 unit on a build field and blocks
+  it (`eiBuildgridBlockedFields` = Array of `[ZoneID, Vector2i]`). Fakes of the server game need `League`,
+  `IsSandbox`, `ServerEntityManager`, `Map.ClampToZone` / `Map.Lanes` (and `Map.BuildZones` for replace / build
+  targets). `TGameStatisticManager` (`Game.Statistics`, optional in fakes) counts per commander; `CardPlayed` waits
+  for the card info. Factory: `eiWelaCount` units per target (SpreadSpawns: `RTarget.ComputeSpawningPattern`, or
+  random within `eiWelaAreaOfEffect`); build targets sit at `RTarget.GetRealBuildPosition` and block their fields
+  **with ID 0** (quirk: blocked in PreProcessing); `eiWelaUnitProduced [ID]` in the fired group, then groupless.
+  Replace: `eiDelayedKillEntity` for the target, the new unit in its place, then `eiReplaceEntity [owner, new, False]`.
+  Projectile: from the owner (**an owner at exactly (0, 0) shoots from the target**, quirk: "a commander"), values
+  copied into blackboard group [0], a `TProjectileEventRedirecter` (damage done / kills / will-deal-damage go to the
+  creator). Spawner brain: `eiWaveSpawn [GridID, Coord]` for its field fires group 0 at the zone's spawn target +
+  grid offset through `RMatrix2x2.Inverse` **as coded** (the transpose of the inverse; for the rotation base: the
+  base itself, so field (0, 0) of a 4x4 zone facing (0, 1) gives (-3, -3), not (3, 3)). Capture point: team groups in
+  `SetTeamGroup` order (original: hash order). Unused options: `docs/unused-features.md`.
+- **Splash and teleport** (server, `tests/test_splash_teleport.gd`, incl. a real MeleeGolemTower's cone splash):
+  splash warheads query `eiEntitiesInRange` (all teams) around each target (an empty target ends the fire) with
+  `eiWelaAreaOfEffect` of the value group, filtered by IgnoreMainTargets, the target's layer (ground / flyer, unless
+  TargetsGroundAndAir), LineFromOwner(width) or the cone `eiWelaAreaOfEffectCone` (from the owner), and
+  `eiWelaTargetPossible` of the validate group. Health splash shares `eiWelaDamage × eiWelaSplashfactor` (default
+  10000) with at most `eiWelaDamage` per unit, round by round from the unit needing least (health; heal: missing
+  health, full units skipped unless dtOverheal); what is left is spread over all, capped per unit. Types get
+  dtSplash. Teleport: to the team's nexus (else the farthest one), a fixed spot, or the owner to its target; unless
+  imprinted it offsets from an entity destination, exiles and re-keys the unit (`eiReplaceEntity [ID, new, True]`:
+  the entity manager changes its `ID`); AsProjectile hands the unit to a projectile carrying an imprinted teleport
+  warhead in [0] (commander = the owner's ID, quirk kept).
 - `TNexusEarlyVulnerabilityComponent` (`:88`) is not ported: only declared and exposed, nothing creates it
   (listed in `docs/unused-features.md`, with the unused axis and exclude zones).
 - **Time**: `TTimer` reads `TTimeManager.GetFloatingTimestamp()` (ms). Tests freeze it with

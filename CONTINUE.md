@@ -12,7 +12,7 @@ Hand-off note for the next session. Read `CLAUDE.md` first, then this.
 - Never read or write the owner's other repos.
 
 ## Where we are
-Phases 0 and 1 done, phase 2 steps 1-4 done, step 5 under way (see `docs/port-plan.md`). Verified facts about the original are in
+Phases 0 and 1 done, phase 2 steps 1-4 done, step 5 under way (entity-local families done up to spawning) (see `docs/port-plan.md`). Verified facts about the original are in
 `docs/original-architecture.md`. If `reference/` is missing, run `tools\fetch_reference.ps1` (~800 MB download,
 ~3 GB checked out; run it in the background).
 
@@ -78,10 +78,20 @@ The brains are done: every used class of `...Server.Brains.pas` (section "Brains
 `ProcessDueEvents` is TServerGame.Idle's loop), `RCommanderAbilityTarget` (`src/runtime/types/`), `BC.THINK_TIME_INTERVAL`
 and `BC.UNIT_PROPERTIES_PREVENT_{THINKING,MOVEMENT}`. Test fakes of the game now need `Map.Lanes` (a real
 `TLaneManager`) and `DelayedEvents` when real units think.
-Next: the spawning family. `TServerEntityManagerComponent` (`GameServer/BaseConflict.EntityComponents.Server.pas:357`:
-`SpawnUnit*`, eiDelayedKillEntity = kill at the next Idle, eiLose), then what spawns through it:
-`TWelaEffect{Factory,Replace,Projectile}Component`, `TBrainSpawnerComponent`, the splash warheads (collision queries
-exist now) and `TWarheadSpottyTeleportComponent`. A real test: a golem's projectile-less death spawns its soul
-(`TWelaEffectFactoryComponent` in GROUP_SOUL), or a ranged golem's projectile flies and hits.
+Spawning is done: `TServerEntityManagerComponent` (the server game's EntityManager and ServerEntityManager),
+`TGameStatisticManager` (`src/runtime/classes/`, `Game.Statistics`), `TWelaEffect{Factory,Replace,Projectile}Component`,
+`TProjectileEventRedirecter`, `TBrain{Spawner,CapturePoint}Component`, the splash warheads and
+`TWarheadSpottyTeleportComponent` (sections "Spawning" and "Splash and teleport" in `docs/entity-core.md`,
+`tests/test_spawning.gd`, `tests/test_splash_teleport.gd`). Old test fakes that kill real units now use the server
+entity manager (souls spawn on death). `tools/run_tests.ps1` now fails on any `SCRIPT ERROR` in the test log.
+Next: the link family: `TWelaLinkEffectComponent` (establishes / breaks link entities), `TWelaLinkEffectUnitPropertyComponent`,
+`TLinkEventRedirecter`, `TLinkEffectDamageRedirectionComponent`, `TLinkEffectFireAtProducedUnitsComponent`,
+`TLinkBrainComponent` (`GameServer/...Server.pas:150`), `TWelaEffectLinkPayCostMyselfComponentServer`
+(`...Server.Welas.pas:570-735`). Then the small server rest from the stub list (`src/runtime/dws/stubs/`):
+`TModifier{Blinded,MultiplyDealtDamage}Component`, `TBuffTakenDamageMultiplierComponent`, `TWelaReady{Nth,EntityNearby}Component`,
+`TWelaEffect{IncomePayout,Statistics,WaveSpawn}Component`, `T{Server,}PrimaryTargetComponent`, `TSuicideOnGameEndComponent`,
+`TStatisticsUnitComponent`, `TServerCardPlayStatisticsComponent`; then commander / scenario / tutorial / sandbox
+directors, and phase 3 (the game loop). A real test for links: a real link script (e.g. `Links\...` used by a
+linking unit) establishing, draining and breaking.
 The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.
 When a hand-written file declares `class_name TFoo`, rerun the transpiler: it drops the stub.

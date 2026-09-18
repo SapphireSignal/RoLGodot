@@ -16,6 +16,17 @@ var Center: Vector2:
 		return Origin + (Direction * 0.5)
 
 
+static func Create(Origin_: Vector2, Direction_: Vector2) -> RLine2D:
+	var Result := RLine2D.new()
+	Result.Origin = Origin_
+	Result.Direction = Direction_
+	return Result
+
+
+func Length() -> float:
+	return Direction.length()
+
+
 static func CreateFromPoints(Startpoint: Vector2, Endpoint_: Vector2) -> RLine2D:
 	var Result := RLine2D.new()
 	Result.Origin = Startpoint

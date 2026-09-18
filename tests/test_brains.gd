@@ -18,14 +18,19 @@ class FakeMap:
 	var Lanes := TLaneManager.new().Create()
 	var Pathfinding = null
 
+	func ClampToZone(_Zone: String, Position: Vector2) -> Vector2:
+		return Position
+
 
 class FakeGame:
 	extends RefCounted
 	var IsShuttingDown := false
 	var IsSandbox := false
 	var IngameStatus := 2  # BC.gsPlaying
+	var League := 1
 	var Map := FakeMap.new()
 	var EntityManager = null
+	var ServerEntityManager = null
 	var CollisionManager = null
 	var DelayedEvents := TIntPriorityQueue.new()
 
@@ -191,8 +196,9 @@ func _setup() -> void:
 	_bus.ApplicationType = C.nsServer
 	_bus.Game = FakeGame.new()
 	_game_entity = TEntity.new().Create(_bus, 1)
-	_manager = TEntityManagerComponent.new().Create(_game_entity)
+	_manager = TServerEntityManagerComponent.new().Create(_game_entity)
 	_bus.Game.EntityManager = _manager
+	_bus.Game.ServerEntityManager = _manager
 	_bus.Game.CollisionManager = TServerCollisionManagerComponent.new().Create(_game_entity)
 
 
@@ -200,6 +206,7 @@ func after_each() -> void:
 	TTimeManager.FakeTime = null
 	if _game_entity != null:
 		_bus.Game.CollisionManager = null
+		_bus.Game.ServerEntityManager = null
 		_bus.Game.DelayedEvents.Clear()
 		_game_entity.Free()  # frees the managers and every deployed entity
 		_bus.Game = null

@@ -17,7 +17,7 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - Godot: `D:\Godot\Godot_v4.7.1-stable_win64.exe` (console build `..._console.exe` for headless runs)
 - Delphi: `C:\Program Files (x86)\Embarcadero\Studio\37.0\bin\`
 - Tests: `powershell -ExecutionPolicy Bypass -File tools\run_tests.ps1` (import + compile sweep + tests,
-  hard timeout, logs in `logs/`). Test files: `tests/test_*.gd` extending `res://tests/test_case.gd`.
+  hard timeout, logs in `logs/`; any GDScript runtime `SCRIPT ERROR` in the log fails the run). Test files: `tests/test_*.gd` extending `res://tests/test_case.gd`.
 
 ## Docs
 - `docs/original-architecture.md`: how the original is built, file formats, gotchas.
@@ -84,3 +84,7 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   block, 21 brains, 20 auto-brains) + `TDelayedEventHandler`, `RCommanderAbilityTarget`; two real golems now fight
   to the death (both fall at the 8th exchange, 13033 ms). 1351 files compile, 232 tests green, no errors. Next: the
   spawning family (see CONTINUE.md).
+- 2026-09-18: Phase 2 step 5 part 16: spawning (`TServerEntityManagerComponent`, `TGameStatisticManager`, factory /
+  replace / projectile effects, `TProjectileEventRedirecter`, spawner and capture-point brains) and splash / teleport
+  warheads; a real spawner spawns its squad, a dying golem's soul flies to a gatherer, a real tower splashes. The test
+  runner now fails on runtime script errors. 1356 files compile, 261 tests green, no errors. Next: links (CONTINUE.md).

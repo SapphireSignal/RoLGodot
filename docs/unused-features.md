@@ -63,6 +63,10 @@ How the list is kept:
 | Fire at link ends | `TWelaEffectFireComponent.RedirectToLinkSource`, `.RedirectToLinkDestination`, same unit `:2910` | Meant to fire at a link's source / destination; unfinished: they only set flags that `Fire` never reads. | Yes (no-ops, as in the original) |
 | Resource warhead on cost / commander | `TWarheadSpottyResourceComponent.ChangesCost`, `.TargetsOwningCommander`, `GameServer/BaseConflict.EntityComponents.Server.Warheads.pas:477`, `:546` | A hit that makes a target's card cheaper/dearer, or gives/takes resources from the target's player. | Yes |
 | Spotty percentage of current health | `TWarheadSpottyHealthComponent.PercentageOfCurrentHealth`, same unit `:594` | Damage or heal as a share of the target's current health (only the max-health variant is used). | Yes |
+| Mixed squads / ring spawns | `TWelaEffectFactoryComponent.SpawnsDifferentUnits`, `.SpreadSpawnsOnCircle`, `...Server.Welas.pas:422`, `:426` | A factory spawning a different unit per index of `eiWelaUnitPattern` (a mixed squad), or its units on a circle of `eiWelaAreaOfEffect` around the target instead of anywhere inside it. | Yes |
+| Projectile volleys and link projectiles | `TWelaEffectProjectileComponent.MultipleProjectiles`, `.IsLinkEffect`, `.ReverseLink`, `...Server.Welas.pas:557-563` | `eiWelaCount` projectiles per target, or projectiles leaving from a link's source / destination instead of the shooter. | Yes |
+| Spawner timing and scatter | `TBrainSpawnerComponent.FireNotInitially`, `.ApplyRandomOffset`, `...Server.Brains.Special.pas:64-66` | A spawner that skips its first wave (at game start / placement), or scatters its spawn point by ±1 on each axis. | Yes |
+| Spawn with front | `TServerEntityManagerComponent.SpawnUnitWithFront`, `GameServer/BaseConflict.EntityComponents.Server.pas:379` | Scenario scripts spawning a unit facing a chosen direction (they use the plain, overwatch and no-lifetime variants). | Yes |
 
 ## Developer tools (debug views, not gameplay)
 

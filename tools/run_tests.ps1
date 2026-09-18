@@ -34,5 +34,9 @@ if (Test-Path (Join-Path $root 'reference\rise-of-legions\Scripts')) {
 
 $null = Invoke-Godot @('--import') 'import.log'
 $code = Invoke-Godot @('--script', 'res://tests/run_tests.gd') 'tests.log'
+# GDScript runtime errors (invalid access, null calls, ...) do not fail a check, so count them from the log
+$scriptErrors = @(Select-String -Path (Join-Path $logDir 'tests.log') -Pattern '^SCRIPT ERROR:' -ErrorAction SilentlyContinue).Count
+Write-Host "runtime script errors: $scriptErrors"
+if ($code -eq 0 -and $scriptErrors -gt 0) { $code = 1 }
 if ($code -eq 0) { $code = $pyCode }
 exit $code

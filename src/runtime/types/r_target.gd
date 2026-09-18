@@ -118,6 +118,32 @@ func GetTargetPosition(Game) -> Vector2:
 	return FTargetCoord
 
 
+## The centre of a unit of NeededGridSize fields placed with its first field on this build target.
+func GetRealBuildPosition(Game, NeededGridSize: Vector2i) -> Vector2:
+	var Offset := (Vector2(NeededGridSize) / 2.0 - Vector2(0.5, 0.5)) * TBuildZone.GRIDNODESIZE
+	return GetTargetPosition(Game) + GetBuildZone(Game).CoordBase * Offset
+
+
+## ComputeSpawningPattern (BaseConflict.Types.Target.pas:177): where the Index-th of Count units spawned together
+## stands around Position; one unit stands on it.
+static func ComputeSpawningPattern(Position: Vector2, Front: Vector2, IsSpawner: bool, Index: int, Count: int) -> Vector2:
+	const SPAWN_DISTANCE = 1.5 / 0.45
+	if Count > 1:
+		var Size := 0.2 if IsSpawner else 0.45
+		var Side := Front * SPAWN_DISTANCE * Size
+		# for two entities spawn them beside each other
+		match Count:
+			2:
+				Side = Side.rotated(PI / 2) * 0.5
+			3:
+				Side = Side.rotated(PI / 3)
+			4:
+				Side = Side.rotated(PI / 4)
+		Side = Side.rotated((float(Index) / Count) * 2 * PI)
+		Position = Position + Side
+	return Position
+
+
 func IsEntityValid(Game) -> bool:
 	return GetTargetEntity(Game) != null
 
