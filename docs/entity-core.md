@@ -113,6 +113,8 @@ One file per class, `class_name` = Delphi name (the transpiler then drops its st
 | `t_dynamic_zone_*emitter_component.gd` | `TDynamicZone{,Radial,Axis}EmitterComponent` (`:581-614`): answer `eiInDynamicZone` |
 | `t_game_event_enumerator_component.gd` | `TGameEventEnumeratorComponent` (`:630`): lists its owner for `eiGameEvent` |
 | `t_modifier_*component.gd` | `TModifier{,DamageType,WelaTargetCount,Resource,MultiplyCooldown,ArmorType,WelaDamage,WelaRange,Cost}Component` (`Shared.Wela.pas:32-207`) |
+| `t_wela_ready_*component.gd` | `TWelaReady{,Cost,Cooldown,AfterGameStart,AfterGameEvent,ResourceCompare,UnitProperty,Creator,EventCompare}Component` (`Shared.Wela.pas:575-767`) |
+| `../types/t_game_timer.gd` | `TGameTimer` (`BaseConflict.Types.Shared.pas:54`): TTimer with `StartingTime` |
 | `t_entity_manager_component.gd` | `TEntityManagerComponent` (`:276`): `Game.EntityManager`, entity registry and deferred freeing |
 | `../engine/t_timer.gd`, `t_time_manager.gd` | `TTimer` (whole) and the `TTimeManager` clock (`Engine.Helferlein.Windows.pas:985`) |
 
@@ -137,6 +139,14 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   exception: it changes a resource cap once on `ApplyNow` and takes it back in `BeforeComponentFree` (needs
   `Game.IsShuttingDown`). Delphi `Round` is banker's rounding (`L.Round`). `TModifierWelaCountComponent` and
   `TModifierMultiplyMovementSpeedComponent` are unused and not ported (`docs/unused-features.md`).
+- **Ready checks** (`tests/test_wela_ready_components.gd`, incl. the real server SmallMeleeGolem's attack
+  cooldown): `eiIsReady` read in a wela's group is the AND of every ready component there, read at epFirst on
+  top of the blackboard value (empty = true). `TWelaReadyCooldownComponent` (not a `TWelaReadyComponent`) only
+  answers reads that touch its ReadyGroup; interval = eiCooldown - eiWelaActionpoint; the server writes the start
+  to `eiCooldownStartingTime`, the client's timer reads it from there on every check. Helpers in `BC`:
+  `ResourceCompare` (int resources compare with `Round(Reference)`), `ResourceAdd`, `ResourcePercentage`.
+  Not yet: `TWelaReadySpawnedComponent` (needs `EntityDataCache`), `TWelaReadyEnemiesNearbyComponent` (needs
+  `eiEntitiesInRange` and targets). `TWelaReadyBooleanComponent` / `AfterGameTime` are unused.
 - **Entity manager** (`tests/test_entity_manager.gd`): `eiNewEntity` (sent by `TEntity.Deploy`) registers,
   `GenerateUniqueID` counts from 2. `eiKillEntity` unregisters at once and frees at the next `Idle` (called by the
   game loop); `eiRemoveComponent` / `eiRemoveComponentGroup` / `FreeEntity` are deferred to `Idle` too.
@@ -169,6 +179,6 @@ has an event probe and a fake `Game.EntityManager` for component tests.
 
 - Serialisation (`TEntity.Serialize/Deserialize`, `TBlackboard.SaveToStream/LoadFromStream`,
   `TSerializableEntityComponent`, `TEventbus.InvokeWithRawData`, `TEntityManagerComponent.InvokeEventOnEntity`),
-  `TEntity.OwningCommander`, the rest of
+  `TEntity.OwningCommander`, the per-game pausable clock (`GameTimeManager`; `TGameTimer` uses `TTimeManager` meanwhile), the rest of
   `TTimeManager` (pause, `TickTack`; `CreatedTimestamp` uses the engine clock meanwhile): phase 3, with the game
   loop and client-server sync.

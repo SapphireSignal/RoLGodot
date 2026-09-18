@@ -76,6 +76,9 @@ class FakeEntityManager:
 	func TryGetOwningCommander(_Entity):
 		return Commander
 
+	func GetOwningCommander(_Entity):
+		return Commander
+
 
 class FakeGame:
 	extends RefCounted

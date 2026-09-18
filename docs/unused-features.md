@@ -7,7 +7,7 @@ adding. ("Wela" in the original = a weapon or ability of a unit.)
 How the list is kept:
 - **Whole classes**: `python tools/find_unused_classes.py` lists every class exposed to scripts
   (`ScriptManager.ExposeClass`) whose name appears in no script (`.dws/.ets/.sps`) and in no other code (case
-  ignored, as Delphi and DWScript do). Rerun it after changes to the pinned source; 39 classes on 2026-09-18 (26 before its fluent-setter fix).
+  ignored, as Delphi and DWScript do). Rerun it after changes to the pinned source; 43 classes on 2026-09-18 (26 before it learnt to skip fluent setters, strings and comments).
 - **Unused options of used classes** (a method no script calls): added by hand when porting turns one up.
 
 ## Gameplay ideas
@@ -44,6 +44,10 @@ How the list is kept:
 | Target by buff | `TWelaTargetConstraintBuffComponent`, `BaseConflict.EntityComponents.Shared.Wela.pas:513` | An ability that may only (or may never) target units carrying certain buff types, e.g. dispel only buffed enemies. | No |
 | Global targeting | `TWelaTargetingGlobalComponent`, `...Server.Welas.pas:141` | Picks the best targets anywhere on the map instead of in range. | No |
 | Rectangle targeting | `TWelaTargetingRectangleComponent`, `...Server.Welas.pas:160` | Picks targets in a rectangle in front of the unit (a line/beam area) instead of a circle. | No |
+| Boolean ready check | `TWelaReadyBooleanComponent`, `BaseConflict.EntityComponents.Shared.Wela.pas:587` | An ability is ready by combining the readiness of two other groups with AND / OR / NOT. | No |
+| Instant chain projectile | `TAutoBrainWelaInstantChainComponent`, `...Server.Brains.pas:537` | A projectile that jumps from target to target at once, never hitting one twice. Its own code says "Not working atm." | No |
+| Simple scripted AI | `TScenarioComponent`, `GameServer/BaseConflict.EntityComponents.Server.pas:764` | "A very simple AI for a commander": builds and spawns units at set timestamps (the game uses the scenario directors instead). | No |
+| Add-component warhead | `TWarheadSpottyBuffComponent`, `...Server.Warheads.pas:144` | Each hit adds a named component class to the target (a generic "apply any buff" warhead). | No |
 | Damage type trigger check | `TWelaTriggerCheckTakeDamageTypeComponent`, `BaseConflict.EntityComponents.Shared.Wela.pas:560` | An on-damage-taken ability that only reacts to (or ignores) certain damage types, e.g. "when hit by ranged". | No |
 
 ## Developer tools (debug views, not gameplay)

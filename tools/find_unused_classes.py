@@ -1,7 +1,8 @@
 """Lists classes the original exposes to scripts (ScriptManager.ExposeClass) that nothing uses.
 
 A class counts as used when its name appears in any script (Scripts/**/*.dws|ets|sps) or in any .pas file outside the
-lines that declare, implement or expose it (incl. its own fluent setters returning it). Output: one line per unused class with its unit and declaration line.
+lines that declare, implement or expose it (incl. its own fluent setters returning it; string literals and //
+comments are ignored). Output: one line per unused class with its unit and declaration line.
 Usage: python tools/find_unused_classes.py  (needs reference/, see tools/fetch_reference.ps1)
 """
 import os
@@ -49,6 +50,7 @@ def main():
         decl = ""
         for p, text in pas.items():
             for i, line in enumerate(text.splitlines(), 1):
+                line = re.sub(r"//.*", "", re.sub(r"'[^']*'", "''", line))  # names in strings / comments don't count
                 if not word.search(line):
                     continue
                 if own.search(line):
