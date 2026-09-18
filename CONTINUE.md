@@ -12,7 +12,7 @@ Hand-off note for the next session. Read `CLAUDE.md` first, then this.
 - Never read or write the owner's other repos.
 
 ## Where we are
-Phases 0 and 1 done, phase 2 steps 1-2 done (see `docs/port-plan.md`). Verified facts about the original are in
+Phases 0 and 1 done, phase 2 steps 1-3 done (see `docs/port-plan.md`). Verified facts about the original are in
 `docs/original-architecture.md`. If `reference/` is missing, run `tools\fetch_reference.ps1` (~800 MB download,
 ~3 GB checked out; run it in the background).
 
@@ -29,13 +29,15 @@ XEvent handlers, `SetVarParam`, RParam memory casts, sets as sorted Arrays, per-
 Step 2 done: the script runner in `TEntity` (section "Script runner" in `docs/entity-core.md`,
 `tests/test_script_runner.gd`).
 
+Step 3 done: `TResourceManagerComponent` in `src/runtime/components/` (section "Shared components" in
+`docs/entity-core.md`, `tests/test_resource_manager.gd`, incl. real card league/level runs of
+`Units\Neutral\NexusLevel1` and client `Units\Black\VoidSkeletonDrop` with a fake `Game`). The scripts' `Game()`
+now resolves to the running script's bus (`TEntity.ScriptGame`).
+
 Next:
-3. `TResourceManagerComponent` (`BaseConflict.EntityComponents.Shared.pas:386`) at
-   `src/runtime/components/t_resource_manager_component.gd` (TEntity.Create picks it up by that path).
-   Until it exists, `CardLeague()`/`CardLevel()` read the plain blackboard slot (0), so scripts using
-   `L.i/L.f(..., Entity.CardLeague())` index `arr[-1]`. Once ported, add a runner test with the real card
-   initializer (`BaseConflict.Classes.Shared.pas:510`, sets reCardLevel/reCardLeague) on e.g.
-   `Units\Neutral\NexusLevel1` (InheritsFrom + `Game` global; needs a fake game with IsDuo/IsPvP/IsOneLane
-   and `L.game_resolver`) and `Units\Black\VoidSkeletonDrop` on the client.
-4. Then the other shared components by `docs/script-api.md`.
+4. The entity-local shared components of `BaseConflict.EntityComponents.Shared.pas` that need no game loop:
+   `TUnitPropertyComponent` (:36), `TArmorComponent` (:521), `THealthComponent` (:173, a
+   `TSerializableEntityComponent`: port that base as a thin class, serialisation stays phase 3). One file each
+   in `src/runtime/components/`, a test file each, expectations from the Pascal.
+5. Then the rest by `docs/script-api.md` (Position/Movement, Collision, CommanderIncome*, ...).
 When a hand-written file declares `class_name TFoo`, rerun the transpiler: it drops the stub.

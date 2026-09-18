@@ -235,9 +235,9 @@ func test_component_ids_per_side() -> void:
 	check_eq(server.GetNewComponentID(), first + 1, "server counts up")
 	var cfirst := client.GetNewComponentID()
 	check_eq(client.GetNewComponentID(), cfirst - 1, "client counts down")
-	if not ResourceLoader.exists(TEntity.RESOURCE_MANAGER_PATH):
-		check_eq(first, -2147483648, "server start")
-		check_eq(cfirst, 2147483647, "client start")
+	# TEntity.Create took the first ID for its TResourceManagerComponent
+	check_eq(first, -2147483648 + 1, "server start")
+	check_eq(cfirst, 2147483647 - 1, "client start")
 
 
 func test_groups_reserve_and_free() -> void:

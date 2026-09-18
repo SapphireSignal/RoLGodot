@@ -41,3 +41,6 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - 2026-09-18: Phase 2 step 2 done: script runner in `TEntity` (`CreateFromScript*` with InheritsFrom /
   InheritsFromPreceding, `ApplyScript*`, per-side resolution); real unit/projectile scripts build entities on
   both sides. 28 tests green, no errors. Next: step 3, `TResourceManagerComponent` (see CONTINUE.md).
+- 2026-09-18: Phase 2 step 3 done: `TResourceManagerComponent` on every entity (balance/cap/cost, transactions,
+  reset), `RResourceCost`; card league/level now reach the scripts; scripts' `Game()` follows the running
+  script's side. 1289 files compile, 39 tests green, no errors. Next: step 4, entity-local shared components.

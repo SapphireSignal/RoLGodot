@@ -1,7 +1,7 @@
 extends "res://tests/test_case.gd"
 ## Script runner in TEntity (BaseConflict.Entity.pas:587-712). Expected values are copied from the original scripts
 ## named in each test (Scripts\...), the order rules from TEntity.CreateFromScriptProc.
-## Scripts that read card league/level need TResourceManagerComponent (phase 2 step 3); these tests avoid them.
+## Scripts that read card league/level: tests/test_resource_manager.gd.
 
 const C = preload("res://src/runtime/dws/dws_const.gd")
 

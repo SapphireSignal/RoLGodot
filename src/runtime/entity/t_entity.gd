@@ -19,9 +19,6 @@ const PATH_SCRIPT = "\\Scripts\\"
 static var LastScriptError := ""
 ## Tests that provoke script errors on purpose set this to keep the log free of expected errors.
 static var QuietScriptErrors := false
-## TResourceManagerComponent (BaseConflict.EntityComponents.Shared.pas:386): every entity gets one in Create.
-## Loaded by path so the entity core works before the shared components are ported.
-const RESOURCE_MANAGER_PATH := "res://src/runtime/components/t_resource_manager_component.gd"
 
 ## reserve the first n groups, so the user can hardcode something
 const RESERVED_GROUPS = 20
@@ -115,8 +112,7 @@ func Create(GlobalEventbus = null, ID: int = 0) -> TEntity:
 	FCreatedTimestamp = Time.get_ticks_msec()  # TimeManager.GetTimeStamp: TTimeManager is ported in phase 3
 	# {$IFDEF SERVER} low(integer) {$ENDIF} {$IFDEF CLIENT} high(integer) {$ENDIF}
 	FCurrentComponentID = -2147483648 if IsServer() else 2147483647
-	if ResourceLoader.exists(RESOURCE_MANAGER_PATH):
-		load(RESOURCE_MANAGER_PATH).new().CreateGroupedAll(self)
+	TResourceManagerComponent.new().CreateGroupedAll(self)
 	return self
 
 
@@ -157,7 +153,7 @@ static func CreateFromScriptProc(PatternFileName: String, ProcName: String, Glob
 		var Preceding := func(Entity: TEntity) -> void:
 			if Initializer.is_valid():
 				Initializer.call(Entity)
-			ExecuteFunction(EntityPattern, ProcName, [Entity])
+			ExecuteFunction(EntityPattern, ProcName, [Entity], GlobalEventbus)
 		Result = CreateFromScriptProc(EntityPattern.get(SCRIPT_INHERIT_PRECEDING_VAR_NAME), ProcName, GlobalEventbus, Preceding, IsMeta, FinalScriptFilename)
 		if Result != null:
 			Result.ScriptFile = FinalScriptFilename
@@ -171,7 +167,7 @@ static func CreateFromScriptProc(PatternFileName: String, ProcName: String, Glob
 	if Result == null:
 		return null
 	Result.ScriptFile = FinalScriptFilename
-	ExecuteFunction(EntityPattern, ProcName, [Result])
+	ExecuteFunction(EntityPattern, ProcName, [Result], GlobalEventbus)
 	return Result
 
 
@@ -187,9 +183,9 @@ func ApplyScript(ScriptFileName: String, ProcName := "", Parameters = null) -> v
 	_SetScriptGlobals(Script, GlobalEventbus)
 	# assigned(Parameters): a dynamic array is nil when empty
 	if Parameters != null and not Parameters.is_empty():
-		ExecuteFunction(Script, ProcName, Parameters)
+		ExecuteFunction(Script, ProcName, Parameters, GlobalEventbus)
 	else:
-		ExecuteFunction(Script, ProcName, [self])
+		ExecuteFunction(Script, ProcName, [self], GlobalEventbus)
 
 
 ## Runs ProcName (default 'Apply') with this entity; it returns the component groups it created (array of integer).
@@ -199,7 +195,7 @@ func ApplyScriptReturnGroups(ScriptFileName: String, ProcName := "") -> Array:
 	if Script == null:
 		return []
 	_SetScriptGlobals(Script, GlobalEventbus)
-	var ReturnValue = ExecuteFunction(Script, finalProcName, [self])
+	var ReturnValue = ExecuteFunction(Script, finalProcName, [self], GlobalEventbus)
 	if not ReturnValue is Array:
 		return []
 	# integer -> Byte (truncates like the original's assignment), then ByteArrayToComponentGroup
@@ -226,14 +222,30 @@ static func CompileScriptFromFile(FileName: String, Server: bool) -> Object:
 
 
 ## Port of TScript.ExecuteFunction: the parameter count must match the routine's exactly.
-static func ExecuteFunction(Script: Object, Name: String, Parameters: Array) -> Variant:
+## GlobalEventbus: the side the script runs for; while it runs, the exposed Game() (L.Game) returns its Game.
+static func ExecuteFunction(Script: Object, Name: String, Parameters: Array, GlobalEventbus = null) -> Variant:
 	if not Script.has_method(Name):
 		_ScriptError("TScript.ExecuteFunction: Unknown function \"%s\"." % Name)
 		return null
 	if Script.get_method_argument_count(Name) != Parameters.size():
 		_ScriptError("TScript.ExecuteFunction: Parametercount doesn't match.")
 		return null
-	return Script.callv(Name, Parameters)
+	_ScriptEventbusStack.push_back(GlobalEventbus)
+	var Result = Script.callv(Name, Parameters)
+	_ScriptEventbusStack.pop_back()
+	return Result
+
+
+## The global buses of the scripts running now, innermost last.
+static var _ScriptEventbusStack: Array = []
+
+
+## BaseConflict.Globals.Game, a threadvar in the original (one game per server thread): the Game of the global
+## bus of the innermost running script.
+static func ScriptGame():
+	if _ScriptEventbusStack.is_empty() or _ScriptEventbusStack.back() == null:
+		return null
+	return _ScriptEventbusStack.back().Game
 
 
 ## SetGlobalVariableValueIfExist for 'GlobalEventbus' and 'Game' (the Game of the bus's side).

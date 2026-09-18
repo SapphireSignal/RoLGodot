@@ -39,7 +39,8 @@ Tests: `tests/test_entity_core.gd` (every expectation is derived from the Pascal
 - **Component groups**: `ReserveFreeGroup` hands out 19, 20, … (reserved = -1 until the first component joins);
   `FreeGroups` triggers `eiBeforeFree`/`eiFree` to the groups (ALLGROUP components ignore grouped frees).
 - **Component IDs**: server counts up from `low(integer)`, client down from `high(integer)`.
-- **Entity creation**: `TEntity.Create` adds a `TResourceManagerComponent` (ALLGROUP) to every entity.
+- **Entity creation**: `TEntity.Create` adds a `TResourceManagerComponent` (ALLGROUP) to every entity, so a new
+  entity's first component ID is taken by it.
 
 ## Port conventions (use these when porting components)
 
@@ -84,10 +85,30 @@ Tests: `tests/test_entity_core.gd` (every expectation is derived from the Pascal
   and instantiates the script (= `RunMain`). `GlobalEventbus` / `Game` globals are set from the global bus.
 - Where the original raised (missing file, `ORIGINAL_COMPILE_ERROR`, unknown routine, parameter count mismatch):
   `push_error`, `TEntity.LastScriptError`, creators return `null`. `QuietScriptErrors` silences it for tests.
+- `Game`: scripts that declare `var Game` get the bus's `Game` (`_SetScriptGlobals`); the others call the exposed
+  function `Game()` (`L.Game()`), a threadvar in the original. Here `ExecuteFunction(..., GlobalEventbus)` keeps a
+  stack of the running scripts' buses and `L.Game()` returns `TEntity.ScriptGame()` (the innermost bus's `Game`)
+  unless `L.game_resolver` is set.
+
+## Shared components (`src/runtime/components/`)
+
+One file per class, `class_name` = Delphi name (the transpiler then drops its stub). Tests: `tests/test_<name>.gd`.
+
+| File | Original |
+| --- | --- |
+| `t_resource_manager_component.gd` | `TResourceManagerComponent` (`BaseConflict.EntityComponents.Shared.pas:386`), on every entity |
+| `../types/r_resource_cost.gd` | `RResourceCost` + `AResourceCostHelper` (`BaseConflict.Types.Shared.pas:32`) |
+
+- **Resources**: balance / cap / cost are blackboard values of `eiResourceBalance` / `eiResourceCap` /
+  `eiResourceCost` indexed by `EnumResource`, under the group the event was called to (`CurrentEvent_CalledToGroup`).
+  `RES_INT_RESOURCES` (`BC.IsIntResource`) are integers, the rest singles; `BC.IgnoresCap` = `RES_IGNORE_CAP`.
+  Note `Write(eiResourceBalance, [Res, Amount])` also stores `Res` as the plain value (Values[0]), as in the original.
+- `AResourceCost` is an Array of `RResourceCost`; `OnGetResourceCost` sorts it by resource (the original used
+  TDictionary hash order; callers only look entries up).
+- 32-bit integer overflow is not emulated (balances never get near it).
 
 ## Not ported yet
 
-- `TResourceManagerComponent`: `TEntity.Create` loads it from `TEntity.RESOURCE_MANAGER_PATH` once it exists.
 - Serialisation (`TEntity.Serialize/Deserialize`, `TBlackboard.SaveToStream/LoadFromStream`,
   `TSerializableEntityComponent`, `TEventbus.InvokeWithRawData`), `TEntity.OwningCommander`, `TTimeManager`
   (`CreatedTimestamp` uses the engine clock meanwhile): phase 3, with the game loop and client-server sync.

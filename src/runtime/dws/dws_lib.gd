@@ -8,7 +8,8 @@ static var ALLGROUP: Array = [255]
 ## Math.dws: RVector3ZERO
 const RVector3ZERO := Vector3.ZERO
 
-## Resolves the exposed function Game() (BaseConflict.Globals.pas GameResolver). Set by the game runtime.
+## Resolves the exposed function Game() (BaseConflict.Globals.pas GameResolver). When unset, Game() is the Game of
+## the running script's global bus (TEntity.ScriptGame).
 static var game_resolver: Callable
 
 
@@ -85,5 +86,4 @@ static func Assert(condition: bool, message: String = "") -> void:
 static func Game() -> Variant:
 	if game_resolver.is_valid():
 		return game_resolver.call()
-	push_error("L.Game(): no game_resolver set")
-	return null
+	return TEntity.ScriptGame()

@@ -14,6 +14,11 @@ static func IsIntResource(ResourceType: int) -> bool:
 	return ResourceType >= C.reInteger and ResourceType <= C.reCharmCount
 
 
+## RES_IGNORE_CAP : SetResource = [reGadgetCount, reCharmCount]
+static func IgnoresCap(ResourceType: int) -> bool:
+	return ResourceType == C.reGadgetCount or ResourceType == C.reCharmCount
+
+
 ## BaseConflict.Constants.pas:1058
 static func EventIdentifierToNetworkSend(Event: int) -> int:
 	match Event:
