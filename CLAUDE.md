@@ -4,15 +4,25 @@ A 1:1 Godot 4.7 port of **Rise of Legions**: its last version before the Crystal
 The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 
 ## Project rules
-- Source of truth: the original BrokenGamesUG/rise-of-legions repo at the pinned pre-Crystal-Clash commit
-  (to be recorded in `docs/`). Never use Crystal Clash content or later commits for decisions.
+- Source of truth: `reference/rise-of-legions` at commit `96d5b8e4` (see `docs/source-of-truth.md`).
+  Never use Crystal Clash content, the live game, or anything outside that snapshot for decisions.
 - Stay inside `D:\Games\RoLGodot`. Never touch the owner's other repos.
-- Lean repo and build: `reference/` (original source snapshot) is git-ignored and excluded from export.
+- Lean repo and build: `reference/` is git-ignored, `.gdignore`d and excluded from export, like `tools/`,
+  `tests/`, `docs/`. Get it with `tools/fetch_reference.ps1`.
+- Original data uses German decimal commas and mismatched file-name case: parse/compare accordingly.
 - Git identity: SapphireSignal <SapphireSignal@users.noreply.github.com>.
+- Subagent roles and their cost: `docs/team.md`.
 
 ## Tools
 - Godot: `D:\Godot\Godot_v4.7.1-stable_win64.exe` (console build `..._console.exe` for headless runs)
 - Delphi: `C:\Program Files (x86)\Embarcadero\Studio\37.0\bin\`
+- Tests: `powershell -ExecutionPolicy Bypass -File tools\run_tests.ps1` (import + compile sweep + tests,
+  hard timeout, logs in `logs/`). Test files: `tests/test_*.gd` extending `res://tests/test_case.gd`.
+
+## Docs
+- `docs/original-architecture.md`: how the original is built, file formats, gotchas.
+- `docs/port-plan.md`: phases 0-9. `docs/gap-list.md`: user-visible behaviours and their status.
 
 ## Status
-- 2026-09-18: repo created. Research started, nothing built yet. See `CONTINUE.md` for the brief and next steps.
+- 2026-09-18: Phase 0 (foundation) done: source pinned, reference cloned, architecture researched, Godot
+  scaffold + test runner + `play.bat` + export preset. Next: phase 1, the DWScript → GDScript transpiler.

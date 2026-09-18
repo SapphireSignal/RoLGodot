@@ -1,0 +1,21 @@
+# Original source snapshot (cloned by tools/fetch_reference.ps1, never committed)
+/reference/
+
+# Godot
+.godot/
+*.import.tmp
+/android/
+
+# Build output and logs
+/build/
+/logs/
+*.log
+
+# Python
+__pycache__/
+*.pyc
+
+# OS / editors
+Thumbs.db
+.DS_Store
+.vscode/
