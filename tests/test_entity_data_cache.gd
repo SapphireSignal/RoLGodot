@@ -20,15 +20,6 @@ class FakeGame:
 	var EntityManager = null
 
 
-## Stands in for the TCardInfo the game passes to Commander\CommanderMethods.
-class FakeCardInfo:
-	extends RefCounted
-	var Filename := ""
-	var League := 1
-	var Level := 1
-	var SkinID := ""
-
-
 func _setup() -> void:
 	_bus = TEventbus.new().Create(null)
 	_bus.Game = FakeGame.new()
@@ -112,10 +103,7 @@ func test_redirecter() -> void:
 func test_real_add_drop() -> void:
 	_setup()
 	var commander := _unit()
-	var info := FakeCardInfo.new()
-	info.Filename = DROP
-	info.League = 4
-	info.Level = 2
+	var info := TCardInfoManager.Instance().ResolveCardUID("bb588865-ea26-4cec-930a-7753ca688afe", 4, 2)
 	commander.ApplyScript("Commander\\CommanderMethods.dws", "AddDrop", [commander, info, 0])
 	check_eq(TEntity.LastScriptError, "", "no script error")
 	var group := -1

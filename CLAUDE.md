@@ -95,3 +95,7 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - 2026-09-18: Phase 2 step 5 part 19: game end, waves, statistics (primary target / nexus loss, suicide on game
   end, income payout, wave spawn rotation, unit / wela / card-play statistics, `CardPlayed`). 1362 files compile,
   298 tests green, no errors. Next: the commander and the directors (see CONTINUE.md).
+- 2026-09-18: Phase 2 step 5 part 20: the commander and the card database (`TCardInfo`, `TCardInfoManager` from
+  `src/content/cards.json` by `tools/convert_cards.py`, `TCommanderAbility{,Component}`, `TCommanderComponent`,
+  `DelphiHash`, `DelphiRtl`); a commander gets its real drop / building / spawner / spell cards. 1369 files compile,
+  310 tests green, no errors. Next: the scenario / tutorial / sandbox directors (see CONTINUE.md).

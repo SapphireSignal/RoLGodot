@@ -132,6 +132,7 @@ One file per class, `class_name` = Delphi name (the transpiler then drops its st
 | `t_server_entity_manager_component.gd`, `../classes/t_game_statistic_manager.gd`, `t_wela_effect_{factory,replace,projectile}_component.gd`, `t_projectile_event_redirecter.gd`, `t_brain_{spawner,capture_point}_component.gd` | `TServerEntityManagerComponent` (`GameServer/...Server.pas:358`), `TGameStatisticManager` (`...Classes.Server.pas:20`), `TWelaEffect{Factory,Replace,Projectile}Component`, `TProjectileEventRedirecter` (`...Server.Welas.pas:337-564`, `:660`), `TBrain{Spawner,CapturePoint}Component` (`...Server.Brains.Special.pas`): see "Spawning" |
 | `t_warhead_splash*_component.gd`, `t_warhead_spotty_teleport_component.gd` | `TWarheadSplash{,Health,Damage,Heal}Component`, `TWarheadSpottyTeleportComponent` (`...Server.Warheads.pas:66`, `:222-279`): see "Splash and teleport" |
 | `t_{,server_}primary_target_component.gd`, `t_suicide_on_game_end_component.gd`, `t_wela_effect_{income_payout,wave_spawn}_component.gd`, `t_statistics_unit_component.gd`, `t_wela_effect_statistics_component.gd`, `t_server_card_play_statistics_component.gd` | `TPrimaryTargetComponent` (`:620`), `TServerPrimaryTargetComponent` (`Server.pas:139`), `TSuicideOnGameEndComponent` (`Client.pas:462`), `TWelaEffect{IncomePayout,WaveSpawn}Component` (`...Server.Welas.Special.pas`), `TStatisticsUnitComponent`, `TWelaEffectStatisticsComponent` (`...Server.Statistics.pas`), `TServerCardPlayStatisticsComponent` (`Server.pas:330`): see "Game end, waves, statistics" |
+| `t_commander_ability{,_component}.gd`, `t_commander_component.gd`, `../classes/t_card_info{,_manager}.gd`, `../types/r_commander_card.gd`, `../engine/delphi_{hash,rtl}.gd` | `TCommanderAbility` (`Server.pas:473`), `TCommanderAbilityComponent` + `RCommanderCard` (`:225-250`), `TCommanderComponent` (`Client.pas:199`), `TCardInfo` / `TCardInfoManager` (`BaseConflict.Constants.Cards.pas:87`, `:172`): see "Commander and cards" |
 
 Tests: `tests/test_unit_property_component.gd`, `test_armor_component.gd`, `test_health_component.gd` (incl. the
 real server `Units\Colorless\SmallMeleeGolem`), `test_commander_income.gd` (incl. the real server
@@ -370,6 +371,23 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   Statistics go to `Game.Statistics` (`TGameStatisticManager`, now with `CardPlayed`; card type and colors from the
   file name: `BC.ScriptFilenameToCard{Type,Colors}`, first matching folder wins). Server games (and test fakes that
   build real server units) must carry `Statistics` and `Commanders`; without a game the statistics are skipped.
+- **Commander and cards** (`tests/test_commander.gd`): the card database is `TCardInfoManager.Instance()`, filled
+  from `src/content/cards.json` (`python tools/convert_cards.py` turns the original's AddCard / AddSkin list into it,
+  checked by the test runner). A card info is one (UID, league, level), cached per triple; skins are clones with
+  their own UID, `BaseUID` of the base card, and make the base card the `default` skin (so its file + empty skin
+  finds nothing in `ScriptFilenameToCardInfo`). The mapping is a `DelphiDictionary` with `DelphiHash.StringHash`
+  (Bob Jenkins' lookup3 over the UTF-16 units, the Delphi 10.x string comparer; checked against lookup3's published
+  values, the RTL choice is unverified: the `.dproj` files say ProjectVersion 18.5 and Delphi 11+ hashes with
+  FNV-1a), so `GetAllCardUIDs` (the bots' card walk) follows the original's slot order. `TCardInfo`'s stats read the
+  entity data cache and take it as a parameter (the cache is per side in the port); the translated texts (Name,
+  descriptions, skills, keywords) come with the localization. `TCommanderAbilityComponent` (server: in the
+  constructor; client: at eiAfterCreate, then it frees itself) applies the card's script: `Commander\CommanderMethods`
+  AddDrop / AddBuilding / AddSpawner, or the spell file's AddSpell. Every card script adds a `TCommanderAbility` in
+  the card's group: it answers `eiEnumerateCommanderAbilities` (an Array, deck order), and `CanUseAbility` /
+  `UseAbility` read / trigger eiCanUseAbility / eiUseAbility in the card's group or the chosen mode's (IsMultiMode:
+  one group per mode; `ModeCount` keeps the original's `Min(1, modes)`). Charges are the commander's reCharge in the
+  card's group. The client's `TCommanderComponent` adds its commander to the global `eiEnumerateCommanders` (epFirst).
+  `DelphiRtl` has SysUtils' file-name functions with Windows delimiters and `CompareText` / `SameText` (ASCII only).
 - `TNexusEarlyVulnerabilityComponent` (`:88`) is not ported: only declared and exposed, nothing creates it
   (listed in `docs/unused-features.md`, with the unused axis and exclude zones).
 - **Time**: `TTimer` reads `TTimeManager.GetFloatingTimestamp()` (ms). Tests freeze it with

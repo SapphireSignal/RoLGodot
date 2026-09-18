@@ -48,8 +48,14 @@ const GSE_GLOBAL_DROPS = "global_drops"
 const GSE_GLOBAL_BUILDINGS = "global_buildings"
 const GSE_GLOBAL_SPELLS = "global_spells"
 
-## BaseConflict.Constants.Cards.pas:206-216
+## BaseConflict.Constants.Cards.pas:203-216
+const MIN_LEAGUE = 1
+const MAX_LEAGUE = 5
+const MIN_LEVEL = 1
 const MAX_LEVEL = 5
+const DISABLE_LEAGUE_SYSTEM = false
+const DEFAULT_LEAGUE = MAX_LEAGUE - 1
+const DEFAULT_LEVEL = MAX_LEVEL
 const FILE_IDENTIFIER_DROP = "Drop"
 const FILE_IDENTIFIER_SPAWNER = "Spawner"
 const FILE_IDENTIFIER_BUILDING = "Building"

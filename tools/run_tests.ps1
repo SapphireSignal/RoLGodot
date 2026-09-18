@@ -28,6 +28,8 @@ if (Test-Path (Join-Path $root 'reference\rise-of-legions\Scripts')) {
     if ($LASTEXITCODE -ne 0) { $pyCode = 1 }
     & python (Join-Path $root 'tools\convert_maps.py') --check
     if ($LASTEXITCODE -ne 0) { $pyCode = 1 }
+    & python (Join-Path $root 'tools\convert_cards.py') --check
+    if ($LASTEXITCODE -ne 0) { $pyCode = 1 }
 } else {
     Write-Host 'reference/ missing: skipped the generated-scripts check'
 }

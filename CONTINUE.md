@@ -12,7 +12,7 @@ Hand-off note for the next session. Read `CLAUDE.md` first, then this.
 - Never read or write the owner's other repos.
 
 ## Where we are
-Phases 0 and 1 done, phase 2 steps 1-4 done, step 5 under way (entity-local families done up to game end, waves and statistics) (see `docs/port-plan.md`). Verified facts about the original are in
+Phases 0 and 1 done, phase 2 steps 1-4 done, step 5 under way (entity-local families done up to the commander and its cards) (see `docs/port-plan.md`). Verified facts about the original are in
 `docs/original-architecture.md`. If `reference/` is missing, run `tools\fetch_reference.ps1` (~800 MB download,
 ~3 GB checked out; run it in the background).
 
@@ -97,8 +97,13 @@ Game end, waves and statistics are done: `T{Server,}PrimaryTargetComponent`, `TS
 `tests/test_statistics.gd`). New: `BC.ScriptFilenameToCard{Type,Colors}`, `BC.BUILDGRID_SIZE/_SLOTS`,
 `BC.UNIT_PROPERTIES_STATE_EFFECTS`, `DSet.Intersection`. Fake games that build real server units now need
 `Statistics` and `Commanders` (every unit carries TStatisticsUnitComponent).
-Next, the server rest of the stub list (`src/runtime/dws/stubs/`): the commander (`TCommanderComponent`,
-`TCommanderAbility`), then the scenario / tutorial / sandbox directors (`TScenarioDirectorComponent`,
+The commander and the card database are done: `TCardInfoManager.Instance()` (cards from `src/content/cards.json`, made
+by `tools/convert_cards.py`, checked by the test runner), `TCardInfo` (stats take the side's `TEntityDataCache`;
+translated texts wait for the localization), `TCommanderAbilityComponent` + `RCommanderCard`, `TCommanderAbility`,
+`TCommanderComponent` (section "Commander and cards", `tests/test_commander.gd`). New engine helpers: `DelphiHash`
+(Delphi's Bob Jenkins string hash, for `DelphiDictionary` string keys) and `DelphiRtl` (ExtractFilePath / FileName,
+ChangeFileExt, CompareText, SameText). Test fakes pass real `TCardInfo`s now (resolve by UID).
+Next, the server rest of the stub list (`src/runtime/dws/stubs/`): the scenario / tutorial / sandbox directors (`TScenarioDirectorComponent`,
 `TTutorialDirectorServerComponent`, `TServerSandbox{,Command}Component`), and phase 3 (the game loop; the real
 `Scenarios\Game` script needs `Game.GameDirector`). The other stubs are client visuals (phase 4+).
 The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.
