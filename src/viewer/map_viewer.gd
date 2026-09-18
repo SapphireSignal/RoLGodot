@@ -1,0 +1,219 @@
+extends Node3D
+## Map viewer (phase 4 check): a map's terrain, water and vegetation (TClientMap) seen through the game's camera
+## (TClientCameraComponent.ApplyCamera: eye = target + zoom * 10 * CAMERAOFFSET.Normalize, vertical field of view
+## coEngineCameraFoV, near 1, far 10000). The game limits the zoom to coGameplayCameraMinZoom..MaxZoom (2.6..3.8,
+## starts at 3.8); the viewer lets it go further out for an overview.
+## Controls: WASD / arrows scroll, right mouse drag pans, wheel zooms, Q / E rotate, R resets.
+## Capture mode (checks without a person):
+##   -- --capture-out=<absolute folder> [--maps=Classic,Single] [--hide=Terrain,Water,Vegetation]
+## writes views of each map (game camera at a few places, an overview), then quits. Launcher smoke test:
+##   -- --smoke-test=<file>  after a few drawn frames writes "ok ..." or "FAIL ..." to <file> and quits.
+
+const MAPS := ["Classic", "Single"]
+## BaseConflict.Constants.Client.pas CAMERAOFFSET (game space).
+const CAMERAOFFSET := Vector3(-0.394721269607544, 0.812130928039551, -0.429695725440979)
+const FIELD_OF_VIEW := 0.6853981635  # coEngineCameraFoV, radians, vertical
+const MIN_ZOOM := 2.6
+const MAX_ZOOM := 3.8
+## Named views for captures and the view buttons: [name, target x, target z, zoom].
+const VIEWS := [["start", 0.0, 0.0, MAX_ZOOM], ["west base", -90.0, -23.0, MAX_ZOOM], ["east base", 90.0, -23.0, MAX_ZOOM],
+	["center close", 0.0, -10.0, MIN_ZOOM], ["overview", 0.0, 0.0, 30.0]]
+
+var _map: TClientMap
+var _camera: Camera3D
+var _target := Vector2.ZERO
+var _zoom := MAX_ZOOM
+var _rotation := 0.0
+var _dragging := false
+var _info: Label
+var _toggles := {}
+var _load_ms := 0.0
+
+
+func _ready() -> void:
+	_build_scene()
+	_build_ui()
+	var maps := _user_arg("maps")
+	var capture := _user_arg("capture-out")
+	if capture != "":
+		_run_capture.call_deferred(maps.split(",") if maps != "" else PackedStringArray(MAPS), capture)
+		return
+	_load_map(maps.get_slice(",", 0) if maps != "" else MAPS[0])
+	var smoke := _user_arg("smoke-test")
+	if smoke != "":
+		_finish_smoke_test.call_deferred(smoke)
+
+
+func _user_arg(arg_name: String) -> String:
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--%s=" % arg_name):
+			return arg.substr(arg_name.length() + 3)
+	return ""
+
+
+func _build_scene() -> void:
+	var env := WorldEnvironment.new()
+	env.environment = Environment.new()
+	env.environment.background_mode = Environment.BG_COLOR
+	env.environment.background_color = Color(0, 0, 0)
+	env.environment.tonemap_mode = Environment.TONE_MAPPER_LINEAR
+	add_child(env)
+	_camera = Camera3D.new()
+	_camera.fov = rad_to_deg(FIELD_OF_VIEW)
+	_camera.near = 1.0
+	_camera.far = 10000.0
+	add_child(_camera)
+
+
+func _build_ui() -> void:
+	var layer := CanvasLayer.new()
+	add_child(layer)
+	var panel := PanelContainer.new()
+	panel.position = Vector2(8, 8)
+	layer.add_child(panel)
+	var box := VBoxContainer.new()
+	panel.add_child(box)
+	var back := Button.new()
+	back.text = "Back to main"
+	back.pressed.connect(func() -> void: get_tree().change_scene_to_file("res://src/main/main.tscn"))
+	box.add_child(back)
+	var map_row := HBoxContainer.new()
+	box.add_child(map_row)
+	for map_name: String in MAPS:
+		var button := Button.new()
+		button.text = map_name
+		button.pressed.connect(func() -> void: _load_map(map_name))
+		map_row.add_child(button)
+	for layer_name: String in ["Terrain", "Water", "Vegetation"]:
+		var toggle := CheckBox.new()
+		toggle.text = layer_name
+		toggle.button_pressed = true
+		toggle.toggled.connect(func(_on: bool) -> void: _apply_toggles())
+		box.add_child(toggle)
+		_toggles[layer_name] = toggle
+	var view_row := HBoxContainer.new()
+	box.add_child(view_row)
+	for view: Array in VIEWS:
+		var button := Button.new()
+		button.text = view[0]
+		button.pressed.connect(func() -> void: _set_view(view))
+		view_row.add_child(button)
+	_info = Label.new()
+	box.add_child(_info)
+
+
+func _load_map(map_name: String) -> void:
+	if _map:
+		_map.queue_free()
+	var start := Time.get_ticks_msec()
+	_map = TClientMap.CreateFromFile(map_name)
+	_load_ms = Time.get_ticks_msec() - start
+	add_child(_map)
+	_apply_toggles()
+	_set_view(VIEWS[0])
+
+
+func _apply_toggles() -> void:
+	if _map:
+		_map.SetDrawTerrain(_toggles.Terrain.button_pressed)
+		_map.SetDrawWater(_toggles.Water.button_pressed)
+		_map.SetDrawVegetation(_toggles.Vegetation.button_pressed)
+
+
+func _set_view(view: Array) -> void:
+	_target = Vector2(view[1], view[2])
+	_zoom = view[3]
+	_rotation = 0.0
+	_update_camera()
+
+
+## ApplyCamera: CameraDirection = FZoom * CAMERAOFFSET.Normalize * 10, turned by the rotation; eye = target + it.
+func _update_camera() -> void:
+	var direction := _zoom * CAMERAOFFSET.normalized() * 10
+	direction = TVegetationManager.RotationPitchYawRoll(Vector3(0, _rotation, 0)) * direction
+	var target := Vector3(_target.x, 0, _target.y)
+	_camera.position = TMesh.ToGodot(target + direction)
+	_camera.look_at(TMesh.ToGodot(target), Vector3.UP)
+	if _info and _map:
+		_info.text = "%s  loaded in %d ms\ntarget (%.1f, %.1f)  zoom %.2f (game: %.1f..%.1f)  rotation %.2f\nWASD/arrows scroll, right drag pan, wheel zoom, Q/E rotate, R reset" % [
+			_map.MapName, _load_ms, _target.x, _target.y, _zoom, MIN_ZOOM, MAX_ZOOM, _rotation]
+
+
+## The screen axes on the ground (game space): TClientCameraComponent scrolls along CAMERAOFFSET.XZ and its
+## orthogonal; up moves away from the camera.
+func _scroll(right: float, up: float) -> void:
+	var forward := -Vector2(CAMERAOFFSET.x, CAMERAOFFSET.z).normalized().rotated(-_rotation)
+	var side := Vector2(-forward.y, forward.x)
+	_target += (forward * up - side * right) * _zoom * 0.5
+	_update_camera()
+
+
+func _process(delta: float) -> void:
+	var right := Input.get_axis("ui_left", "ui_right")
+	var up := Input.get_axis("ui_down", "ui_up")
+	if Input.is_key_pressed(KEY_A):
+		right -= 1
+	if Input.is_key_pressed(KEY_D):
+		right += 1
+	if Input.is_key_pressed(KEY_W):
+		up += 1
+	if Input.is_key_pressed(KEY_S):
+		up -= 1
+	if right != 0 or up != 0:
+		_scroll(right * delta * 60, up * delta * 60)
+	if Input.is_key_pressed(KEY_Q):
+		_rotation -= delta
+		_update_camera()
+	if Input.is_key_pressed(KEY_E):
+		_rotation += delta
+		_update_camera()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mb := event as InputEventMouseButton
+		if mb.button_index == MOUSE_BUTTON_RIGHT:
+			_dragging = mb.pressed
+		elif mb.button_index == MOUSE_BUTTON_WHEEL_UP and mb.pressed:
+			_zoom = maxf(1.0, _zoom - 0.2)
+			_update_camera()
+		elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN and mb.pressed:
+			_zoom = minf(40.0, _zoom + 0.2)
+			_update_camera()
+	elif event is InputEventMouseMotion and _dragging:
+		var mm := event as InputEventMouseMotion
+		_scroll(-mm.relative.x * 0.02, mm.relative.y * 0.02)
+	elif event is InputEventKey and event.pressed and (event as InputEventKey).keycode == KEY_R:
+		_set_view(VIEWS[0])
+
+
+func _finish_smoke_test(result_path: String) -> void:
+	for i in 5:
+		await RenderingServer.frame_post_draw
+	var terrain_ok := _map != null and _map.Terrain != null and _map.Terrain.get_child_count() > 0
+	var water_ok := _map != null and _map.Water.SurfaceCount() > 0
+	var vegetation_ok := _map != null and _map.Vegetation.get_child_count() > 0
+	var image_ok := get_viewport().get_texture().get_image() != null
+	var ok := terrain_ok and water_ok and vegetation_ok and image_ok
+	var file := FileAccess.open(result_path, FileAccess.WRITE)
+	file.store_string("%s map viewer: %s terrain %s, water %s, vegetation %s\n" % ["ok" if ok else "FAIL",
+		_map.MapName if _map else "no map", terrain_ok, water_ok, vegetation_ok])
+	file.close()
+	get_tree().quit()
+
+
+func _run_capture(maps: PackedStringArray, out_dir: String) -> void:
+	DirAccess.make_dir_recursive_absolute(out_dir)
+	# --hide=Water,Vegetation: capture with those layers off (to isolate a render problem)
+	for layer_name in _user_arg("hide").split(",", false):
+		if _toggles.has(layer_name):
+			(_toggles[layer_name] as CheckBox).set_pressed_no_signal(false)
+	for map_name in maps:
+		_load_map(map_name)
+		for view: Array in VIEWS:
+			_set_view(view)
+			for i in 4:
+				await RenderingServer.frame_post_draw
+			var file := "%s_%s.png" % [map_name.to_lower(), String(view[0]).replace(" ", "_")]
+			get_viewport().get_texture().get_image().save_png(out_dir.path_join(file))
+	get_tree().quit()

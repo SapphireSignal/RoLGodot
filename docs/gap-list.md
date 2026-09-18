@@ -16,7 +16,12 @@ Status: ⬜ missing · 🟨 partial · ✅ matches original (checked against the
 ## Match (sandbox first)
 | Behaviour | Source | Status |
 | --- | --- | --- |
-| Classic map with terrain, water, vegetation, lighting | `Maps/Classic` | ⬜ |
+| Map terrain (Classic, Single): heightmap, 16 chunk textures, normal / material maps, lighting | `Engine.Terrain.pas`, `Maps/*/*.ter` | 🟨 drawn at full detail (the original's geomipmapping LoD is not ported), no shadow mapping yet |
+| Map water: waves, refraction, reflection, depth color, caustics, sun specular | `Engine.Water.pas`, `Watershader.fx`, `*.wat` | 🟨 the G-buffer lookups come from Godot's depth / screen / normal textures; not compared against a capture of the original |
+| Map vegetation: palms and grass tufts from their stored seeds, wind sway | `Engine.Vegetation.pas`, `*.veg` | ✅ rolls replayed with Delphi's RNG (tested); palms cast no shadow yet |
+| Map decorations (`.bcc` and the scenarios' `AddDecoEntity`: nexus ground, bridges, rocks) | `BaseConflict.Map.Client.pas` | ⬜ need the client entity visuals (phase 5) |
+| Shadows (the original's own shadow mapping, first light) | `Engine.Core.pas` shadow map | ⬜ |
+| Game camera: scroll (keys, edges, drag), zoom 2.6..3.8, camera zone limits, rotation | `TClientCameraComponent` | 🟨 the map viewer uses its view geometry (offset, field of view, zoom range); the component itself is not ported |
 | Units walk lanes, fight, die | `Scripts/Units`, server components | ⬜ |
 | Card hand, play spawner / drop / spell | `BaseConflict.Classes.Gamestates*.pas` | ⬜ |
 | Minimap | `BaseConflict.Classes.MiniMap.pas` | ⬜ |

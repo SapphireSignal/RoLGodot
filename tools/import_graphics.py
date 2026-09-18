@@ -8,6 +8,7 @@ For every mesh descriptor (Graphics/**/*.xml, the XML serialisation of TMesh, En
   assets/graphics/<...>/<texture>.tga|.png                 each referenced texture, copied, or decoded from the
                                                            engine's own .tex (KTF) when no source image exists
 and a Godot .import file for each texture (lossless, mipmaps: the original generates mipmaps, mhGenerate).
+Then the maps' graphics (terrain, water, vegetation): tools/import_map_graphics.py (not with --only).
 All paths are lowercased: the original ran on case-insensitive Windows and its references differ in case from the
 files on disk, so the port resolves every graphics path by lowercasing it (see docs/assets.md).
 --check: resolve everything, write nothing; exit 1 if a reference cannot be resolved.
@@ -21,6 +22,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import fbx_info
+import import_map_graphics
 
 ROOT = Path(__file__).resolve().parent.parent
 GRAPHICS = ROOT / 'reference' / 'rise-of-legions' / 'Graphics'
@@ -229,6 +231,22 @@ def copy_if_changed(src: Path, dst: Path):
     return True
 
 
+def write_texture(src: Path, dst: Path) -> int:
+    """Copies a source image (or decodes a .tex) and gives it the texture .import. Returns files written."""
+    written = 0
+    if src.suffix.lower() == '.tex':
+        if not dst.exists():
+            ktf_to_png(src, dst)
+            written += 1
+    else:
+        written += copy_if_changed(src, dst)
+    import_file = dst.with_name(dst.name + '.import')
+    if not import_file.exists():
+        import_file.write_text(TEXTURE_IMPORT, encoding='utf-8', newline='\n')
+        written += 1
+    return written
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument('--only', help='only descriptors whose path contains this (case-insensitive)')
@@ -267,16 +285,7 @@ def main() -> int:
                                   encoding='utf-8', newline='\n')
             written += 1
         for name, source in textures.items():
-            target = out_dir / name
-            if source.suffix.lower() == '.tex':
-                if not target.exists():
-                    ktf_to_png(source, target)
-                    written += 1
-            else:
-                written += copy_if_changed(source, target)
-            import_file = target.with_name(target.name + '.import')
-            if not import_file.exists():
-                import_file.write_text(TEXTURE_IMPORT, encoding='utf-8', newline='\n')
+            written += write_texture(source, out_dir / name)
         mesh['Source'] = 'Graphics/' + rel.as_posix()
         descriptor = out_dir / (Path(rel.name).stem.lower() + '.mesh.json')
         text = json.dumps(mesh, indent=1, sort_keys=True) + '\n'
@@ -284,10 +293,14 @@ def main() -> int:
             descriptor.write_text(text, encoding='utf-8', newline='\n')
             written += 1
 
-    for problem in problems:
+    map_problems = []
+    if not args.only:
+        written += import_map_graphics.import_maps(OUT, args.check, copy_if_changed, write_texture, map_problems)
+    for problem in problems + map_problems:
         print(problem)
-    print(f'{count} mesh descriptors, {written} files written, {len(problems)} problems')
-    return 1 if args.check and any('not found' in p and 'texture' not in p for p in problems) else 0
+    print(f'{count} mesh descriptors, maps, {written} files written, {len(problems) + len(map_problems)} problems')
+    mesh_failed = any('not found' in p and 'texture' not in p for p in problems)
+    return 1 if args.check and (mesh_failed or map_problems) else 0
 
 
 if __name__ == '__main__':

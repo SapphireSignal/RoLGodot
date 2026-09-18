@@ -13,7 +13,8 @@ Hand-off note for the next session. Read `CLAUDE.md` first, then this.
 
 ## Where we are
 Phases 0-2 done, phase 3 done except bots and network (the headless sandbox match runs and is profiled); phase 4,
-the asset pipeline, is under way: meshes done, map graphics next (see "Phase 4" below and `docs/port-plan.md`). Verified facts about the original are in
+the asset pipeline, is under way: meshes and map graphics done, the render extras next (see "Phase 4" below and
+`docs/port-plan.md`). Verified facts about the original are in
 `docs/original-architecture.md`. If `reference/` is missing, run `tools\fetch_reference.ps1` (~800 MB download,
 ~3 GB checked out; run it in the background).
 
@@ -132,9 +133,19 @@ Read `docs/assets.md`. Setup after fetching `reference/`: `python tools/import_g
 (the test runner imports too). Meshes are done: `TMesh` (`src/runtime/graphics/`), the shader, `TLightManager`,
 `src/viewer/mesh_viewer.tscn` (capture mode for checking renders yourself; `--turntable=N` for video frames, ffmpeg is
 installed via WinGet). Every script mesh reference resolves (114 references, 86 base models, 173 unit files with skins).
-Next: the map graphics: `.ter` terrain (+ tiled Classic<N>Diffuse/Material/Normal textures), `.wat` water, `.veg`
-vegetation, `.bcc`; read `Engine.Terrain.pas`, `Engine.Water.pas`, `Engine.Vegetation.pas`, `BaseConflict.Map.Client.pas`
-and plan converters, then render the Classic map in a viewer. Later in phase 4/6: glow stage + bloom, fur, outline,
-the original's shadow mapping.
+Map graphics are done (section "Maps" in `docs/assets.md`): `tools/import_map_graphics.py` (run by
+`import_graphics.py`), `TClientMap` with `TTerrain`, `TWaterManager`/`TWaterSurface`, `TVegetationManager`,
+`TEngineRawMesh`, `DelphiRandom` (use it wherever the original replays `Random` from a seed), the terrain / water /
+vegetation shaders, `src/viewer/map_viewer.tscn` (capture mode `--capture-out=<dir> [--maps=..] [--hide=..]`),
+`tests/test_map_graphics.gd`. Winding rule: keep the original's index order in Godot space (see "Winding").
+Open in the map: decorations (`.bcc` + scenario `AddDecoEntity`, need client entities: phase 5), shadows,
+geomipmapping, the camera component (the viewer only borrows its geometry). No capture of the original exists to
+compare against; an idea worth checking: whether the original client (Delphi is installed) can be built and run
+offline far enough to capture reference screenshots (it logs in to the closed master server).
+Next in phase 4: the original's shadow mapping (terrain and vegetation receive it, palms cast it), then glow stage +
+bloom (`PostEffects.fxs`), fur, outline. Or, if the owner prefers seeing units on the map first, start phase 5 with
+the client entity visuals (TMeshComponent, animations) and the decorations.
+Owner: `docs/questions-for-devs.md` is the list for the original developers (master-server values); record their
+answers there.
 The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.
 When a hand-written file declares `class_name TFoo`, rerun the transpiler: it drops the stub.

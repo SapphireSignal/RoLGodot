@@ -17,8 +17,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - Godot: `D:\Godot\Godot_v4.7.1-stable_win64.exe` (console build `..._console.exe` for headless runs)
 - Delphi: `C:\Program Files (x86)\Embarcadero\Studio\37.0\bin\`
 - Tests: `powershell -ExecutionPolicy Bypass -File tools\run_tests.ps1` (import + compile sweep + tests,
-  hard timeout, logs in `logs/`; any GDScript runtime `SCRIPT ERROR` in the log fails the run; last, a smoke test starts the game through
-  `play.bat`, presses the Mesh viewer button and checks a mesh is drawn: a window flashes up). Test files: `tests/test_*.gd` extending `res://tests/test_case.gd`.
+  hard timeout, logs in `logs/`; any GDScript runtime `SCRIPT ERROR` in the log fails the run; last, two smoke tests start the game through
+  `play.bat` and press the Mesh viewer / Map viewer button, checking a mesh / the Classic map is drawn: windows flash up). Test files: `tests/test_*.gd` extending `res://tests/test_case.gd`.
 
 ## Docs
 - `docs/original-architecture.md`: how the original is built, file formats, gotchas.
@@ -31,7 +31,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - `docs/map.md`: map data (zones), build zones, lanes, pathfinding, the priority-queue tie rule.
 - `docs/game-loop.md`: TGame / TServerGame / TGameThread, scenarios, game setup, ticks, what the headless match shows.
 - `docs/assets.md`: the graphics import (`tools/import_graphics.py`, generated `assets/graphics/`), TMesh, the mesh
-  shader (gamma-space port of the original's lighting), TLightManager, the mesh viewer.
+  shader (gamma-space port of the original's lighting), TLightManager, the maps (terrain, water, vegetation), the viewers.
+- `docs/questions-for-devs.md`: what only the closed master server knew (meta values), asked of the original devs.
 
 ## Status
 - 2026-09-18: Phase 0 (foundation) done: source pinned, reference cloned, architecture researched, Godot
@@ -122,3 +123,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   port of Standardshader + the deferred sun/ambient pass), `TLightManager` from the map's `.lig`, the mesh viewer
   (main scene button). All 200 meshes render and animate without errors. 340 tests green. Next: the map graphics
   (terrain, water, vegetation), see CONTINUE.md.
+- 2026-09-18: Phase 4 part 2, map graphics: `tools/import_map_graphics.py` (.ter grid in the original's base64 +
+  zlib, .wat, .veg, raw .msh), `TTerrain`, `TWaterSurface`/`TWaterManager`, `TVegetationManager` (rolls replayed with
+  `DelphiRandom`, the Win32 RTL generator), `TEngineRawMesh`, `TClientMap`, three shaders, the map viewer (main scene
+  button, capture mode, second launcher smoke test). Both maps render. `docs/questions-for-devs.md` lists what only the
+  master server knew. 354 tests green, no errors. Next: see CONTINUE.md.

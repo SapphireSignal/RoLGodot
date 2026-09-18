@@ -69,6 +69,9 @@ How the list is kept:
 | Spawner timing and scatter | `TBrainSpawnerComponent.FireNotInitially`, `.ApplyRandomOffset`, `...Server.Brains.Special.pas:64-66` | A spawner that skips its first wave (at game start / placement), or scatters its spawn point by ±1 on each axis. | Yes |
 | Spawn with front | `TServerEntityManagerComponent.SpawnUnitWithFront`, `GameServer/BaseConflict.EntityComponents.Server.pas:379` | Scenario scripts spawning a unit facing a chosen direction (they use the plain, overwatch and no-lifetime variants). | Yes |
 | Whole-grid and ordered waves | `TWelaEffectWaveSpawnComponent.SpawnAllTogether`, `.SpawnInOrder`, `GameServer/BaseConflict.EntityComponents.Server.Welas.Special.pas:73-74` | Every spawner on the build grid spawning at once each wave, or the spawners taking turns in grid order instead of a random order (the tutorial uses its own fixed order). | Yes |
+| Procedural trees | `TTree`, `Engine/Engine.Vegetation.pas:99` | Trees generated from a trunk spline and leaf quads (height, thickness, leaf count, gravity), with their own trunk / leaf textures. No map uses them: both maps' vegetation is palm meshes and grass tufts. | No |
+| Sky reflection on water | `TWaterSurface.SkyTexture`, `Engine/Engine.Water.pas:79` | A spherical environment map reflected by the water instead of the flat `SkyColor`. Both maps leave it empty. | No |
+| Terrain from a picture / OBJ | `TTerrain.LoadFromGrayscaleTexture`, `.LoadFromOBJ`, `Engine/Engine.Terrain.pas:541`, `:1016` | Map-editor ways to create a terrain from a grayscale heightmap or a mesh. The game only loads `.ter` files. | No |
 
 ## Developer tools (debug views, not gameplay)
 
