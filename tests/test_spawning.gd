@@ -32,6 +32,7 @@ class FakeMap:
 class FakeGame:
 	extends RefCounted
 	var IsShuttingDown := false
+	var Commanders: Array = []
 	var IsSandbox := false
 	var Overwatch := false
 	var OverwatchClearable := false
@@ -355,6 +356,10 @@ func test_spawn_unit() -> void:
 	check_eq(_manager.GetEntityByID(3), e, "deployed")
 	check_eq(_bus.Game.Map.Clamped, [[C.ZONE_WALK, Vector2(3, 4)]], "clamped to the walk zone")
 	check_eq(_bus.Game.Statistics.GetCount(7, "unit_spawns_SmallMeleeGolem"), 1, "counted for the commander")
+	# TStatisticsUnitComponent at eiAfterCreate: a melee golem with 68 health
+	check_eq(_bus.Game.Statistics.GetCount(7, "wela_spawns_Melee"), 1, "a melee spawn")
+	check_eq(_bus.Game.Statistics.GetCount(7, "wela_spawns_Ranged"), 0, "not ranged")
+	check_eq(_bus.Game.Statistics.GetCount(7, "wela_spawns_gte500Health"), 0, "less than 500 health")
 
 
 ## The scripts' form: SpawnUnit(X, Y, Pattern, TeamID) faces (0, 1), has no commander nor creator. Spawners are

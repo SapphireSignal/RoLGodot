@@ -3,7 +3,8 @@ extends TObject
 ## Port of TGameStatisticManager (GameServer/BaseConflict.Classes.Server.pas:20, implementation :111): counts game
 ## events per commander (spawns, kills, deaths, wela use, played cards) for the game's end statistics. The server
 ## game owns one as `Game.Statistics`.
-## Not yet: CardPlayed (needs the CardInfoManager's card types and colors, comes with the cards).
+## CardPlayed takes the card type and colors from the file name (BC.ScriptFilenameToCard{Type,Colors}); its
+## "Unimplemented card type" raise is unreachable (every name is some type).
 ## BuildStatistics returns the RGameFinishedStatistics record as a Dictionary
 ## {duration, commander_statistics: [{player_id, game_events: [{identifier, count}]}]}, commanders and events in
 ## insertion order (the original: TDictionary hash order).
@@ -64,6 +65,35 @@ func SanitizeScriptFileName(ScriptFileName: String) -> String:
 		Result = Result.replace(Pattern, "")
 	var Delimiter := maxi(Result.rfind("/"), Result.rfind("\\"))
 	return Result.substr(Delimiter + 1)
+
+
+## Triggered whenever a commander plays a card: its type's global count, its colors and the per-card count (and
+## the highest per-card count as card_play_countoftype).
+func CardPlayed(CommanderID: int, ScriptFileName: String) -> void:
+	match BC.ScriptFilenameToCardType(ScriptFileName):
+		C.ctDrop:
+			GlobalDrops(CommanderID)
+		C.ctSpell:
+			GlobalSpells(CommanderID)
+		C.ctBuilding:
+			GlobalBuildings(CommanderID)
+		C.ctSpawner:
+			GlobalSpawners(CommanderID)
+	var CardColors := BC.ScriptFilenameToCardColors(ScriptFileName)
+	if CardColors.has(C.ecColorless):
+		CountEvent(CommanderID, BC.GSE_CARD_PLAY_COLOR_PREFIX + "colorless")
+	if CardColors.has(C.ecBlack):
+		CountEvent(CommanderID, BC.GSE_CARD_PLAY_COLOR_PREFIX + "black")
+	if CardColors.has(C.ecGreen):
+		CountEvent(CommanderID, BC.GSE_CARD_PLAY_COLOR_PREFIX + "green")
+	if CardColors.has(C.ecRed):
+		CountEvent(CommanderID, BC.GSE_CARD_PLAY_COLOR_PREFIX + "red")
+	if CardColors.has(C.ecBlue):
+		CountEvent(CommanderID, BC.GSE_CARD_PLAY_COLOR_PREFIX + "blue")
+	if CardColors.has(C.ecWhite):
+		CountEvent(CommanderID, BC.GSE_CARD_PLAY_COLOR_PREFIX + "white")
+	var PlayCount := CountEvent(CommanderID, BC.GSE_CARD_PLAY_PREFIX + SanitizeScriptFileName(ScriptFileName))
+	MaxEvent(CommanderID, BC.GSE_CARD_PLAY_PREFIX + "countoftype", PlayCount)
 
 
 func AddCommander(CommanderID: int, PlayerID: int) -> void:

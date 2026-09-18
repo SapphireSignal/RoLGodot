@@ -92,3 +92,6 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   `RTarget.Hash`; a real caster golem's Crystal Power link, a real gatling turret firing until out of ammo) and the
   combat modifiers (blinded, dealt / taken damage multipliers, Nth / entity-nearby ready). 1361 files compile, 284
   tests green, no errors. Next: the small server rest from the stub list (see CONTINUE.md).
+- 2026-09-18: Phase 2 step 5 part 19: game end, waves, statistics (primary target / nexus loss, suicide on game
+  end, income payout, wave spawn rotation, unit / wela / card-play statistics, `CardPlayed`). 1362 files compile,
+  298 tests green, no errors. Next: the commander and the directors (see CONTINUE.md).

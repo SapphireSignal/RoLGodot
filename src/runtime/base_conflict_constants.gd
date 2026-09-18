@@ -55,6 +55,53 @@ const FILE_IDENTIFIER_SPAWNER = "Spawner"
 const FILE_IDENTIFIER_BUILDING = "Building"
 const FILE_IDENTIFIER_GOLEMS = "Golems"
 const FILE_IDENTIFIER_SPELL = "Spell"
+const FILE_EXTENSION_SPELL = ".sps"
+
+## BUILDGRID_SIZE / BUILDGRID_SLOTS (:57-58): a build zone has 8 x 3 fields, 20 without the corners.
+const BUILDGRID_SIZE = Vector2i(8, 3)
+const BUILDGRID_SLOTS = 20
+## UNIT_PROPERTIES_STATE_EFFECTS (:293), sorted like DSet.Make.
+static var UNIT_PROPERTIES_STATE_EFFECTS: Array = DSet.Make([C.upStunned, C.upRooted, C.upBlinded, C.upFrozen,
+	C.upSoulless, C.upGrounded, C.upLifted, C.upPetrified])
+
+
+## TCardInfoManager.ScriptFilenameToCardType (BaseConflict.Constants.Cards.pas:322): by the (case-insensitive)
+## file identifiers; everything else is a drop.
+static func ScriptFilenameToCardType(ScriptFile: String) -> int:
+	if ScriptFile.containsn(FILE_IDENTIFIER_SPAWNER):
+		return C.ctSpawner
+	if ScriptFile.containsn(FILE_IDENTIFIER_BUILDING):
+		return C.ctBuilding
+	if ScriptFile.containsn(FILE_EXTENSION_SPELL) or ScriptFile.containsn(FILE_IDENTIFIER_SPELL):
+		return C.ctSpell
+	return C.ctDrop
+
+
+## TCardInfoManager.ScriptFilenameToCardColors (BaseConflict.Constants.Cards.pas:249): the card's colors by its
+## folder, as a set. Kept: the single colors are tested first, so 'greenwhite\' gives [ecWhite], 'blackwhite\'
+## [ecWhite] and 'blackgreen\' [ecGreen]; the two-color branches never match.
+static func ScriptFilenameToCardColors(ScriptFile: String) -> Array:
+	var lowerScriptFile := ScriptFile.to_lower()
+	if lowerScriptFile.contains("green\\"):
+		return [C.ecGreen]
+	if lowerScriptFile.contains("white\\"):
+		return [C.ecWhite]
+	if lowerScriptFile.contains("black\\"):
+		return [C.ecBlack]
+	if lowerScriptFile.contains("red\\"):
+		return [C.ecRed]
+	if lowerScriptFile.contains("blue\\"):
+		return [C.ecBlue]
+	if lowerScriptFile.contains("colorless\\") or lowerScriptFile.contains("golems\\") \
+			or lowerScriptFile.contains("neutral\\") or lowerScriptFile.contains("scenario\\"):
+		return [C.ecColorless]
+	if lowerScriptFile.contains("greenwhite\\"):
+		return DSet.Make([C.ecGreen, C.ecWhite])
+	if lowerScriptFile.contains("blackwhite\\"):
+		return DSet.Make([C.ecBlack, C.ecWhite])
+	if lowerScriptFile.contains("blackgreen\\"):
+		return DSet.Make([C.ecBlack, C.ecGreen])
+	return []
 
 
 ## RES_INT_RESOURCES : SetResource = [reInteger .. high(EnumResource)]

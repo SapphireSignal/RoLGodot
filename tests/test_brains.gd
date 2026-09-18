@@ -25,6 +25,8 @@ class FakeMap:
 class FakeGame:
 	extends RefCounted
 	var IsShuttingDown := false
+	var Statistics := TGameStatisticManager.new().Create()
+	var Commanders: Array = []
 	var IsSandbox := false
 	var IngameStatus := 2  # BC.gsPlaying
 	var League := 1

@@ -12,7 +12,7 @@ Hand-off note for the next session. Read `CLAUDE.md` first, then this.
 - Never read or write the owner's other repos.
 
 ## Where we are
-Phases 0 and 1 done, phase 2 steps 1-4 done, step 5 under way (entity-local families done up to links and combat modifiers) (see `docs/port-plan.md`). Verified facts about the original are in
+Phases 0 and 1 done, phase 2 steps 1-4 done, step 5 under way (entity-local families done up to game end, waves and statistics) (see `docs/port-plan.md`). Verified facts about the original are in
 `docs/original-architecture.md`. If `reference/` is missing, run `tools\fetch_reference.ps1` (~800 MB download,
 ~3 GB checked out; run it in the background).
 
@@ -91,9 +91,15 @@ original walks or edits a TDictionary) and `RTarget.Hash`.
 The combat modifiers are done: `TModifier{Blinded,MultiplyDealtDamage}Component`, `TBuffTakenDamageMultiplierComponent`,
 `TWelaReady{Nth,EntityNearby}Component` (section "Combat modifiers", `tests/test_combat_modifiers.gd`; random rolls are
 tested by seeding Godot's RNG and replaying the rolls).
-Next, the small server rest from the stub list (`src/runtime/dws/stubs/`): `TWelaEffect{IncomePayout,Statistics,WaveSpawn}Component`,
-`T{Server,}PrimaryTargetComponent`, `TSuicideOnGameEndComponent`, `TStatisticsUnitComponent`,
-`TServerCardPlayStatisticsComponent`; then commander / scenario / tutorial / sandbox directors, and phase 3 (the
-game loop).
+Game end, waves and statistics are done: `T{Server,}PrimaryTargetComponent`, `TSuicideOnGameEndComponent`,
+`TWelaEffect{IncomePayout,WaveSpawn}Component`, `TStatisticsUnitComponent`, `TWelaEffectStatisticsComponent`,
+`TServerCardPlayStatisticsComponent` + `TGameStatisticManager.CardPlayed` (section "Game end, waves, statistics",
+`tests/test_statistics.gd`). New: `BC.ScriptFilenameToCard{Type,Colors}`, `BC.BUILDGRID_SIZE/_SLOTS`,
+`BC.UNIT_PROPERTIES_STATE_EFFECTS`, `DSet.Intersection`. Fake games that build real server units now need
+`Statistics` and `Commanders` (every unit carries TStatisticsUnitComponent).
+Next, the server rest of the stub list (`src/runtime/dws/stubs/`): the commander (`TCommanderComponent`,
+`TCommanderAbility`), then the scenario / tutorial / sandbox directors (`TScenarioDirectorComponent`,
+`TTutorialDirectorServerComponent`, `TServerSandbox{,Command}Component`), and phase 3 (the game loop; the real
+`Scenarios\Game` script needs `Game.GameDirector`). The other stubs are client visuals (phase 4+).
 The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.
 When a hand-written file declares `class_name TFoo`, rerun the transpiler: it drops the stub.

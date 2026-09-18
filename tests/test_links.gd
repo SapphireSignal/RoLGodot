@@ -32,6 +32,7 @@ class FakeMap:
 class FakeGame:
 	extends RefCounted
 	var IsShuttingDown := false
+	var Commanders: Array = []
 	var IsSandbox := false
 	var Overwatch := false
 	var OverwatchClearable := false

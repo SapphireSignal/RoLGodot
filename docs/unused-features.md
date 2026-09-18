@@ -68,6 +68,7 @@ How the list is kept:
 | Links hitting both ends | `TLinkBrainComponent.FiresAtSources`, `GameServer/BaseConflict.EntityComponents.Server.pas:163` | A link that, on each cooldown, also fires a group at its source (e.g. a drain beam that heals the caster while it damages the target). | Yes |
 | Spawner timing and scatter | `TBrainSpawnerComponent.FireNotInitially`, `.ApplyRandomOffset`, `...Server.Brains.Special.pas:64-66` | A spawner that skips its first wave (at game start / placement), or scatters its spawn point by ±1 on each axis. | Yes |
 | Spawn with front | `TServerEntityManagerComponent.SpawnUnitWithFront`, `GameServer/BaseConflict.EntityComponents.Server.pas:379` | Scenario scripts spawning a unit facing a chosen direction (they use the plain, overwatch and no-lifetime variants). | Yes |
+| Whole-grid and ordered waves | `TWelaEffectWaveSpawnComponent.SpawnAllTogether`, `.SpawnInOrder`, `GameServer/BaseConflict.EntityComponents.Server.Welas.Special.pas:73-74` | Every spawner on the build grid spawning at once each wave, or the spawners taking turns in grid order instead of a random order (the tutorial uses its own fixed order). | Yes |
 
 ## Developer tools (debug views, not gameplay)
 

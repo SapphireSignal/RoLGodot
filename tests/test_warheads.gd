@@ -27,6 +27,8 @@ class FakeMap:
 class FakeGame:
 	extends RefCounted
 	var IsShuttingDown := false
+	var Statistics := TGameStatisticManager.new().Create()
+	var Commanders: Array = []
 	var IsSandbox := false
 	var IngameStatus: int = BC.gsLoading
 	var League := 1
@@ -423,3 +425,12 @@ func test_real_golem_hits_golem() -> void:
 	attacker.Eventbus.Trigger(C.eiFire, [[RTarget.Create(victim)]], [1])
 	check_eq(probe.Named("KillDone"), [[victim.ID, [1]]], "the killing blow: eiKillDone in group 1")
 	check_eq(RParam.AsBoolean(victim.Eventbus.Read(C.eiIsAlive, [])), false, "the victim is dead")
+	# TStatisticsUnitComponent (UnitTemplate); both golems belong to commander 0, built without eiAfterCreate
+	var stats: TGameStatisticManager = _bus.Game.Statistics
+	check_eq(stats.GetCount(0, "wela_spawns_Melee"), 0, "no spawn counts without eiAfterCreate")
+	check_eq(stats.GetCount(0, "wela_gain_damage_max"), 17, "the victim took 8.5 + 8.5 in total")
+	check_eq(stats.GetCount(0, "global_gain_damage"), 25, "the running sum each hit: round(8.5) = 8, then 17")
+	check_eq(stats.GetCount(0, "unit_kills_SmallMeleeGolem"), 1, "the attacker's kill")
+	check_eq(stats.GetCount(0, "unit_deaths_SmallMeleeGolem"), 1, "the victim's death")
+	check_eq(stats.GetCount(0, "global_kills"), 2, "counted by the killer's UnitKills and the victim's OnDie")
+	check_eq(stats.GetCount(0, "global_deaths"), 1, "one death")
