@@ -22,7 +22,11 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 ## Docs
 - `docs/original-architecture.md`: how the original is built, file formats, gotchas.
 - `docs/port-plan.md`: phases 0-9. `docs/gap-list.md`: user-visible behaviours and their status.
+- `docs/scripts.md`: how the original runs scripts, the construct survey, transpiler decisions.
 
 ## Status
 - 2026-09-18: Phase 0 (foundation) done: source pinned, reference cloned, architecture researched, Godot
   scaffold + test runner + `play.bat` + export preset. Next: phase 1, the DWScript → GDScript transpiler.
+- 2026-09-18: Phase 1 steps 1-2 done: script engine read, lexer + preprocessor (`tools/dws/`), survey
+  (`tools/survey_scripts.py`, all 509 scripts preprocess for CLIENT and SERVER), `docs/scripts.md`.
+  Next: parser + GDScript emitter (step 3).

@@ -16,13 +16,16 @@ Phase 0 done (see `docs/port-plan.md`). Verified facts about the original are in
 `docs/original-architecture.md`. If `reference/` is missing, run `tools\fetch_reference.ps1` (~800 MB download,
 ~3 GB checked out; run it in the background).
 
+Phase 1 steps 1-2 done: `docs/scripts.md` holds how the original compiles and runs scripts (defines,
+`#define` quirk, includes, `InheritsFrom`), the construct survey and the transpiler decisions (one output per
+side, canonical name spelling, `Math.dws` hand-ported). Front end: `tools/dws/lexer.py`,
+`tools/dws/preprocess.py`; survey: `python tools/survey_scripts.py --json logs/script_survey.json`.
+
 ## Next: phase 1, the script transpiler
-1. Read `Engine/Engine.Script.pas` to see how scripts are compiled: which symbols are exposed (the component
-   classes, `RVector3`, enums), how `{$INCLUDE}` and `{$IFDEF CLIENT/SERVER}` are resolved.
-2. Survey the DWScript constructs used across `Scripts/` (procedures, vars, if/else, for, fluent method chains,
-   set literals `[a, b]`, `{@UBL_...}` markers, includes). Write the survey into `docs/scripts.md`.
-3. Write `tools/transpile_scripts.py`: `.ets/.dws/.sps` → GDScript under `src/content/scripts/`, one file per
-   script, keeping the three entry points. Unsupported constructs are reported, never skipped silently.
+3. Write `tools/dws/parser.py` (AST for the subset in `docs/scripts.md`) and `tools/transpile_scripts.py`:
+   preprocess per side → parse → emit `src/content/scripts/{client,server}/<path>.gd`, keeping entry points.
+   Unsupported constructs stop with file:line, never skipped silently. Build the symbol table for canonical
+   spellings from the Pascal declarations of the exposed classes and enums.
 4. Test: every generated file passes the compile sweep (it needs stub component classes, which become the
-   phase 2 work list).
+   phase 2 work list: the survey's `classes` and `members`).
 Open question to resolve on the way: the last argument of `TCardInfo.Create` in `BaseConflict.Constants.Cards.pas`.
