@@ -142,9 +142,18 @@ Open in the map: decorations (`.bcc` + scenario `AddDecoEntity`, need client ent
 geomipmapping, the camera component (the viewer only borrows its geometry). No capture of the original exists to
 compare against; an idea worth checking: whether the original client (Delphi is installed) can be built and run
 offline far enough to capture reference screenshots (it logs in to the closed master server).
-Next in phase 4: the original's shadow mapping (terrain and vegetation receive it, palms cast it), then glow stage +
-bloom (`PostEffects.fxs`), fur, outline. Or, if the owner prefers seeing units on the map first, start phase 5 with
-the client entity visuals (TMeshComponent, animations) and the decorations.
+**Next (the owner's priority, 2026-09-18): the map viewer must show the battlefield, not just the ground.** The owner
+noticed there are no lanes, no nexus, no towers. Lanes are not drawn by the original (no client code renders them);
+what shows them are the bridges and the base plates' paving. So:
+1. Client entity visuals: `TMeshComponent` (+ the animation component) from `BaseConflict.EntityComponents.Client*.pas`,
+   so a client entity built from a script shows its model at its display position / front / size.
+2. Map decorations: `TClientMap` loads `<Map>.bcc` `SavedDecorations` (Classic: 108, e.g. `BridgePart1/2`,
+   `Bridge11..333`, `Stones1`, sound emitters `AtmoBeach/Jungle/Wind` that draw nothing) with `AddDecoEntity`.
+3. The scenario's placed things in the map viewer: the `AddDecoEntity` calls of the scenario scripts (nexus ground)
+   and the units a scenario starts with (nexus, towers, spawners) from the client scripts, placed where the headless
+   sandbox match puts them (`docs/game-loop.md`).
+Check with captures that bridges line up with the terrain and the nexus sits on its plate. Then, in phase 4 again:
+shadow mapping (terrain and vegetation receive it, palms cast it), glow stage + bloom (`PostEffects.fxs`), fur, outline.
 Owner: `docs/questions-for-devs.md` is the list for the original developers (master-server values); record their
 answers there.
 The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.
