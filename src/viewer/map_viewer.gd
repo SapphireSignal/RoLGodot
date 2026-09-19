@@ -47,6 +47,8 @@ var _dragging := false
 var _info: Label
 var _toggles := {}
 var _load_ms := 0.0
+var _loading := false
+var _loading_overlay: ColorRect
 
 
 func _ready() -> void:
@@ -57,7 +59,7 @@ func _ready() -> void:
 	if capture != "":
 		_run_capture.call_deferred(maps.split(",") if maps != "" else PackedStringArray(), capture)
 		return
-	_load_scenario(0)
+	_request_scenario(0)
 	var smoke := _user_arg("smoke-test")
 	if smoke != "":
 		_finish_smoke_test.call_deferred(smoke)
@@ -106,7 +108,7 @@ func _build_ui() -> void:
 		var button := Button.new()
 		button.text = SCENARIOS[i][0]
 		var index := i
-		button.pressed.connect(func() -> void: _load_scenario(index))
+		button.pressed.connect(func() -> void: _request_scenario(index))
 		scenario_row.add_child(button)
 	for layer_name: String in ["Terrain", "Water", "Vegetation", "Entities"]:
 		var toggle := CheckBox.new()
@@ -125,6 +127,37 @@ func _build_ui() -> void:
 		view_row.add_child(button)
 	_info = Label.new()
 	box.add_child(_info)
+	# Loading a scenario blocks the main thread for seconds (server game + client game): a dimmed overlay says so and
+	# swallows the clicks made meanwhile.
+	_loading_overlay = ColorRect.new()
+	_loading_overlay.color = Color(0, 0, 0, 0.6)
+	_loading_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_loading_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	_loading_overlay.visible = false
+	var loading_label := Label.new()
+	loading_label.name = "Text"
+	loading_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	loading_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	loading_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	loading_label.add_theme_font_size_override("font_size", 32)
+	_loading_overlay.add_child(loading_label)
+	layer.add_child(_loading_overlay)
+
+
+## Loads a scenario behind the loading overlay: it is drawn first, and stays one frame after the load so clicks
+## queued during the blocking load land on it. Clicks while loading are ignored.
+func _request_scenario(index: int) -> void:
+	if _loading:
+		return
+	_loading = true
+	(_loading_overlay.get_node("Text") as Label).text = "Loading %s ..." % SCENARIOS[index][0]
+	_loading_overlay.visible = true
+	for i in 2:
+		await RenderingServer.frame_post_draw
+	_load_scenario(index)
+	await get_tree().process_frame
+	_loading_overlay.visible = false
+	_loading = false
 
 
 func _unload() -> void:
@@ -240,11 +273,25 @@ func _process(delta: float) -> void:
 		_update_camera()
 
 
+## A drag ends wherever the button is released, also over the panel (which eats the event before
+## _unhandled_input), and when the window loses focus: otherwise the view kept panning with every mouse move.
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_RIGHT \
+			and not event.pressed:
+		_dragging = false
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		_dragging = false
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
 		if mb.button_index == MOUSE_BUTTON_RIGHT:
-			_dragging = mb.pressed
+			if mb.pressed:
+				_dragging = true
 		elif mb.button_index == MOUSE_BUTTON_WHEEL_UP and mb.pressed:
 			_zoom = maxf(1.0, _zoom - 0.2)
 			_update_camera()
@@ -269,6 +316,8 @@ func _drawn_meshes() -> int:
 
 
 func _finish_smoke_test(result_path: String) -> void:
+	while _loading:
+		await get_tree().process_frame
 	for i in 5:
 		await RenderingServer.frame_post_draw
 	var terrain_ok := _map != null and _map.Terrain != null and _map.Terrain.get_child_count() > 0
