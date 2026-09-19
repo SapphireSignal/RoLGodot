@@ -75,4 +75,6 @@ void fragment() {
 		specular += mix(light_color.rgb, color.rgb, mb.b) * pow(clamp(dot(normal, halfway), 0.0, 1.0), mb.g * 255.0 + 1.0) * mb.r;
 	}
 	ALBEDO = rol_to_linear(color.rgb * mix(light_intensity + rol_ambient, vec3(1.0), mb.a) + specular * light_intensity);
+	// the glow camera (TPostEffectManager, the camera without layer 20): black, only the depth the glow is tested against
+	if ((CAMERA_VISIBLE_LAYERS & 524288u) == 0u) ALBEDO = vec3(0.0);
 }

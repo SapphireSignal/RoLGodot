@@ -283,9 +283,42 @@ EFFECT_TEXTURES = ['Effects/Textures/Matcap*', 'Effects/Textures/SpawnMask*', 'E
                    'Effects/Metal/Metal_*']
 
 
+SCRIPT_EFFECT = re.compile(r"TMeshEffect\w*\.Create\(([^;]*)", re.IGNORECASE)
+IMAGE_LITERAL = re.compile(r"'([^']*\.(?:tga|png))'", re.IGNORECASE)
+
+
+def script_effect_textures():
+    """Texture file names the client scripts give mesh effects (TMeshEffectHideAndGlow / Warp / Wobble .Create:
+    'PATH_GRAPHICS + ''Units\\White\\PatronSaint'' + Entity.SkinFileSuffix + ''\\PatronSaintSpawnMask.tga'''): the
+    file names, lower case, found in any folder (a skinned path fits every skin folder)."""
+    found = set()
+    for path in SCRIPTS.rglob('*'):
+        if path.suffix.lower() in ('.ets', '.dws'):
+            for match in SCRIPT_EFFECT.finditer(path.read_text(encoding='utf-8', errors='replace')):
+                for literal in IMAGE_LITERAL.findall(match.group(1)):
+                    # a %d name is formatted with the team when drawn (the matcaps, imported by EFFECT_TEXTURES)
+                    if '%' not in literal:
+                        found.add(Path(literal.replace('\\', '/')).name.lower())
+    return found
+
+
 def import_effect_textures(check: bool, problems: list) -> int:
-    """Copies the effect textures to assets/graphics/<lowercased path> (the source image, else the decoded .tex)."""
+    """Copies the effect textures to assets/graphics/<lowercased path> (the source image, else the decoded .tex):
+    the effects' own (EFFECT_TEXTURES) and the ones scripts name, from every folder that has them."""
     written = 0
+    wanted = script_effect_textures()
+    by_name = {}
+    for path in sorted(GRAPHICS.rglob('*')):
+        if path.suffix.lower() in IMAGE_EXTENSIONS and path.name.lower() in wanted:
+            by_name.setdefault(path.name.lower(), []).append(path)
+    for name in sorted(wanted):
+        if name not in by_name:
+            problems.append(f'script effect texture "{name}" not found (rendered without it, like the original)')
+            continue
+        for source in by_name[name]:
+            if not check:
+                rel = source.relative_to(GRAPHICS).parent.as_posix().lower()
+                written += write_texture(source, OUT / rel / name)
     for pattern in EFFECT_TEXTURES:
         sources = {}
         for path in sorted(GRAPHICS.glob(pattern)):

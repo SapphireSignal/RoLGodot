@@ -151,23 +151,32 @@ The map viewer now shows the battlefield: scenario buttons 1 lane (Single, defau
 golem base on its nexus ground); nexus with floating team crystals, towers, bridges with their stone rails.
 Mesh effects (section "Mesh effects" in `docs/assets.md`, `tests/test_mesh_effects.gd`): `TShader` composes the
 standard shader template (`standard_shader.gdshaderinc`, never included) with the effects' ported block files
-(`src/runtime/graphics/effect_shaders/`); ported: Matcap, Metal, Spawn (all colors, blue in 20 own passes), Tint, the
-component and the stack. To port another effect: its `.fx` blocks into `effect_shaders/<name>.gdshaderinc` (use the
-`pso_*` locals, game-space `Worldposition`), its class in `src/runtime/components/`, rerun the transpiler, add its
-shader to `tests/check_shaders.gd`'s EFFECTS.
-Open in phase 4: shadow mapping (terrain and vegetation receive it, palms cast it), glow stage + bloom
-(`PostEffects.fxs`; the nexus / tower glow textures are bound per team already) and with it the glow-type effects
-(Glow, HideAndGlow, SoulGain, the spawn effects' glow pass), the other effects (Ghost, Warp, Wobble, Ice, Stone, Void,
-Spherify, Invisible), particle effects and point lights on units, fur, outline, geomipmapping, the camera component
-(the viewer only borrows its geometry). No capture of the original exists to compare against; an idea
-worth checking: whether the original client (Delphi is installed) can be built and run offline far enough to capture
-reference screenshots (it logs in to the closed master server).
+(`src/runtime/graphics/effect_shaders/`); ported: Matcap, Metal, Spawn (all colors, blue in 20 own passes), Tint,
+Glow, HideAndGlow, SoulGain, the component and the stack. To port another effect: its `.fx` blocks into
+`effect_shaders/<name>.gdshaderinc` (use the `pso_*` locals, game-space `Worldposition`), its class in
+`src/runtime/components/`, rerun the transpiler, add its shader to `tests/check_shaders.gd`'s EFFECTS; textures a
+script passes to `TMeshEffect*.Create` are imported by `import_graphics.py` already.
+Death decay (end of "Mesh effects" in `docs/assets.md`, `tests/test_unit_decay.gd`): `TUnitDecayManagerComponent`
+(`TClientGame.DecayManager`), `DeathShader{,_Black}.fx`; dying units and buildings freeze (no script makes a death
+animation) and blow apart / darken for 500 ms.
+Post effects (section "Post effects" in `docs/assets.md`, `tests/test_post_effects.gd`): `TPostEffectManager` runs
+`PostEffects.fxs` (`tools/convert_post_effects.py` -> `src/content/post_effects.json`) on a SubViewport chain; the
+glow stage is a second camera without cull layer 20 (shaders test `CAMERA_VISIBLE_LAYERS`), meshes draw their glow
+pass there (`TMesh.GlowMaterial`, `_glow_flags`). Ported: Glow, UnsharpMasking, ColorCorrection. Map viewer capture
+switches: `--post-effects=off|none`, `--dump-glow=on`, `--death-burst=N`, `--view=x,z,zoom`.
+Open in phase 4: the Toon post effect (the original's dark borders, `PosteffectBlackBorder.fx` + `PosteffectToon.fx`,
+border mode: needs G-buffer normal + linear depth + material alpha: a third camera with its own layer bit drawing
+them the way the glow camera works), FXAA (`Engine/Shader/FXAA.fx`, mode dither, quality 2), Distortion and Outline
+(need particles / hover), shadow mapping (terrain and vegetation receive it, palms cast it), the other mesh effects
+(Ghost, Warp, Wobble, Ice, Stone, Void, Spherify, Invisible), particle effects and point lights on units, fur,
+geomipmapping, the camera component (the viewer only borrows its geometry). No capture of the original exists to
+compare against; an idea worth checking: whether the original client (Delphi is installed) can be built and run
+offline far enough to capture reference screenshots (it logs in to the closed master server).
 The live sandbox runs in the map viewer (network done): card buttons drop footmen / place spawners; units walk, fight
-and die on the client. Check in a capture (`--play=... --wait=...`) that drops show their spawn effect, units their
-walk / attack / death animations.
-**Next:** pick by visibility: the unit visuals of a live fight (death: decay manager, `eiDie` on the client; health
-bars are HUD, phase 5), or the glow stage + bloom (the crystals' and every glow texture's look, then the glow
-effects), or phase 5's camera component and card hand on top of the network.
+and die (decay) on the client, drops show their spawn effect.
+**Next:** pick by visibility: the Toon post effect (dark outlines on everything: the biggest look difference left)
+with FXAA, or particle effects (every hit, projectile and spell), or phase 5's camera component and card hand on top
+of the network.
 Owner: `docs/questions-for-devs.md` is the list for the original developers (master-server values); record their
 answers there.
 The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.

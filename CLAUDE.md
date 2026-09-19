@@ -36,7 +36,7 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - `docs/assets.md`: the graphics import (`tools/import_graphics.py`, generated `assets/graphics/`), TMesh on the raw
   `.msh` (skinning, morphs, animation drivers), the mesh shader (gamma-space port of the original's lighting),
   TLightManager, the maps (terrain, water, vegetation, decorations), the mesh effects (shader block composition,
-  own passes, the effect stack), the viewers.
+  own passes, the effect stack, the death decay), the post effects (viewport pipeline, glow stage), the viewers.
 - `docs/questions-for-devs.md`: what only the closed master server knew (meta values), asked of the original devs.
 
 ## Status
@@ -150,3 +150,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   the client), `TClientGame.JoinLocal`, the game thread's player state machine and own clock. The map viewer runs the
   sandbox live with card buttons: units spawn, walk, fight and die on the client. `play.bat` refreshes the class cache
   (quick import) first. 371 tests green, no errors. Next: see CONTINUE.md.
+- 2026-09-18: Death decay and post effects: `TUnitDecayManagerComponent` + `DeathShader{,_Black}.fx` (dying units blow
+  apart / darken for 500 ms); `TPostEffectManager` runs `PostEffects.fxs` on a SubViewport chain (pass-through
+  pixel-exact) with the glow stage (a second camera, meshes' glow passes), Glow, UnsharpMasking, ColorCorrection; mesh
+  effects Glow, HideAndGlow, SoulGain (effects-stage own pass); the importer takes the scripts' effect textures.
+  380 tests green, 1403 shader variants compile, no errors. Next: see CONTINUE.md.

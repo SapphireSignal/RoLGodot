@@ -8,8 +8,8 @@ extends TGame
 ## JoinLocal is the port's stand-in for the loading game state's connect (TGameStateLoadCoreGame: NET_HELLO_SERVER
 ## with the token, NET_ASSIGNED_PLAYER back) against an in-process game server; ReadyWhenLoaded stands in for the
 ## core game state's client-ready event once the game is ready.
-## Not ported yet: input, camera, GUI, sound, commander manager (OnTokenMapping's eiNewCommander), decay / trace
-## managers, minimap, the build grid manager and TClientEntityManagerComponent (the end screen).
+## Not ported yet: input, camera, GUI, sound, commander manager (OnTokenMapping's eiNewCommander), the trace
+## manager, minimap, the build grid manager and TClientEntityManagerComponent (the end screen).
 
 enum { gsPreparing, gsRunning, gsReconnecting, gsAborted, gsCrashed, gsFinishing, gsFinished }  # EnumGameStatus
 
@@ -18,6 +18,7 @@ var FClientNetworkComponent: TClientNetworkComponent = null
 var FTokenMapping: Array = []
 var FGameState: int = gsPreparing
 var FSentReady := false
+var DecayManager: TUnitDecayManagerComponent = null
 
 var ClientMap: TClientMap:
 	get:
@@ -46,6 +47,7 @@ func Create(GameInfo_ = null, Socket: TLoopbackSocket = null, AuthentificationTo
 	if Socket != null:
 		FClientNetworkComponent = TClientNetworkComponent.new().Create(GameEntity, Socket, AuthentificationToken,
 			FinishedReceiveGameData)
+	DecayManager = TUnitDecayManagerComponent.new().Create(GameEntity)
 	Initialize()
 	return self
 

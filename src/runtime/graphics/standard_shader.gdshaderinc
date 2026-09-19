@@ -18,7 +18,20 @@
 //
 // Space: VERTEX / NORMAL / world_position are Godot space (game x mirrored, see TMesh). The block vs_worldposition
 // works on Worldposition in game space, as the original's blocks expect.
+//
+// Glow stage (rsGlow, TPostEffectManager): a second camera sharing the world draws the glow buffer; it lacks the
+// cull layer bit GLOW_LAYER_BIT (layer 20) every other camera has by default, which ROL_GLOW_CAMERA tests. Under it the world variants draw black (they are
+// the scene depth the glow is tested against), except the main material of a mesh with its own glow pass
+// (glow_replaces), which is not drawn, and the own passes of the effects stage (ROL_EFFECTS_STAGE: blended, forward
+// lit, no z write), which are no scene depth. The ROL_GLOW_STAGE variants (the mesh's glow pass: diffuse = the glow texture,
+// ALPHA, no lighting) draw only under the glow camera: the main one opaque (premultiplied over the black buffer), own
+// passes blended. Other cameras never draw them.
+#ifndef ROL_GLOW_STAGE
 #define LIGHTING
+#endif
+#define ROL_GLOW_CAMERA ((CAMERA_VISIBLE_LAYERS & 524288u) == 0u)
+// a vertex outside the clip volume: the triangle is not drawn
+#define ROL_NOT_DRAWN vec4(2.0, 2.0, 2.0, 1.0)
 
 global uniform vec3 rol_ambient;          // Ambient.PremultiplyAlpha.RGB
 global uniform int rol_light_count;       // enabled directional lights, at most 4 (MAX_DIRECTIONAL_LIGHTS)
@@ -50,6 +63,7 @@ uniform bool color_adjustment = false;      // COLORADJUSTMENT
 uniform bool absolute_color_adjustment = false;
 uniform vec3 hsv_offset = vec3(0.0);
 uniform vec3 absolute_hsv = vec3(0.0);
+uniform bool glow_replaces = false;         // world variants: the mesh draws its own glow pass (see above)
 #block custom_parameters
 #endblock
 
@@ -157,6 +171,14 @@ void vertex() {
 	forward_halfway = normalize(normalize(CAMERA_POSITION_WORLD - world_position) + rol_light_dir_0);
 	#block after_vertexshader
 	#endblock
+	#ifdef ROL_GLOW_STAGE
+	if (!ROL_GLOW_CAMERA) POSITION = ROL_NOT_DRAWN;
+	#elif defined(ROL_EFFECTS_STAGE)
+	// own passes of the effects stage are no scene depth: not in the glow stage
+	if (ROL_GLOW_CAMERA) POSITION = ROL_NOT_DRAWN;
+	#else
+	if (ROL_GLOW_CAMERA && glow_replaces) POSITION = ROL_NOT_DRAWN;
+	#endif
 }
 
 void fragment() {
@@ -164,6 +186,7 @@ void fragment() {
 	vec3 CameraPosition = CAMERA_POSITION_WORLD;
 	vec3 CameraLeft = -INV_VIEW_MATRIX[0].xyz;
 	vec3 CameraUp = INV_VIEW_MATRIX[1].xyz;
+	vec3 CameraDirection = -INV_VIEW_MATRIX[2].xyz;
 	vec4 pso_Color = vec4(0.0);
 	#block pixelshader_diffuse
 	#ifdef DIFFUSETEXTURE
@@ -197,6 +220,7 @@ void fragment() {
 	#endif
 	vec4 pso_NormalBuffer = vec4(Normal, length(CameraPosition - world_position));
 	#else
+	#ifdef LIGHTING
 	// Forward (effects stage): one directional light (DirectionalLightDir / DirectionalLightColor)
 	vec3 LightIntensity = rol_light_count > 0
 		? clamp(dot(Normal, rol_light_dir_0), 0.0, 1.0) * rol_light_color_0.rgb * rol_light_color_0.a : vec3(0.0);
@@ -221,6 +245,7 @@ void fragment() {
 	pso_Color.rgb = pso_Color.rgb * mix(LightIntensity + rol_ambient, vec3(1.0), Material.a);
 	#else
 	pso_Color.rgb = pso_Color.rgb * (LightIntensity + rol_ambient);
+	#endif
 	#endif
 	#endif
 	#endif
@@ -259,8 +284,17 @@ void fragment() {
 	}
 	result = pso_Color.rgb * mix(light_intensity + rol_ambient, vec3(1.0), pso_MaterialBuffer.a) + specular * light_intensity;
 	#endif
+	#ifdef ROL_GLOW_STAGE
+	#ifdef ROL_ALPHA
 	ALBEDO = rol_to_linear(result);
+	ALPHA = clamp(pso_Color.a, 0.0, 1.0);
+	#else
+	ALBEDO = rol_to_linear(result * clamp(pso_Color.a, 0.0, 1.0));
+	#endif
+	#else
+	ALBEDO = ROL_GLOW_CAMERA ? vec3(0.0) : rol_to_linear(result);
 	#ifdef ROL_ALPHA
 	ALPHA = clamp(pso_Color.a, 0.0, 1.0);
+	#endif
 	#endif
 }

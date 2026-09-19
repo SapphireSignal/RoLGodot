@@ -40,6 +40,8 @@ const TEXTURE_SLOT_UNIFORMS := {0: "diffuse_texture", 2: "material_texture", 3: 
 ## EnumBlendMode (Engine.Vertex.pas)
 const BLEND_LINEAR := 0
 const BLEND_ADDITIVE := 1
+const BLEND_SUBTRACTIVE := 2
+const BLEND_REVERSE_SUBTRACTIVE := 3
 
 static var _shaders := {}
 ## TMeshAnimatedGeometry cache (the original's QueryDeviceForObject): .msh path -> TGeometry.
@@ -144,6 +146,12 @@ var MeshMaterial: ShaderMaterial
 var CustomShader: Array[RMeshShader] = []
 ## [RMeshShader, pass index, ShaderMaterial] per own pass drawn in the world stage (built by ApplyMaterial).
 var OwnPassMaterials: Array = []
+## The glow stage (rsGlow, drawn only under the glow camera): the mesh's glow pass when it has a glow texture and no
+## custom shader hides it, and [RMeshShader, pass index, ShaderMaterial] per own pass in the glow stage.
+var GlowMaterial: ShaderMaterial = null
+var GlowOwnPassMaterials: Array = []
+## [RMeshShader, pass index, ShaderMaterial] per own pass in the effects stage (blended, not in the glow stage).
+var EffectsOwnPassMaterials: Array = []
 ## TRawMesh.AnimationController with the bone driver, then the morph driver.
 var AnimationController := TAnimationController.new()
 var AnimationDriverBone: TSkinnedMeshAnimationDriver = null
@@ -375,34 +383,92 @@ func HasColorOverride() -> bool:
 ## mode or the custom shaders. The drawing (TRawMesh.Render): the mesh with its shader and every custom shader that
 ## does not render in an own pass, unless a custom shader hides it (OwnPassHideOriginal); then, per custom shader
 ## drawn in own passes in the world stage, OwnPasses more draws (cull none) with only that shader's blocks. Godot
-## draws them as the material's next_pass chain. The glow stage is not ported yet (docs/assets.md).
+## draws them as the material's next_pass chain. The glow stage (DrawsAtStage rsGlow) follows in the same chain: the
+## glow pass (GenerateShaderBitmask(rsGlow): the glow texture as diffuse, ALPHA, no lighting, the mesh's cull mode)
+## when the mesh has a glow texture and nothing hides it, then the own passes in the glow stage; these variants draw
+## only under the glow camera (TPostEffectManager), where the world ones draw black.
 func ApplyMaterial() -> void:
 	if MeshMaterial == null:
 		return
 	var diffuse := _texture(DiffuseTexture)
 	var material := _texture(MaterialTexture)
+	var glow := _texture(GlowTexture)
 	var flags := _shader_flags(diffuse != null, material != null)
 	var skinning := Geometry != null and Geometry.HasSkin
 	MeshMaterial.shader = _shader_for(Cullmode, flags, skinning, ResolveShaderArray())
 	OwnPassMaterials.clear()
+	GlowOwnPassMaterials.clear()
+	GlowMaterial = null
 	for mesh_shader: RMeshShader in CustomShader:
 		if RS_WORLD in mesh_shader.NeedsOwnPass:
 			for j in mesh_shader.OwnPasses:
 				var pass_material := ShaderMaterial.new()
 				pass_material.shader = _shader_for("cmNone", flags, skinning, [mesh_shader.ShaderName])
 				OwnPassMaterials.append([mesh_shader, j, pass_material])
+	EffectsOwnPassMaterials.clear()
+	for mesh_shader: RMeshShader in CustomShader:
+		if RS_EFFECTS in mesh_shader.NeedsOwnPass:
+			for j in mesh_shader.OwnPasses:
+				var pass_material := ShaderMaterial.new()
+				pass_material.shader = _shader_for("cmNone", _effects_flags(flags), skinning, [mesh_shader.ShaderName],
+					mesh_shader.BlendMode)
+				EffectsOwnPassMaterials.append([mesh_shader, j, pass_material])
+	var hidden := CustomShaderBlocks()
+	if glow != null and not hidden:
+		GlowMaterial = ShaderMaterial.new()
+		GlowMaterial.shader = _shader_for(Cullmode, _glow_flags(true, false), skinning, ResolveShaderArray())
+	for mesh_shader: RMeshShader in CustomShader:
+		if RS_GLOW in mesh_shader.NeedsOwnPass:
+			for j in mesh_shader.OwnPasses:
+				var pass_material := ShaderMaterial.new()
+				pass_material.shader = _shader_for("cmNone", _glow_flags(glow != null, true), skinning,
+					[mesh_shader.ShaderName], mesh_shader.BlendMode)
+				GlowOwnPassMaterials.append([mesh_shader, j, pass_material])
 	var chain: Array[ShaderMaterial] = []
-	if not CustomShaderBlocks():
+	if not hidden:
 		chain.append(MeshMaterial)
 	for own: Array in OwnPassMaterials:
 		chain.append(own[2])
+	for own: Array in EffectsOwnPassMaterials:
+		chain.append(own[2])
+	var world_count := chain.size()
+	if GlowMaterial != null:
+		chain.append(GlowMaterial)
+	for own: Array in GlowOwnPassMaterials:
+		chain.append(own[2])
 	for i in chain.size():
 		chain[i].next_pass = chain[i + 1] if i + 1 < chain.size() else null
-		_set_material_parameters(chain[i], diffuse, material)
+		if i < world_count:
+			_set_material_parameters(chain[i], diffuse, material)
+		else:
+			_set_material_parameters(chain[i], glow, null)
+			chain[i].set_shader_parameter("use_alpha", true)
+	MeshMaterial.set_shader_parameter("glow_replaces", GlowMaterial != null)
 	if MeshInstance != null:
 		MeshInstance.material_override = chain[0] if not chain.is_empty() else null
 	UploadBoneTransforms()
 	SetUpCustomShaders()
+
+
+## GenerateShaderBitmask(rsEffects) for own passes of the effects stage: the world flags without the G-buffer, lit
+## forward, blended (ROL_ALPHA; the ALPHA flag itself stays the mesh's HasAlpha, use_alpha), no z write.
+static func _effects_flags(world_flags: PackedStringArray) -> PackedStringArray:
+	var flags := PackedStringArray(["ROL_EFFECTS_STAGE", "ROL_ALPHA"])
+	for flag in world_flags:
+		if flag in ["DIFFUSETEXTURE", "MATERIAL", "MATERIALTEXTURE"]:
+			flags.append(flag)
+	return flags
+
+
+## GenerateShaderBitmask(rsGlow) as defines: ROL_GLOW_STAGE, DIFFUSETEXTURE (the glow texture); own passes blend
+## (ROL_ALPHA).
+static func _glow_flags(has_glow: bool, own_pass: bool) -> PackedStringArray:
+	var flags := PackedStringArray(["ROL_GLOW_STAGE"])
+	if own_pass:
+		flags.append("ROL_ALPHA")
+	if has_glow:
+		flags.append("DIFFUSETEXTURE")
+	return flags
 
 
 func _set_material_parameters(m: ShaderMaterial, diffuse: Texture2D, material: Texture2D) -> void:
@@ -472,6 +538,20 @@ func SetUpCustomShaders() -> void:
 		var mesh_shader: RMeshShader = own[0]
 		if mesh_shader.SetUp.is_valid():
 			mesh_shader.SetUp.call(ShaderBinding.new(own[2]), RS_WORLD, own[1])
+	for own: Array in EffectsOwnPassMaterials:
+		var mesh_shader: RMeshShader = own[0]
+		if mesh_shader.SetUp.is_valid():
+			mesh_shader.SetUp.call(ShaderBinding.new(own[2]), RS_EFFECTS, own[1])
+	if GlowMaterial != null:
+		var glow_binding := ShaderBinding.new(GlowMaterial)
+		for i in range(CustomShader.size() - 1, -1, -1):
+			var mesh_shader: RMeshShader = CustomShader[i]
+			if not mesh_shader.RendersInOwnPass() and mesh_shader.SetUp.is_valid():
+				mesh_shader.SetUp.call(glow_binding, RS_GLOW, 0)
+	for own: Array in GlowOwnPassMaterials:
+		var mesh_shader: RMeshShader = own[0]
+		if mesh_shader.SetUp.is_valid():
+			mesh_shader.SetUp.call(ShaderBinding.new(own[2]), RS_GLOW, own[1])
 
 
 ## The materials this mesh draws with (bone matrices go to each).
@@ -479,13 +559,20 @@ func Materials() -> Array[ShaderMaterial]:
 	var result: Array[ShaderMaterial] = [MeshMaterial]
 	for own: Array in OwnPassMaterials:
 		result.append(own[2])
+	for own: Array in EffectsOwnPassMaterials:
+		result.append(own[2])
+	if GlowMaterial != null:
+		result.append(GlowMaterial)
+	for own: Array in GlowOwnPassMaterials:
+		result.append(own[2])
 	return result
 
 
 ## One compiled shader per render mode, flag and custom shader combination: the standard shader template with the
 ## custom shaders' blocks (TShader.Compose), the render mode and the flag defines in front.
-static func _shader_for(cullmode: String, flags: PackedStringArray, skinning: bool, custom_shaders: Array) -> Shader:
-	var key := "%s|%s|%s|%s" % [cullmode, ",".join(flags), skinning, "+".join(custom_shaders)]
+static func _shader_for(cullmode: String, flags: PackedStringArray, skinning: bool, custom_shaders: Array,
+		blend_mode := BLEND_LINEAR) -> Shader:
+	var key := "%s|%s|%s|%s|%d" % [cullmode, ",".join(flags), skinning, "+".join(custom_shaders), blend_mode]
 	if _shaders.has(key):
 		return _shaders[key]
 	var cull := "cull_back"
@@ -495,6 +582,15 @@ static func _shader_for(cullmode: String, flags: PackedStringArray, skinning: bo
 		cull = "cull_front"
 	var has_alpha := flags.has("ROL_ALPHA")
 	var modes := "unshaded, %s, %s" % [cull, "blend_mix, depth_draw_opaque" if has_alpha else "depth_draw_opaque"]
+	if has_alpha and (flags.has("ROL_GLOW_STAGE") or flags.has("ROL_EFFECTS_STAGE")):
+		# own passes outside the world stage: no z write, blended (Render: SrcAlpha / One with the blend op, or the
+		# linear SrcAlpha / InvSrcAlpha)
+		var blend := "blend_mix"
+		if blend_mode == BLEND_ADDITIVE:
+			blend = "blend_add"
+		elif blend_mode == BLEND_REVERSE_SUBTRACTIVE:
+			blend = "blend_sub"
+		modes = "unshaded, %s, %s, depth_draw_never" % [cull, blend]
 	var defines := ""
 	for flag in flags:
 		defines += "#define %s\n" % flag

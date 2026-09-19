@@ -5,8 +5,9 @@ extends TVisualizerComponent
 ## of TVisualizerComponent with the final size, plays the animations the entity asks for (eiPlayAnimation) and
 ## answers sub positions (bones, head, top, ground...) and the bounding sphere.
 ## The mesh effects (TMeshEffect*) live in the effect stack: one effect per class is mounted on the mesh at a time,
-## expired ones are removed each frame. Not ported yet: the death decay (TUnitDecayManagerComponent: a dying mesh
-## with a death effect only plays its death animation and keeps its effects), outline drawing (the values reach TMesh,
+## expired ones are removed each frame. On death the mesh plays its death animation; units and buildings
+## (udHasDeathEffect) on the client drop their effects and hand the mesh to the client game's decay manager
+## (TUnitDecayManagerComponent), and this component goes. Not ported yet: outline drawing (the values reach TMesh,
 ## the outline pass is not ported), ApplyTeamColoring (TMeshEffectTeamColor: no script uses it).
 
 const SIZE_FACTOR_3DSMAX = 2.0 / 125.0
@@ -318,7 +319,21 @@ func OnDie(_KillerID, _KillerCommanderID) -> bool:
 		FMesh.AnimationController.Play(C.ANIMATION_DEATH)
 	else:
 		FMesh.AnimationController.Pause()
-	# not ported yet: with udHasDeathEffect the mesh goes to ClientGame.DecayManager (TUnitDecayManagerComponent)
+	var ClientGame = GlobalEventbus().Game if GlobalEventbus() != null else null
+	if ClientGame is TClientGame and RParam.AsBoolean(Owner.UnitData(C.udHasDeathEffect)):
+		# remove all effects for death effect
+		while not FEffectStack.is_empty():
+			PopEffect()
+		var ColorIdentity: int
+		if FDeathColorIdentityOverrideActive:
+			ColorIdentity = FDeathColorIdentityOverride
+		else:
+			ColorIdentity = RParam.AsEnumType(Eventbus().Read(C.eiColorIdentity, []))
+		ClientGame.DecayManager.AddMesh(FMesh, ColorIdentity)
+		# we passed our mesh to the manager and so can not rely on its validity anymore
+		FMesh = null
+		FDecaying = true
+		DeferFree()
 	return true
 
 

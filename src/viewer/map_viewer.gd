@@ -10,6 +10,7 @@ extends Node3D
 ## Controls: WASD / arrows scroll, right mouse drag pans, wheel zooms, Q / E rotate, R resets.
 ## Capture mode (checks without a person):
 ##   -- --capture-out=<absolute folder> [--maps=Single,Classic] [--hide=Terrain,Water,Vegetation,Entities] [--wait=ms]
+##      [--play=<card label,...>] [--death-burst=N] [--post-effects=off|none] [--dump-glow=on]
 ## writes views of each scenario on those maps (game camera at a few places, an overview; after the game ran --wait
 ## ms), then quits. Launcher smoke
 ## test:  -- --smoke-test=<file>  after a few drawn frames writes "ok ..." or "FAIL ..." to <file> and quits.
@@ -47,6 +48,7 @@ var _entities: Node3D
 var _entity_count := 0
 var _scenario_index := 0
 var _camera: Camera3D
+var _post_effects: TPostEffectManager
 var _target := Vector2.ZERO
 var _zoom := MAX_ZOOM
 var _rotation := 0.0
@@ -105,7 +107,15 @@ func _build_scene() -> void:
 	_camera.fov = rad_to_deg(FIELD_OF_VIEW)
 	_camera.near = 1.0
 	_camera.far = 10000.0
-	add_child(_camera)
+	# the game's post effect stack (glow, unsharp masking, color correction): the camera draws into its world viewport;
+	# --post-effects=off draws the plain scene, =none the pipeline without effects (comparison captures)
+	if _user_arg("post-effects") == "off":
+		add_child(_camera)
+	else:
+		_post_effects = TPostEffectManager.new().Create(self, _camera)
+		if _user_arg("post-effects") == "none":
+			_post_effects.FEffects = []
+			_post_effects.Rebuild()
 
 
 func _build_ui() -> void:
@@ -448,6 +458,23 @@ func _run_capture(maps: PackedStringArray, out_dir: String) -> void:
 		var wait_until := Time.get_ticks_msec() + int(_user_arg("wait"))
 		while Time.get_ticks_msec() < wait_until:
 			await get_tree().process_frame
+		# --death-burst=N: after the wait, at the first unit death on the client, N frames ~60 ms apart centered on the
+		# dying mesh (the decay manager's death shader, 500 ms)
+		var burst := int(_user_arg("death-burst"))
+		if burst > 0:
+			var give_up := Time.get_ticks_msec() + 60000
+			while _client.DecayManager.DecayingCount() == 0 and Time.get_ticks_msec() < give_up:
+				await get_tree().process_frame
+			if _client.DecayManager.DecayingCount() > 0:
+				var dying: TMesh = _client.DecayManager.FDecayingUnits[0].DecayingMesh
+				_set_view(["death", dying.Position.x, dying.Position.z, 1.2])
+				for f in burst:
+					var next := Time.get_ticks_msec() + 60
+					await RenderingServer.frame_post_draw
+					var file := "%d_%s_death_%02d.png" % [i, String(SCENARIOS[i][2]).to_lower(), f]
+					get_viewport().get_texture().get_image().save_png(out_dir.path_join(file))
+					while Time.get_ticks_msec() < next:
+						await get_tree().process_frame
 		for view: Array in views:
 			_set_view(view)
 			if view.size() > 4:
@@ -457,4 +484,7 @@ func _run_capture(maps: PackedStringArray, out_dir: String) -> void:
 				await RenderingServer.frame_post_draw
 			var file := "%d_%s_%s.png" % [i, String(SCENARIOS[i][2]).to_lower(), String(view[0]).replace(" ", "_")]
 			get_viewport().get_texture().get_image().save_png(out_dir.path_join(file))
+			# --dump-glow=on: the glow stage's buffer too
+			if _user_arg("dump-glow") == "on" and _post_effects != null and _post_effects.GlowViewport != null:
+				_post_effects.GlowViewport.get_texture().get_image().save_png(out_dir.path_join("glow_" + file))
 	get_tree().quit()

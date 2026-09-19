@@ -169,7 +169,9 @@ func test_blue_spawn_draws_own_passes() -> String:
 	while m != null:
 		chain += 1
 		m = m.next_pass
-	check_eq(chain, 20, "the mesh's own drawing is hidden")
+	check_eq(chain, 40, "the mesh's own drawing is hidden: 20 world passes, then 20 in the glow stage")
+	check_eq(mesh.GlowOwnPassMaterials.size(), 20, "NeedOwnPass [rsWorld, rsGlow]")
+	check(mesh.GlowMaterial == null, "no glow pass of its own while hidden")
 	check(mesh.MeshInstance.material_override != mesh.MeshMaterial, "not the main material")
 	mesh.SetUpCustomShaders()
 	check_near(mesh.OwnPassMaterials[19][2].get_shader_parameter("pass_progress"), 1.0, 1e-6, "last pass progress")

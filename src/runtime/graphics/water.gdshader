@@ -189,4 +189,6 @@ void fragment() {
 
 	ALBEDO = rol_to_linear(resulting_color);
 	ALPHA = 1.0;
+	// the glow camera (TPostEffectManager, the camera without layer 20): black, only the depth the glow is tested against
+	if ((CAMERA_VISIBLE_LAYERS & 524288u) == 0u) ALBEDO = vec3(0.0);
 }

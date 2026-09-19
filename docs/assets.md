@@ -90,15 +90,16 @@ light pass `DeferredDirectionalAmbientLight.fx`; `TMesh` builds one variant per 
 - **Shading reduction override**: `TMeshComponent` sets `ShadingReductionOverride` to the client option
   `coEngineGlobalShadingReduction`, default 0.5, used when the mesh's own ShadingReduction is 0; it also makes
   every unit mesh "have material settings".
-- Not yet: glow stage (144 descriptors have a glow texture; needs the bloom post effect), fur (18), outline,
-  normal maps (none of the 200 descriptors uses one), shadow mapping (the original's own, first light only).
+- Not yet: fur (18), outline, normal maps (none of the 200 descriptors uses one), shadow mapping (the original's own,
+  first light only). The glow stage: see "Post effects".
 - The shader is a **template**, never `#include`d: TMesh composes each variant (below) and puts `shader_type`,
   the render mode and the flag defines in front: `GBUFFER` (+ `DRAW_COLOR/NORMAL/MATERIAL`) for opaque meshes (lit
   by the ported deferred pass at the end), `ROL_ALPHA` for the forward path, `DIFFUSETEXTURE`, `MATERIAL`,
-  `MATERIALTEXTURE`, `CULLNONE`, `ROL_SKINNING`. The fragment keeps the original's `pso.Color` /
-  `pso.MaterialBuffer` / `pso.NormalBuffer` as `pso_*` locals so effect blocks port line by line.
-- **Headless Godot does not compile shaders.** `tests/check_shaders.gd` (run by the test runner with a window, ~7 s)
-  builds all 560 variants and fails on any that does not parse.
+  `MATERIALTEXTURE`, `CULLNONE`, `ROL_SKINNING`; `ROL_GLOW_STAGE` (the glow pass, `_glow_flags`) and
+  `ROL_EFFECTS_STAGE` (own passes of the effects stage, `_effects_flags`). The fragment keeps the original's
+  `pso.Color` / `pso.MaterialBuffer` / `pso.NormalBuffer` as `pso_*` locals so effect blocks port line by line.
+- **Headless Godot does not compile shaders.** `tests/check_shaders.gd` (run by the test runner with a window)
+  builds all ~1400 mesh variants and the post effect shaders and fails on any that does not parse.
 
 ## Mesh effects
 `TMeshEffect*` (`src/runtime/components/t_mesh_effect*.gd`, `BaseConflict.EntityComponents.Client.Visuals.pas`) change
@@ -112,9 +113,11 @@ last to first, so the first custom shader is outermost; a block without `#inheri
 
 **On the mesh** (`TMesh`): `CustomShader` is the RMeshShader list (shader name, SetUp, own-pass stages, pass count,
 hides the original, blend mode, owning effect), sorted by the effects' order values (spawn 1, tint 5000, matcap 9993,
-metal 10000). `ApplyMaterial` builds the main material from the list's non-own-pass shaders and, per shader drawn in
-own passes in the world stage, `OwnPasses` materials with only that shader (cull none), chained as `next_pass`; an
-`OwnPassHideOriginal` shader drops the main one. Each frame `SetUpCustomShaders` calls the SetUps (world stage only):
+hide and glow 9997, glow 9998, soul gain 9999, metal 10000). `ApplyMaterial` builds one `next_pass` chain: the main
+material from the list's non-own-pass shaders, per shader drawn in own passes `OwnPasses` materials with only that
+shader (cull none) in the world stage, then in the effects stage (blended by the blend mode, no z write), then the
+glow pass and the glow stage's own passes (see "Post effects"); an `OwnPassHideOriginal` shader drops the main one
+(and the glow pass). Each frame `SetUpCustomShaders` calls the SetUps with each material's stage:
 `ShaderBinding.SetShaderConstant` / `SetTexture` (slots `tsVariable1..3` = `variable_texture_1..3`). The raw mesh's
 smoothed normals ride in `CUSTOM2` (`SMOOTHED_NORMAL`).
 
@@ -123,16 +126,66 @@ others wait; expired ones go each frame; when a mounted one goes, the next waiti
 if the removed one had no own passes (as written). `TMeshEffectComponent` gives managed clones to its group's meshes
 (at once unless it waits for die / fire: `ActivateOnLose` effects run at creation too, as written) and takes them back
 when freed. Textures: `import_graphics.py` copies `Graphics/Effects/Textures` matcaps, spawn mask, glow textures and
-`Effects/Metal` to `assets/graphics/effects/`.
+`Effects/Metal` to `assets/graphics/effects/`, and every image a script passes to a `TMeshEffect*.Create` (masks such
+as `PatronSaintSpawnMask.tga`) from every folder holding that file (all skins).
 
 Ported: Matcap (nexus / tower crystals: `MatcapCrystal<team>.png`), Metal (the snapshot has only White, Blue, Generic:
 green / black / red metal units get no texture, the original warns too), Spawn (every drop: `Modifiers\Drop.dws`; white,
-colorless, green, black, black legendary, blue with 20 own passes; red uses white; `OverrideEffectTime` is undone by
-`InitializeOnMesh`, as written), Tint. Deviations: the default order value (the class's RTTI address) is a name hash;
-timekeys at a time before every key read uninitialized values in the original, the port takes the first key. Not
-yet: Glow, HideAndGlow, SoulGain, Ghost, Warp, Wobble, Ice, Stone, Void, Spherify, Invisible (still stubs: they sit
-on the stack without a shader) and the glow stage the spawn / glow effects feed. Unused: ColorOverlay, TeamColor
-(`ApplyTeamColoring`), SlidingTexture, SoulExtract, SpawnerSpawn (`docs/unused-features.md`).
+colorless, green, black, black legendary, blue with 20 own passes in the world and glow stages; red uses white;
+`OverrideEffectTime` is undone by `InitializeOnMesh`, as written; a mesh without a glow texture gets its color's
+`<Color>Glow.tga` meanwhile: flat color, alpha 0, so only the spawn shader's alpha term glows), Tint, Glow
+(`GlowOvershoot.fx`, glow override too), HideAndGlow (two timelines, a mask), SoulGain (an own pass in the effects
+stage). Deviations: the default order value (the class's RTTI address) is a name hash; timekeys at a time before every
+key read uninitialized values in the original, the port takes the first key. Not yet: Ghost, Warp, Wobble, Ice,
+Stone, Void, Spherify, Invisible (still stubs: they sit on the stack without a shader).
+
+**Death decay** (`TUnitDecayManagerComponent`, `TClientGame.DecayManager`): on `eiDie` a client unit or building
+(`udHasDeathEffect`, set by `UnitTemplate` / `BuildingTemplate`) pops its effects and hands its mesh over; the mesh
+plays `death` (no script makes one, so every pose freezes) and draws with only `DeathShader.fx` (swell, fly apart
+along the smoothed normals, flatten, noise holes, glow color `GLOW_COLOR_MAP` of its color identity) or, black,
+`DeathShader_Black.fx` (noise holes, darkening) for 500 ms, then is freed. The noise takes the game space position.
+Map viewer capture: `--play=... --death-burst=N` shoots N frames at the first death.
+
+Unused effects: ColorOverlay, TeamColor (`ApplyTeamColoring`), SlidingTexture, SoulExtract, SpawnerSpawn
+(`docs/unused-features.md`).
+
+## Post effects
+`TPostEffectManager` (`src/runtime/graphics/t_post_effect_manager.gd`, `Engine.PostEffects.pas`) runs the original's
+post effect stack. **The stack** is `PostEffects.fxs`, converted by `tools/convert_post_effects.py` into
+`src/content/post_effects.json` (checked by the test runner); the client then fires `OPTIONS_POSTEFFECTS`, so SSAO,
+Toon, Glow, FXAA, UnsharpMasking and Distortion follow `coGraphicsPostEffect*` (defaults: SSAO off, the rest on);
+ColorCorrection and Outline are always on, Bloom and the Draw* debug views off. `ToArray` = the dictionary's values
+(`DelphiDictionary` slot order) sorted by RenderOrder with `DelphiSort`: Toon (1, stage rsWorldPostEffects), then in
+rsPostEffects Glow (2), FXAA (7), UnsharpMasking (8), ColorCorrection / Distortion (10, hash order), Outline (11).
+
+**The Godot pipeline.** The camera renders the 3D world into `WorldViewport` (a SubViewport; the root viewport draws
+no 3D). Each pass is a SubViewport drawing a full ColorRect with a canvas shader (`src/runtime/graphics/post_effects/`)
+over earlier textures; a pass's inputs are its descendants and Godot draws child viewports first, so one frame runs
+the chain in order (checked: without effects the result is pixel-identical to drawing directly). The last texture is
+shown under the UI (a CanvasLayer at -1). All targets are 8 bit (the original's A8R8G8B8, clamping between passes) and
+hold the gamma-space values (the 3D output is converted to sRGB before 2D, see "Shading"), so the passes compute on the
+original's values. The map viewer installs it (`--post-effects=off` / `none` for comparison captures).
+
+**Glow stage (rsGlow).** `GlowViewport` has a second camera on the same world, synced to the main one before each
+frame. It lacks cull layer 20 (`GLOW_LAYER_BIT`), which every other camera has by default; the shaders test
+`CAMERA_VISIBLE_LAYERS` for it (`ROL_GLOW_CAMERA`). Under the glow camera terrain, vegetation, water and the meshes'
+world passes draw black (the scene depth the original z-tests the glow against), a mesh with a glow pass leaves its
+world pass out (`glow_replaces`) and the glow pass draws instead: `GenerateShaderBitmask(rsGlow)` = the glow texture
+as diffuse, ALPHA, no lighting, the effect blocks in their non-G-buffer branch, the SetUps called with rsGlow. The
+original alpha-blends it (SrcAlpha / InvSrcAlpha) onto the black-cleared target without z write; the port draws it
+opaque with z write as `rgb * a` (the same over black; where glowing surfaces overlap with alpha < 1 the front one
+wins). Own passes in the glow stage blend without z write (linear / additive / reverse subtractive; D3D's subtract has
+no Godot mode). Other cameras never draw glow variants. Dump the buffer with `--dump-glow=on`.
+
+**Ported effects.** Glow: the glow buffer blurred by `TTextureBlur` (Kernelsize 4, 2 iterations, spread 0.68,
+Anamorphic 4.56 = y spread x 1.44, intensity 0.32, additive: `GAUSS_4_ADDITIVE`, which brightens ~1.6x per pass),
+the last pass added onto the scene. UnsharpMasking: the scene blurred (normal kernel, spread 0.12, 1 iteration) and
+`scene + (scene - blurred) * 0.36`. ColorCorrection: `pow(saturate((c - 0) / 0.956), 1.008)`. Blur passes: per
+iteration i a vertical pass (`pixelwidth = (i + 1 + SpreadX) / width`) then a horizontal one, linear clamped sampling.
+Not yet: Toon (border mode: dark outlines where the G-buffer's normal / depth jump, needs normal, depth and material
+buffers: a third camera with its own layer bit could draw them), FXAA (`FXAA.fx`, 3.11, mode dither, quality 2),
+Distortion (nothing draws in rsDistortion yet: particles), Outline (the outline stage: hover highlights). The mesh
+viewer draws without post effects.
 
 ## Lighting
 `TLightManager` (`src/runtime/map/t_light_manager.gd`) ports `BaseConflict.Map.Client.pas`: ambient and

@@ -11,6 +11,12 @@ const DEFAULTS := {
 	C.coEngineGlobalShadingReduction: "0.5",
 	C.coGameplayFixedTeamColors: "True",
 	C.coGameplayShowEffectRadius: "True",
+	C.coGraphicsPostEffectSSAO: "False",
+	C.coGraphicsPostEffectToon: "True",
+	C.coGraphicsPostEffectGlow: "True",
+	C.coGraphicsPostEffectFXAA: "True",
+	C.coGraphicsPostEffectUnsharpMasking: "True",
+	C.coGraphicsPostEffectDistortion: "True",
 }
 
 static var FOptions := {}
