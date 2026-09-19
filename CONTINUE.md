@@ -145,15 +145,22 @@ client gets them. `GFXD` (`src/runtime/graphics/gfxd.gd`) holds the main scene a
 `TOptionManager` only the client options in use.
 The map viewer now shows the battlefield: scenario buttons 1 lane (Single, default), 2 lanes (Classic), PvE (Single,
 golem base on its nexus ground); nexus with floating team crystals, towers, bridges with their stone rails.
+Mesh effects (section "Mesh effects" in `docs/assets.md`, `tests/test_mesh_effects.gd`): `TShader` composes the
+standard shader template (`standard_shader.gdshaderinc`, never included) with the effects' ported block files
+(`src/runtime/graphics/effect_shaders/`); ported: Matcap, Metal, Spawn (all colors, blue in 20 own passes), Tint, the
+component and the stack. To port another effect: its `.fx` blocks into `effect_shaders/<name>.gdshaderinc` (use the
+`pso_*` locals, game-space `Worldposition`), its class in `src/runtime/components/`, rerun the transpiler, add its
+shader to `tests/check_shaders.gd`'s EFFECTS.
 Open in phase 4: shadow mapping (terrain and vegetation receive it, palms cast it), glow stage + bloom
-(`PostEffects.fxs`; the nexus / tower glow textures are bound per team already), the mesh effects (`TMeshEffect*`:
-matcap crystals, spawn, metal...), particle effects and point lights on units, fur, outline, geomipmapping, the
-camera component (the viewer only borrows its geometry). No capture of the original exists to compare against; an idea
+(`PostEffects.fxs`; the nexus / tower glow textures are bound per team already) and with it the glow-type effects
+(Glow, HideAndGlow, SoulGain, the spawn effects' glow pass), the other effects (Ghost, Warp, Wobble, Ice, Stone, Void,
+Spherify, Invisible), particle effects and point lights on units, fur, outline, geomipmapping, the camera component
+(the viewer only borrows its geometry). No capture of the original exists to compare against; an idea
 worth checking: whether the original client (Delphi is installed) can be built and run offline far enough to capture
 reference screenshots (it logs in to the closed master server).
-**Next:** pick by visibility: the mesh effects that change how the placed buildings look (matcap on nexus / tower
-crystals, `TMeshEffectMatcap`), then glow + bloom; or the live sandbox in the viewer (server frames running, units
-synced to the client: needs the movement sync, `eiMoveTo` / positions over the stream).
+**Next:** pick by visibility: the glow stage + bloom (the crystals' and every glow texture's look, then the glow
+effects); or the live sandbox in the viewer (server frames running, units synced to the client: needs the movement
+sync, `eiMoveTo` / positions over the stream), which would show the spawn and metal effects on real units.
 Owner: `docs/questions-for-devs.md` is the list for the original developers (master-server values); record their
 answers there.
 The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.

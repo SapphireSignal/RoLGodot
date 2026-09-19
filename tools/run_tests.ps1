@@ -6,9 +6,10 @@ $godot = 'D:\Godot\Godot_v4.7.1-stable_win64_console.exe'
 $logDir = Join-Path $root 'logs'
 New-Item -ItemType Directory -Force $logDir | Out-Null
 
-function Invoke-Godot([string[]]$GodotArgs, [string]$LogName) {
+function Invoke-Godot([string[]]$GodotArgs, [string]$LogName, [switch]$Windowed) {
     $log = Join-Path $logDir $LogName
-    $allArgs = @('--headless', '--path', $root, '--log-file', $log) + $GodotArgs
+    $allArgs = @('--path', $root, '--log-file', $log) + $GodotArgs
+    if (-not $Windowed) { $allArgs = @('--headless') + $allArgs }
     $p = Start-Process -FilePath $godot -ArgumentList $allArgs -NoNewWindow -PassThru
     $null = $p.Handle  # cache the handle so ExitCode is readable after exit
     if (-not $p.WaitForExit($TimeoutSec * 1000)) {
@@ -43,6 +44,13 @@ $scriptErrors = @(Select-String -Path (Join-Path $logDir 'tests.log') -Pattern '
 Write-Host "runtime script errors: $scriptErrors"
 if ($code -eq 0 -and $scriptErrors -gt 0) { $code = 1 }
 if ($code -eq 0) { $code = $pyCode }
+
+# Mesh shader variants compile (headless Godot does not compile shaders, so this one opens a window)
+$shaderCode = Invoke-Godot @('--script', 'res://tests/check_shaders.gd') 'shaders.log' -Windowed
+$shaderErrors = @(Select-String -Path (Join-Path $logDir 'shaders.log') -Pattern 'SHADER ERROR' -ErrorAction SilentlyContinue).Count
+$shaderSummary = Select-String -Path (Join-Path $logDir 'shaders.log') -Pattern '^check_shaders:' -ErrorAction SilentlyContinue | Select-Object -First 1
+Write-Host "shader check: $($shaderSummary.Line) shader errors: $shaderErrors"
+if ($code -eq 0 -and ($shaderCode -ne 0 -or $shaderErrors -gt 0 -or $null -eq $shaderSummary)) { $code = 1 }
 
 # Launcher smoke tests: start the game exactly as the owner does (play.bat, windowed), press one of the main scene's
 # viewer buttons (Mesh viewer: a mesh is drawn; Map viewer: terrain, water and vegetation of the Classic map are

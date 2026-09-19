@@ -19,6 +19,11 @@ func check_eq(actual, expected, what: String) -> void:
 		fail("%s: expected %s, got %s" % [what, str(expected), str(actual)])
 
 
+func check_near(actual: float, expected: float, eps: float, what: String) -> void:
+	if absf(actual - expected) > eps:
+		fail("%s: expected %s, got %s" % [what, str(expected), str(actual)])
+
+
 ## Runs after every test (override to free what the test created).
 func after_each() -> void:
 	pass

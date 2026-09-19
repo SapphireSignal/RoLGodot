@@ -4,9 +4,10 @@ extends TVisualizerComponent
 ## conditional textures (TConditionalMeshTexture*, :845, :6551, :6561, :7151). Displays a TMesh at the bind matrix
 ## of TVisualizerComponent with the final size, plays the animations the entity asks for (eiPlayAnimation) and
 ## answers sub positions (bones, head, top, ground...) and the bounding sphere.
-## Not ported yet: the mesh effects (TMeshEffect*, the effect stack is kept empty), the death decay
-## (TUnitDecayManagerComponent: a dying mesh with a death effect only plays its death animation), outline drawing
-## (the values reach TMesh, the outline pass is not ported).
+## The mesh effects (TMeshEffect*) live in the effect stack: one effect per class is mounted on the mesh at a time,
+## expired ones are removed each frame. Not ported yet: the death decay (TUnitDecayManagerComponent: a dying mesh
+## with a death effect only plays its death animation and keeps its effects), outline drawing (the values reach TMesh,
+## the outline pass is not ported), ApplyTeamColoring (TMeshEffectTeamColor: no script uses it).
 
 const SIZE_FACTOR_3DSMAX = 2.0 / 125.0
 ## PATH_GRAPHICS_ENVIRONMENT: meshes from here are static (applied once).
@@ -118,6 +119,7 @@ func CreateGrouped(Owner = null, Group = [], Meshpath = "") -> TEntityComponent:
 
 
 func Destroy() -> void:
+	# managed effects belong to their TMeshEffectComponent; the rest go with the stack
 	FEffectStack.clear()
 	FConditionalTextures.clear()
 	if not FDecaying and FMesh != null:
@@ -187,6 +189,54 @@ func Idle() -> void:
 		FMesh.ShadingReduction = ClientMap.Terrain.ShadingReduction
 	if material_before != [FMesh.ColorAdjustment, FMesh.AbsoluteHSV, FMesh.ShadingReduction]:
 		FMesh.ApplyMaterial()
+	for i in range(FEffectStack.size() - 1, -1, -1):
+		if i < FEffectStack.size() and FEffectStack[i].Expired():
+			RemoveMeshEffect(FEffectStack[i])
+
+
+## Puts an effect on the stack; mounts it on the mesh unless an effect of its class is there (their blocks would
+## clash); effects drawn in own passes mount at once. Without a mesh an unmanaged effect is dropped.
+func AddMeshEffect(MeshEffect: TMeshEffect) -> void:
+	if FMesh == null:
+		return
+	MeshEffect.FOwningComponent = self
+	if MeshEffect.NeedOwnPass.is_empty():
+		var isSamePresent := false
+		for Effect: TMeshEffect in FEffectStack:
+			isSamePresent = isSamePresent or Effect.get_script() == MeshEffect.get_script()
+		if not isSamePresent:
+			MeshEffect.InitializeOnMesh(FMesh)
+	else:
+		# own passes can be activated directly
+		MeshEffect.InitializeOnMesh(FMesh)
+	FEffectStack.append(MeshEffect)
+
+
+## Takes an effect off the mesh and the stack, then mounts the next effect of the same class if none is mounted.
+func RemoveMeshEffect(MeshEffect: TMeshEffect) -> void:
+	# if mesh ist already killed, only remove effect and don't try to deregister it
+	if FMesh == null:
+		FEffectStack.erase(MeshEffect)
+		return
+	MeshEffect.FinalizeOnMesh()
+	MeshEffect.FOwningComponent = null
+	FEffectStack.erase(MeshEffect)
+	# activate another Mesheffect of the same type as they are cancelling each other out
+	if MeshEffect.NeedOwnPass.is_empty():
+		var isSameActive := false
+		for Effect: TMeshEffect in FEffectStack:
+			isSameActive = isSameActive or (Effect.get_script() == MeshEffect.get_script() and Effect.IsMounted)
+		if not isSameActive:
+			for Effect: TMeshEffect in FEffectStack:
+				if Effect.get_script() == MeshEffect.get_script():
+					Effect.InitializeOnMesh(FMesh)
+					break
+
+
+func PopEffect() -> void:
+	if FEffectStack.is_empty():
+		return
+	RemoveMeshEffect(FEffectStack.back())
 
 
 static func _argb_to_rgba(argb: int) -> int:

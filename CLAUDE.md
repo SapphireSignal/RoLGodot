@@ -6,6 +6,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 ## Project rules
 - Source of truth: `reference/rise-of-legions` at commit `96d5b8e4` (see `docs/source-of-truth.md`).
   Never use Crystal Clash content, the live game, or anything outside that snapshot for decisions.
+  Layout: `BaseConflict.*.pas` at its root, engine units in `Engine/` (`Engine/Engine.Mesh.pas`), engine shaders
+  in `Engine/Shader/`, effect shaders in `Graphics/Effects/Shader/`, scripts in `Scripts/`.
 - Stay inside `D:\Games\RoLGodot`. Never touch the owner's other repos.
 - Lean repo and build: `reference/` is git-ignored, `.gdignore`d and excluded from export, like `tools/`,
   `tests/`, `docs/`. Get it with `tools/fetch_reference.ps1`.
@@ -17,7 +19,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - Godot: `D:\Godot\Godot_v4.7.1-stable_win64.exe` (console build `..._console.exe` for headless runs)
 - Delphi: `C:\Program Files (x86)\Embarcadero\Studio\37.0\bin\`
 - Tests: `powershell -ExecutionPolicy Bypass -File tools\run_tests.ps1` (import + compile sweep + tests,
-  hard timeout, logs in `logs/`; any GDScript runtime `SCRIPT ERROR` in the log fails the run; last, two smoke tests start the game through
+  hard timeout, logs in `logs/`; any GDScript runtime `SCRIPT ERROR` in the log fails the run; then a windowed
+  shader compile check (`tests/check_shaders.gd`: headless Godot never compiles shaders); last, two smoke tests start the game through
   `play.bat` and press the Mesh viewer / Map viewer button, checking a mesh / the Single map with its decorations and entities is drawn: windows flash up). Test files: `tests/test_*.gd` extending `res://tests/test_case.gd`.
 
 ## Docs
@@ -32,7 +35,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - `docs/game-loop.md`: TGame / TServerGame / TGameThread, scenarios, game setup, ticks, what the headless match shows.
 - `docs/assets.md`: the graphics import (`tools/import_graphics.py`, generated `assets/graphics/`), TMesh on the raw
   `.msh` (skinning, morphs, animation drivers), the mesh shader (gamma-space port of the original's lighting),
-  TLightManager, the maps (terrain, water, vegetation, decorations), the viewers.
+  TLightManager, the maps (terrain, water, vegetation, decorations), the mesh effects (shader block composition,
+  own passes, the effect stack), the viewers.
 - `docs/questions-for-devs.md`: what only the closed master server knew (meta values), asked of the original devs.
 
 ## Status
@@ -135,3 +139,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   `TAnimationComponent`, `TLogicToWorldComponent`), entity serialize / deserialize, map decorations (`.bcc`), a
   partial `TClientGame`. The map viewer shows the 1 lane / 2 lane / PvE sandboxes with nexus, towers, bridges.
   1411 files compile, 361 tests green, no errors. Next: see CONTINUE.md.
+- 2026-09-18: Phase 4 part 4, mesh effects: `TShader` (the original's shader block composition), the standard shader
+  as a block template with flag defines, 8 ported effect shaders, `TMeshEffect{,Generic,WithTimekeys,Matcap,Metal,
+  Spawn,Tint}`, `TMeshEffectComponent`, the effect stack, own passes (blue spawn), smoothed normals, effect textures.
+  The nexus / tower crystals show their matcap. New windowed shader check (560 variants). 366 tests green, no errors.
+  Next: see CONTINUE.md.

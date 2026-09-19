@@ -277,6 +277,34 @@ def write_texture(src: Path, dst: Path) -> int:
     return written
 
 
+# Textures the ported mesh effects load by game path (TMeshEffect*: matcaps, metal, spawn mask, glow overrides),
+# relative to Graphics/. Glob patterns; a name matching nothing is a problem.
+EFFECT_TEXTURES = ['Effects/Textures/Matcap*', 'Effects/Textures/SpawnMask*', 'Effects/Textures/*Glow*',
+                   'Effects/Metal/Metal_*']
+
+
+def import_effect_textures(check: bool, problems: list) -> int:
+    """Copies the effect textures to assets/graphics/<lowercased path> (the source image, else the decoded .tex)."""
+    written = 0
+    for pattern in EFFECT_TEXTURES:
+        sources = {}
+        for path in sorted(GRAPHICS.glob(pattern)):
+            if path.suffix.lower() in IMAGE_EXTENSIONS:
+                sources[path.stem.lower()] = path
+        for path in sorted(GRAPHICS.glob(pattern)):
+            if path.suffix.lower() == '.tex' and path.stem.lower() not in sources:
+                sources[path.stem.lower()] = path
+        if not sources:
+            problems.append(f'effect textures "{pattern}" not found')
+        for stem, source in sorted(sources.items()):
+            if check:
+                continue
+            rel = source.relative_to(GRAPHICS).parent.as_posix().lower()
+            suffix = '.png' if source.suffix.lower() == '.tex' else source.suffix.lower()
+            written += write_texture(source, OUT / rel / (stem + suffix))
+    return written
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument('--only', help='only descriptors whose path contains this (case-insensitive)')
@@ -344,6 +372,8 @@ def main() -> int:
         for stale in list(OUT.rglob('*.fbx')) + list(OUT.rglob('*.fbx.import')):
             stale.unlink()
             written += 1
+    if not args.only:
+        written += import_effect_textures(args.check, problems)
     map_problems = []
     if not args.only:
         written += import_map_graphics.import_maps(OUT, args.check, copy_if_changed, write_texture, map_problems)

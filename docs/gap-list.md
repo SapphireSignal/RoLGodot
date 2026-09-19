@@ -20,7 +20,7 @@ Status: ⬜ missing · 🟨 partial · ✅ matches original (checked against the
 | Map water: waves, refraction, reflection, depth color, caustics, sun specular | `Engine.Water.pas`, `Watershader.fx`, `*.wat` | 🟨 the G-buffer lookups come from Godot's depth / screen / normal textures; not compared against a capture of the original |
 | Map vegetation: palms and grass tufts from their stored seeds, wind sway | `Engine.Vegetation.pas`, `*.veg` | ✅ rolls replayed with Delphi's RNG (tested); palms cast no shadow yet |
 | Map decorations (`.bcc` and the scenarios' `AddDecoEntity`: nexus ground, bridges, rocks) | `BaseConflict.Map.Client.pas` | ✅ created from their scripts, placed, drawn (map viewer); the ambient sound emitters are silent until sound |
-| Nexus, towers, spawners and the other scenario entities drawn with their meshes, team textures and stand animations | `TMeshComponent`, `TAnimationComponent`, `Engine.Animation.pas` | 🟨 drawn from the engine's raw meshes like release builds; glow, mesh effects (matcap crystals, spawn), particles and point lights not yet |
+| Nexus, towers, spawners and the other scenario entities drawn with their meshes, team textures and stand animations | `TMeshComponent`, `TAnimationComponent`, `Engine.Animation.pas` | 🟨 drawn from the engine's raw meshes like release builds, matcap crystals, tower spawn animation; glow, particles and point lights not yet |
 | Shadows (the original's own shadow mapping, first light) | `Engine.Core.pas` shadow map | ⬜ |
 | Game camera: scroll (keys, edges, drag), zoom 2.6..3.8, camera zone limits, rotation | `TClientCameraComponent` | 🟨 the map viewer uses its view geometry (offset, field of view, zoom range); the component itself is not ported |
 | Units walk lanes, fight, die | `Scripts/Units`, server components | ⬜ |
@@ -35,7 +35,8 @@ Status: ⬜ missing · 🟨 partial · ✅ matches original (checked against the
 | Behaviour | Source | Status |
 | --- | --- | --- |
 | Particle effects per card | `Graphics/Effects/ParticleEffects` | ⬜ |
-| Metal / glow mesh effects | `TMeshEffectMetal`, glow textures | ⬜ |
+| Mesh effects: matcap, metal, spawn animations (per color), tint | `TMeshEffect*`, effect shaders | ✅ ported, compile-checked; seen on the nexus crystals only (units don't reach the client yet) |
+| Mesh effects: glow, hide-and-glow, soul gain, ghost, warp, wobble, ice, stone, void, spherify, invisible | `TMeshEffect*` | ⬜ (glow needs the glow stage) |
 | Post effects | `PostEffects.fxs` | ⬜ |
 | Music and sound effects | `Sound/Banks` | ⬜ |
 | 29 languages | `Lang/*.csv` | ⬜ |

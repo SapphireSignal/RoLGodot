@@ -25,6 +25,8 @@ var BoundingSphereRadius := 0.0
 var Positions := PackedVector3Array()
 var TextureCoordinates := PackedVector2Array()
 var Normals := PackedVector3Array()
+## SmoothedNormal of each vertex (the shader's SMOOTHED_NORMAL, used by mesh effects).
+var SmoothedNormals := PackedVector3Array()
 ## ColorData: one RVector4 per vertex (x, y, z, w).
 var Colors: Array[Vector4] = []
 var Indices := PackedInt32Array()
@@ -87,12 +89,15 @@ func _read(data: PackedByteArray) -> bool:
 	Positions.resize(count)
 	TextureCoordinates.resize(count)
 	Normals.resize(count)
+	SmoothedNormals.resize(count)
 	for i in count:
 		var v := pos + i * VERTEX_RECORD_SIZE
 		Positions[i] = _vector3(data, v)
 		var t := v + 12 * MAX_MORPH_TARGET_COUNT
 		TextureCoordinates[i] = Vector2(data.decode_float(t), data.decode_float(t + 4))
 		Normals[i] = _vector3(data, t + 8)
+		# after Normal, Tangent, Binormal, BoneWeights, BoneIndices
+		SmoothedNormals[i] = _vector3(data, t + 76)
 	pos += count * VERTEX_RECORD_SIZE
 	Colors.resize(count)
 	for i in count:

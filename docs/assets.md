@@ -92,6 +92,47 @@ light pass `DeferredDirectionalAmbientLight.fx`; `TMesh` builds one variant per 
   every unit mesh "have material settings".
 - Not yet: glow stage (144 descriptors have a glow texture; needs the bloom post effect), fur (18), outline,
   normal maps (none of the 200 descriptors uses one), shadow mapping (the original's own, first light only).
+- The shader is a **template**, never `#include`d: TMesh composes each variant (below) and puts `shader_type`,
+  the render mode and the flag defines in front: `GBUFFER` (+ `DRAW_COLOR/NORMAL/MATERIAL`) for opaque meshes (lit
+  by the ported deferred pass at the end), `ROL_ALPHA` for the forward path, `DIFFUSETEXTURE`, `MATERIAL`,
+  `MATERIALTEXTURE`, `CULLNONE`, `ROL_SKINNING`. The fragment keeps the original's `pso.Color` /
+  `pso.MaterialBuffer` / `pso.NormalBuffer` as `pso_*` locals so effect blocks port line by line.
+- **Headless Godot does not compile shaders.** `tests/check_shaders.gd` (run by the test runner with a window, ~7 s)
+  builds all 560 variants and fails on any that does not parse.
+
+## Mesh effects
+`TMeshEffect*` (`src/runtime/components/t_mesh_effect*.gd`, `BaseConflict.EntityComponents.Client.Visuals.pas`) change
+how a mesh is drawn. **Shader composition** (`TShader`, `t_shader.gd` = `Engine.GfxApi.pas` LoadShader / ParseBlocks /
+ApplyBlocks): the standard shader has named sections (a line holding the block keyword starts one, so comments never
+name it); an effect's shader file overrides sections, `#inherited` = what it replaces. The block files are walked
+last to first, so the first custom shader is outermost; a block without `#inherited` drops what it replaces (as
+`SpawnShader_Blue.fx` does with `vs_worldposition`). The ported block files are `src/runtime/graphics/effect_shaders/
+<original file name lowercased>.gdshaderinc`, hand ports of the `.fx` (same blocks; `vs_worldposition` works on
+`Worldposition` in game space, `pos` is the model-space vertex).
+
+**On the mesh** (`TMesh`): `CustomShader` is the RMeshShader list (shader name, SetUp, own-pass stages, pass count,
+hides the original, blend mode, owning effect), sorted by the effects' order values (spawn 1, tint 5000, matcap 9993,
+metal 10000). `ApplyMaterial` builds the main material from the list's non-own-pass shaders and, per shader drawn in
+own passes in the world stage, `OwnPasses` materials with only that shader (cull none), chained as `next_pass`; an
+`OwnPassHideOriginal` shader drops the main one. Each frame `SetUpCustomShaders` calls the SetUps (world stage only):
+`ShaderBinding.SetShaderConstant` / `SetTexture` (slots `tsVariable1..3` = `variable_texture_1..3`). The raw mesh's
+smoothed normals ride in `CUSTOM2` (`SMOOTHED_NORMAL`).
+
+**Stack** (`TMeshComponent.AddMeshEffect` / `RemoveMeshEffect` / `Idle`): one effect per class is mounted at a time,
+others wait; expired ones go each frame; when a mounted one goes, the next waiting one of its class mounts, but only
+if the removed one had no own passes (as written). `TMeshEffectComponent` gives managed clones to its group's meshes
+(at once unless it waits for die / fire: `ActivateOnLose` effects run at creation too, as written) and takes them back
+when freed. Textures: `import_graphics.py` copies `Graphics/Effects/Textures` matcaps, spawn mask, glow textures and
+`Effects/Metal` to `assets/graphics/effects/`.
+
+Ported: Matcap (nexus / tower crystals: `MatcapCrystal<team>.png`), Metal (the snapshot has only White, Blue, Generic:
+green / black / red metal units get no texture, the original warns too), Spawn (every drop: `Modifiers\Drop.dws`; white,
+colorless, green, black, black legendary, blue with 20 own passes; red uses white; `OverrideEffectTime` is undone by
+`InitializeOnMesh`, as written), Tint. Deviations: the default order value (the class's RTTI address) is a name hash;
+timekeys at a time before every key read uninitialized values in the original, the port takes the first key. Not
+yet: Glow, HideAndGlow, SoulGain, Ghost, Warp, Wobble, Ice, Stone, Void, Spherify, Invisible (still stubs: they sit
+on the stack without a shader) and the glow stage the spawn / glow effects feed. Unused: ColorOverlay, TeamColor
+(`ApplyTeamColoring`), SlidingTexture, SoulExtract, SpawnerSpawn (`docs/unused-features.md`).
 
 ## Lighting
 `TLightManager` (`src/runtime/map/t_light_manager.gd`) ports `BaseConflict.Map.Client.pas`: ambient and

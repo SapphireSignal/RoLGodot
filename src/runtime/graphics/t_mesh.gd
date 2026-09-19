@@ -26,6 +26,21 @@ const FBX_DEFAULT_ANIMATIONTRACK := "AnimStack::Take 001"
 const HW_MAX_BONES := 66
 const MAX_MORPH_TARGET_COUNT := 8
 
+## EnumRenderStage (Engine.Core.Types.pas) values the port uses: stages the mesh effects draw or set up in.
+const RS_SHADOW := 3
+const RS_WORLD := 5
+const RS_EFFECTS := 7
+const RS_GLOW := 11
+## EnumTextureSlot (Engine.GfxApi.Types.pas) -> the template's sampler uniforms.
+const TS_VARIABLE1 := 3
+const TS_VARIABLE2 := 4
+const TS_VARIABLE3 := 5
+const TEXTURE_SLOT_UNIFORMS := {0: "diffuse_texture", 2: "material_texture", 3: "variable_texture_1",
+	4: "variable_texture_2", 5: "variable_texture_3"}
+## EnumBlendMode (Engine.Vertex.pas)
+const BLEND_LINEAR := 0
+const BLEND_ADDITIVE := 1
+
 static var _shaders := {}
 ## TMeshAnimatedGeometry cache (the original's QueryDeviceForObject): .msh path -> TGeometry.
 static var _geometries := {}
@@ -44,6 +59,46 @@ class TGeometry:
 	var SkinOffsets: Array[Transform3D] = []
 	var HasSkin := false
 	var MorphtargetCount := 0
+
+
+## RMeshShader (Engine.Mesh.pas): a custom shader of the mesh (a mesh effect's blocks), its SetUp (binding, stage,
+## pass index), the stages it draws in own passes, how many, whether it hides the mesh's own drawing, its blend mode
+## (own passes outside the world stage) and its owner (the effect).
+class RMeshShader:
+	var ShaderName := ""
+	var SetUp := Callable()
+	var NeedsOwnPass: Array = []
+	var OwnPasses := 0
+	var OwnPassHideOriginal := false
+	var BlendMode := 0
+	var Tag: Object = null
+
+	func _init(ShaderPath: String, SetUp_: Callable, NeedsOwnPass_: Array = [], OwnPasses_ := 0,
+			OwnPassHideOriginal_ := false, BlendMode_ := 0, Tag_: Object = null) -> void:
+		ShaderName = ShaderPath
+		SetUp = SetUp_
+		NeedsOwnPass = NeedsOwnPass_
+		OwnPasses = OwnPasses_
+		OwnPassHideOriginal = OwnPassHideOriginal_
+		BlendMode = BlendMode_
+		Tag = Tag_
+
+	func RendersInOwnPass() -> bool:
+		return not NeedsOwnPass.is_empty()
+
+
+## The "CurrentShader" a SetUp gets (TShader.SetShaderConstant / SetTexture): one material's parameters.
+class ShaderBinding:
+	var TargetMaterial: ShaderMaterial
+
+	func _init(material: ShaderMaterial) -> void:
+		TargetMaterial = material
+
+	func SetShaderConstant(Name: String, Value) -> void:
+		TargetMaterial.set_shader_parameter(Name, Value)
+
+	func SetTexture(Slot: int, Texture: Texture2D) -> void:
+		TargetMaterial.set_shader_parameter(TMesh.TEXTURE_SLOT_UNIFORMS[Slot], Texture)
 
 
 ## Descriptor fields (TRawMesh published properties).
@@ -85,6 +140,10 @@ var Geometry: TGeometry = null
 var MeshInstance: MeshInstance3D = null
 var MeshInstances: Array[MeshInstance3D] = []
 var MeshMaterial: ShaderMaterial
+## TRawMesh.CustomShader: RMeshShader list, sorted by the effects' order values (TMeshEffect.InitializeOnMesh).
+var CustomShader: Array[RMeshShader] = []
+## [RMeshShader, pass index, ShaderMaterial] per own pass drawn in the world stage (built by ApplyMaterial).
+var OwnPassMaterials: Array = []
 ## TRawMesh.AnimationController with the bone driver, then the morph driver.
 var AnimationController := TAnimationController.new()
 var AnimationDriverBone: TSkinnedMeshAnimationDriver = null
@@ -238,7 +297,16 @@ static func _build_mesh(raw: TEngineRawMesh, skinned: bool) -> ArrayMesh:
 	arrays[Mesh.ARRAY_NORMAL] = raw.Normals
 	arrays[Mesh.ARRAY_TEX_UV] = raw.TextureCoordinates
 	arrays[Mesh.ARRAY_INDEX] = raw.Indices
-	var format := 0
+	# SMOOTHED_NORMAL (mesh effects) in CUSTOM2
+	var smoothed := PackedFloat32Array()
+	smoothed.resize(raw.SmoothedNormals.size() * 3)
+	for i in raw.SmoothedNormals.size():
+		var n := raw.SmoothedNormals[i]
+		smoothed[i * 3] = n.x
+		smoothed[i * 3 + 1] = n.y
+		smoothed[i * 3 + 2] = n.z
+	arrays[Mesh.ARRAY_CUSTOM2] = smoothed
+	var format := Mesh.ARRAY_CUSTOM_RGB_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM2_SHIFT
 	if skinned:
 		arrays[Mesh.ARRAY_CUSTOM0] = raw.BoneWeights
 		var indices := PackedFloat32Array()
@@ -246,7 +314,7 @@ static func _build_mesh(raw: TEngineRawMesh, skinned: bool) -> ArrayMesh:
 		for i in raw.BoneIndices.size():
 			indices[i] = raw.BoneIndices[i]
 		arrays[Mesh.ARRAY_CUSTOM1] = indices
-		format = (Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM0_SHIFT) \
+		format |= (Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM0_SHIFT) \
 			| (Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM1_SHIFT)
 	var blend_shapes := []
 	var mesh := ArrayMesh.new()
@@ -273,8 +341,11 @@ func _texture(file: String) -> Texture2D:
 	if file == "":
 		return null
 	# a script's texture name (BindTextureToTeam) is taken from the descriptor's folder like the descriptor's own;
-	# the importer lowercases it and writes a .png where only the engine cache .tex exists
+	# the importer lowercases it and writes a .png where only the engine cache .tex exists. A game path
+	# (AbsolutePath(PATH_GRAPHICS...), the mesh effects' glow overrides) is resolved from the game root.
 	var path := FileName.get_base_dir() + "/" + file.replace("\\", "/").get_file().to_lower()
+	if file.begins_with("\\") or file.begins_with("/"):
+		path = TClientMap.ResolveGamePath(file)
 	if not ResourceLoader.exists(path) and ResourceLoader.exists(path.get_basename() + ".png"):
 		path = path.get_basename() + ".png"
 	if not ResourceLoader.exists(path):
@@ -299,37 +370,122 @@ func HasColorOverride() -> bool:
 	return ColorOverride.a > 0.0 or ColorOverride.r > 0.0 or ColorOverride.g > 0.0 or ColorOverride.b > 0.0
 
 
-## Pushes the material settings to the shader (TRawMesh.GenerateShaderBitmask + Render's SetUpShader, world and
-## effects stages).
+## Builds the materials and pushes the material settings to them (TRawMesh.GenerateShaderBitmask, ResolveShaderArray
+## and Render's SetUpShader, world and effects stages). Call it after changing textures, material values, the cull
+## mode or the custom shaders. The drawing (TRawMesh.Render): the mesh with its shader and every custom shader that
+## does not render in an own pass, unless a custom shader hides it (OwnPassHideOriginal); then, per custom shader
+## drawn in own passes in the world stage, OwnPasses more draws (cull none) with only that shader's blocks. Godot
+## draws them as the material's next_pass chain. The glow stage is not ported yet (docs/assets.md).
 func ApplyMaterial() -> void:
 	if MeshMaterial == null:
 		return
-	MeshMaterial.shader = _shader_for(Cullmode, HasAlpha(), Geometry != null and Geometry.HasSkin)
 	var diffuse := _texture(DiffuseTexture)
 	var material := _texture(MaterialTexture)
-	MeshMaterial.set_shader_parameter("has_diffuse_texture", diffuse != null)
-	MeshMaterial.set_shader_parameter("diffuse_texture", diffuse)
-	MeshMaterial.set_shader_parameter("has_material_texture", material != null)
-	MeshMaterial.set_shader_parameter("material_texture", material)
-	MeshMaterial.set_shader_parameter("has_material_settings", HasMaterialSettings())
-	MeshMaterial.set_shader_parameter("specular_intensity", SpecularIntensity)
-	MeshMaterial.set_shader_parameter("specular_power", SpecularPower)
-	MeshMaterial.set_shader_parameter("specular_tint", SpecularTint)
-	MeshMaterial.set_shader_parameter("shading_reduction", ShadingReduction if ShadingReduction > 0.0 else ShadingReductionOverride)
-	MeshMaterial.set_shader_parameter("forward_path", HasAlpha())
-	MeshMaterial.set_shader_parameter("use_alpha", HasAlpha())
-	MeshMaterial.set_shader_parameter("alpha", Alpha)
-	MeshMaterial.set_shader_parameter("alpha_test_ref", AlphaTestTreshold)
-	MeshMaterial.set_shader_parameter("replacement_color", ColorOverride if HasColorOverride() else Color(0, 0, 0, 0))
-	MeshMaterial.set_shader_parameter("color_adjustment", ColorAdjustment != Vector3.ZERO)
-	MeshMaterial.set_shader_parameter("absolute_color_adjustment", ColorAdjustment != Vector3.ZERO and AbsoluteHSV != Vector3.ZERO)
-	MeshMaterial.set_shader_parameter("hsv_offset", ColorAdjustment)
-	MeshMaterial.set_shader_parameter("absolute_hsv", AbsoluteHSV)
+	var flags := _shader_flags(diffuse != null, material != null)
+	var skinning := Geometry != null and Geometry.HasSkin
+	MeshMaterial.shader = _shader_for(Cullmode, flags, skinning, ResolveShaderArray())
+	OwnPassMaterials.clear()
+	for mesh_shader: RMeshShader in CustomShader:
+		if RS_WORLD in mesh_shader.NeedsOwnPass:
+			for j in mesh_shader.OwnPasses:
+				var pass_material := ShaderMaterial.new()
+				pass_material.shader = _shader_for("cmNone", flags, skinning, [mesh_shader.ShaderName])
+				OwnPassMaterials.append([mesh_shader, j, pass_material])
+	var chain: Array[ShaderMaterial] = []
+	if not CustomShaderBlocks():
+		chain.append(MeshMaterial)
+	for own: Array in OwnPassMaterials:
+		chain.append(own[2])
+	for i in chain.size():
+		chain[i].next_pass = chain[i + 1] if i + 1 < chain.size() else null
+		_set_material_parameters(chain[i], diffuse, material)
+	if MeshInstance != null:
+		MeshInstance.material_override = chain[0] if not chain.is_empty() else null
+	UploadBoneTransforms()
+	SetUpCustomShaders()
 
 
-## One compiled shader per render-mode combination.
-static func _shader_for(cullmode: String, has_alpha: bool, skinning := false) -> Shader:
-	var key := "%s|%s|%s" % [cullmode, has_alpha, skinning]
+func _set_material_parameters(m: ShaderMaterial, diffuse: Texture2D, material: Texture2D) -> void:
+	m.set_shader_parameter("diffuse_texture", diffuse)
+	m.set_shader_parameter("material_texture", material)
+	m.set_shader_parameter("specular_intensity", SpecularIntensity)
+	m.set_shader_parameter("specular_power", SpecularPower)
+	m.set_shader_parameter("specular_tint", SpecularTint)
+	m.set_shader_parameter("shading_reduction", ShadingReduction if ShadingReduction > 0.0 else ShadingReductionOverride)
+	m.set_shader_parameter("use_alpha", HasAlpha())
+	m.set_shader_parameter("alpha", Alpha)
+	m.set_shader_parameter("alpha_test_ref", AlphaTestTreshold)
+	m.set_shader_parameter("replacement_color", ColorOverride if HasColorOverride() else Color(0, 0, 0, 0))
+	m.set_shader_parameter("color_adjustment", ColorAdjustment != Vector3.ZERO)
+	m.set_shader_parameter("absolute_color_adjustment", ColorAdjustment != Vector3.ZERO and AbsoluteHSV != Vector3.ZERO)
+	m.set_shader_parameter("hsv_offset", ColorAdjustment)
+	m.set_shader_parameter("absolute_hsv", AbsoluteHSV)
+
+
+## The shader bitmask's flags the effect blocks test, as defines: GBUFFER (opaque meshes, lit by the deferred pass;
+## with it DRAW_COLOR / DRAW_NORMAL / DRAW_MATERIAL, the G-buffer's targets), DIFFUSETEXTURE, MATERIAL,
+## MATERIALTEXTURE, ROL_ALPHA (HasAlpha: blended, the forward path).
+func _shader_flags(has_diffuse: bool, has_material_texture: bool) -> PackedStringArray:
+	var flags := PackedStringArray()
+	if HasAlpha():
+		flags.append("ROL_ALPHA")
+	else:
+		flags.append_array(["GBUFFER", "DRAW_COLOR", "DRAW_NORMAL", "DRAW_MATERIAL"])
+	if has_diffuse:
+		flags.append("DIFFUSETEXTURE")
+	if HasMaterialSettings():
+		flags.append("MATERIAL")
+	if has_material_texture:
+		flags.append("MATERIALTEXTURE")
+	return flags
+
+
+## TRawMesh.ResolveShaderArray: the custom shaders that do not render in an own pass, in list order.
+func ResolveShaderArray() -> Array:
+	var result := []
+	for mesh_shader: RMeshShader in CustomShader:
+		if not mesh_shader.RendersInOwnPass():
+			result.append(mesh_shader.ShaderName)
+	return result
+
+
+## TRawMesh.Render CustomShaderBlocks: a custom shader hides the mesh's own drawing.
+func CustomShaderBlocks() -> bool:
+	for mesh_shader: RMeshShader in CustomShader:
+		if mesh_shader.OwnPassHideOriginal:
+			return true
+	return false
+
+
+## Render's SetUpShader for the world stage: the custom shaders' SetUp on the main material (last to first, those not
+## in an own pass), then per own pass material its shader's SetUp with the pass index. The original runs this every
+## drawn frame; the port from _process.
+func SetUpCustomShaders() -> void:
+	if CustomShader.is_empty():
+		return
+	var main := ShaderBinding.new(MeshMaterial)
+	for i in range(CustomShader.size() - 1, -1, -1):
+		var mesh_shader: RMeshShader = CustomShader[i]
+		if not mesh_shader.RendersInOwnPass() and mesh_shader.SetUp.is_valid():
+			mesh_shader.SetUp.call(main, RS_WORLD, 0)
+	for own: Array in OwnPassMaterials:
+		var mesh_shader: RMeshShader = own[0]
+		if mesh_shader.SetUp.is_valid():
+			mesh_shader.SetUp.call(ShaderBinding.new(own[2]), RS_WORLD, own[1])
+
+
+## The materials this mesh draws with (bone matrices go to each).
+func Materials() -> Array[ShaderMaterial]:
+	var result: Array[ShaderMaterial] = [MeshMaterial]
+	for own: Array in OwnPassMaterials:
+		result.append(own[2])
+	return result
+
+
+## One compiled shader per render mode, flag and custom shader combination: the standard shader template with the
+## custom shaders' blocks (TShader.Compose), the render mode and the flag defines in front.
+static func _shader_for(cullmode: String, flags: PackedStringArray, skinning: bool, custom_shaders: Array) -> Shader:
+	var key := "%s|%s|%s|%s" % [cullmode, ",".join(flags), skinning, "+".join(custom_shaders)]
 	if _shaders.has(key):
 		return _shaders[key]
 	var cull := "cull_back"
@@ -337,11 +493,21 @@ static func _shader_for(cullmode: String, has_alpha: bool, skinning := false) ->
 		cull = "cull_disabled"
 	elif cullmode == "cmCW":
 		cull = "cull_front"
+	var has_alpha := flags.has("ROL_ALPHA")
 	var modes := "unshaded, %s, %s" % [cull, "blend_mix, depth_draw_opaque" if has_alpha else "depth_draw_opaque"]
-	var defines := ("#define ROL_ALPHA\n" if has_alpha else "") + ("#define ROL_SKINNING\n" if skinning else "")
-	var code := "shader_type spatial;\nrender_mode %s;\n%s#include \"%s\"\n" % [modes, defines, SHADER_INCLUDE]
+	var defines := ""
+	for flag in flags:
+		defines += "#define %s\n" % flag
+	if cullmode == "cmNone":
+		defines += "#define CULLNONE\n"
+	if skinning:
+		defines += "#define ROL_SKINNING\n"
+	var blocks := []
+	for name: String in custom_shaders:
+		blocks.append(TShader.LoadBlockFile(name))
+	var body := TShader.Compose(TShader.LoadBaseFile(SHADER_INCLUDE), blocks)
 	var shader := Shader.new()
-	shader.code = code
+	shader.code = "shader_type spatial;\nrender_mode %s;\n%s%s" % [modes, defines, body]
 	_shaders[key] = shader
 	return shader
 
@@ -517,7 +683,8 @@ func UploadBoneTransforms() -> void:
 		var matrices: Array[Projection] = []
 		for i in HW_MAX_BONES:
 			matrices.append(Projection(_skin_matrix(i) if i < Geometry.SkinBones.size() else Transform3D()))
-		MeshMaterial.set_shader_parameter("bone_transforms", matrices)
+		for m in Materials():
+			m.set_shader_parameter("bone_transforms", matrices)
 	if AnimationDriverMorph.HasMorph():
 		for k in mini(Geometry.MorphtargetCount, Geometry.Surface.get_blend_shape_count()):
 			MeshInstance.set_blend_shape_value(k, AnimationDriverMorph.CurrentMorphweights[k] / 100.0)
@@ -554,6 +721,7 @@ func Animate() -> void:
 func _process(_delta: float) -> void:
 	if DrivenByController:
 		Animate()
+	SetUpCustomShaders()
 
 
 ## Frees a mesh (the owner's FreeAndNil): the controller drops its drivers first. A static function, as a node can't
