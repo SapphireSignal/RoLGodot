@@ -1,5 +1,5 @@
 class_name TCollisionComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TCollisionComponent (BaseConflict.EntityComponents.Shared.pas:474, implementation :1744): keeps the
 ## owner in Game.CollisionManager's quadtree as a circle of its collision radius (0.5 if it has none), following
 ## its position and team. Dying removes the component (and so the unit from the tree); exiled units leave the tree

@@ -1,5 +1,5 @@
 class_name TLinkEffectDamageRedirectionComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TLinkEffectDamageRedirectionComponent (GameServer/BaseConflict.EntityComponents.Server.Welas.pas:703,
 ## implementation :2333), server only, a link's continuous effect. On the link's eiAfterCreate it hooks the eiTakeDamage
 ## read of its source (eiLinkSource[0]; DestinationToSource: eiLinkDest[0]) at epHigher, i.e. before armor. Damage

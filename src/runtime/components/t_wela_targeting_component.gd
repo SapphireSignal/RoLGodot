@@ -1,5 +1,5 @@
 class_name TWelaTargetingComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TWelaTargetingComponent (GameServer/BaseConflict.EntityComponents.Server.Welas.pas:40, implementation
 ## :1117), server only. Base of a wela's targeting: eiWelaUpdateTargets [Targets] (trigger, epMiddle) updates the
 ## caller's target list (an Array of RTarget, changed in place), eiWelaValidateTarget [Target] (read, epFirst)

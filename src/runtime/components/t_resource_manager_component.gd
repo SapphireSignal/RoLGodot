@@ -1,5 +1,5 @@
 class_name TResourceManagerComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TResourceManagerComponent (BaseConflict.EntityComponents.Shared.pas:386, implementation :1804).
 ## Component for handling resource within an entity. TEntity.Create adds one (ALLGROUP) to every entity.
 ## Balances, caps and costs live in the blackboard indexed by EnumResource, under the group the event was called to.
@@ -41,7 +41,7 @@ func OnAfterCreate() -> bool:
 
 ## Return whether transaction can be made inbound.
 func OnCanTransact(ResourceID, Amount, _Previous):
-	var Group: Array = TEventbus.CurrentEvent_CalledToGroup
+	var Group: Array = TEventbus.GetCurrentEvent_CalledToGroup()
 	var Balance = FOwner.Blackboard.GetIndexedValue(C.eiResourceBalance, Group, RParam.AsInteger(ResourceID))
 	if BC.IsIntResource(RParam.AsInteger(ResourceID)):
 		var iAmount := RParam.AsInteger(Amount)
@@ -59,18 +59,18 @@ func OnCanTransactNegative(ResourceID, Amount, Previous):
 
 ## Returns the balance of the resource.
 func OnGetResource(ResourceID, _Previous):
-	return FOwner.Blackboard.GetIndexedValue(C.eiResourceBalance, TEventbus.CurrentEvent_CalledToGroup, RParam.AsInteger(ResourceID))
+	return FOwner.Blackboard.GetIndexedValue(C.eiResourceBalance, TEventbus.GetCurrentEvent_CalledToGroup(), RParam.AsInteger(ResourceID))
 
 
 ## Returns the upper bound of the resource.
 func OnGetResourceCap(ResourceID, _Previous):
-	return FOwner.Blackboard.GetIndexedValue(C.eiResourceCap, TEventbus.CurrentEvent_CalledToGroup, RParam.AsInteger(ResourceID))
+	return FOwner.Blackboard.GetIndexedValue(C.eiResourceCap, TEventbus.GetCurrentEvent_CalledToGroup(), RParam.AsInteger(ResourceID))
 
 
 ## Returns the amount of the resources: an AResourceCost (Array of RResourceCost) or RPARAM_EMPTY.
 ## Port: the original lists the entries in TDictionary hash order; here they are sorted by resource.
 func OnGetResourceCost(_Previous):
-	var Map: Dictionary = FOwner.Blackboard.GetIndexMap(C.eiResourceCost, TEventbus.CurrentEvent_CalledToGroup)
+	var Map: Dictionary = FOwner.Blackboard.GetIndexMap(C.eiResourceCost, TEventbus.GetCurrentEvent_CalledToGroup())
 	if Map.is_empty():
 		return null
 	var keys := Map.keys()
@@ -89,7 +89,7 @@ func OnResetResource(ResourceID) -> bool:
 
 ## Adjusts the upper bound of the resource.
 func OnResourceCapTransaction(ResourceID, Amount, Empty) -> bool:
-	var Group: Array = TEventbus.CurrentEvent_CalledToGroup
+	var Group: Array = TEventbus.GetCurrentEvent_CalledToGroup()
 	var Cap = FOwner.Blackboard.GetIndexedValue(C.eiResourceCap, Group, RParam.AsInteger(ResourceID))
 	if BC.IsIntResource(RParam.AsInteger(ResourceID)):
 		var iCurrentCap := RParam.AsInteger(Cap)
@@ -110,13 +110,13 @@ func OnResourceCapTransaction(ResourceID, Amount, Empty) -> bool:
 
 ## Sets the balance of the resource.
 func OnSetResource(ResourceID, Amount) -> bool:
-	FOwner.Blackboard.SetIndexedValue(C.eiResourceBalance, TEventbus.CurrentEvent_CalledToGroup, RParam.AsInteger(ResourceID), Amount)
+	FOwner.Blackboard.SetIndexedValue(C.eiResourceBalance, TEventbus.GetCurrentEvent_CalledToGroup(), RParam.AsInteger(ResourceID), Amount)
 	return true
 
 
 ## Sets the upper bound of the resource.
 func OnSetResourceCap(ResourceID, Amount) -> bool:
-	FOwner.Blackboard.SetIndexedValue(C.eiResourceCap, TEventbus.CurrentEvent_CalledToGroup, RParam.AsInteger(ResourceID), Amount)
+	FOwner.Blackboard.SetIndexedValue(C.eiResourceCap, TEventbus.GetCurrentEvent_CalledToGroup(), RParam.AsInteger(ResourceID), Amount)
 	# refresh resource if cap has been reduced, this will cap it again, else it will do nothing
 	OnTransact(ResourceID, null)
 	return true
@@ -124,13 +124,13 @@ func OnSetResourceCap(ResourceID, Amount) -> bool:
 
 ## Saves the new cost.
 func OnSetResourceCost(ResourceID, Amount) -> bool:
-	FOwner.Blackboard.SetIndexedValue(C.eiResourceCost, TEventbus.CurrentEvent_CalledToGroup, RParam.AsInteger(ResourceID), Amount)
+	FOwner.Blackboard.SetIndexedValue(C.eiResourceCost, TEventbus.GetCurrentEvent_CalledToGroup(), RParam.AsInteger(ResourceID), Amount)
 	return true
 
 
 ## Executes the transaction.
 func OnTransact(ResourceID, Amount) -> bool:
-	var Group: Array = TEventbus.CurrentEvent_CalledToGroup
+	var Group: Array = TEventbus.GetCurrentEvent_CalledToGroup()
 	var Resource := RParam.AsInteger(ResourceID)
 	var Balance = FOwner.Blackboard.GetIndexedValue(C.eiResourceBalance, Group, Resource)
 	var Cap = FOwner.Blackboard.GetIndexedValue(C.eiResourceCap, Group, Resource)

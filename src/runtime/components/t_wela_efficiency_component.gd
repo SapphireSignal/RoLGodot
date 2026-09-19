@@ -1,5 +1,5 @@
 class_name TWelaEfficiencyComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TWelaEfficiencyComponent (GameServer/BaseConflict.EntityComponents.Server.Welas.pas:828, implementation
 ## :3043), server only. Prioritizes targets for the targeting components: eiEfficiency read [Target: TEntity] in
 ## its group adds GetEfficiencyToTarget to the previous value (epMiddle; the effects answer first, at epFirst).

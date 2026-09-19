@@ -1,5 +1,5 @@
 class_name TWelaEffectRedirecterComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TWelaEffectRedirecterComponent (GameServer/BaseConflict.EntityComponents.Server.Welas.pas:253,
 ## implementation :3162), server only. RedirectToGround: at epFirst of eiFire, replaces the `var` targets with the
 ## ground at the owner's position for every later handler. Not group checked (the event's groups decide).

@@ -187,3 +187,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   buffer, 2D grid) and `native/src/math/` (`RMatrix`, lines, rays, bezier, polygons); 18 GDScript files gone. Captures
   unchanged, client step ~10% faster. 1411 files compile, 387 tests green, no errors. Next: the entity core
   (see CONTINUE.md).
+- 2026-09-19: The entity core is C++ (`native/src/entity/`: TEventbus, TBlackboard, TEntity + script runner,
+  TEntityComponent, TRemoteSubscription, TEntityStream; `TThreadContext` a thread_local). GDScript components extend the
+  layer `TGDEntityComponent` (GDScript cannot override bound C++ methods, `docs/native.md`). Bus Read 2.4 -> 0.5 us;
+  loaded Classic 79 -> 136 fps, server 11 -> 4 ms/frame; captures unchanged. 388 tests green, no errors. Next: the
+  component families (see CONTINUE.md).

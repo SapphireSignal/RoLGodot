@@ -57,7 +57,7 @@ class FakeGame:
 
 ## Global traffic: sent entities and delayed kills.
 class GlobalLog:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Sent: Array = []
 	var Kills: Array = []
 
@@ -77,7 +77,7 @@ class GlobalLog:
 
 ## Entity traffic (ALLGROUP): [name, called-to group, parameters...] in call order.
 class EntityLog:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Log: Array = []
 
 	func _DeclareEvents(e: Array) -> void:
@@ -97,7 +97,7 @@ class EntityLog:
 		return Result
 
 	func _group() -> Array:
-		return TEventbus.CurrentEvent_CalledToGroup.duplicate()
+		return TEventbus.GetCurrentEvent_CalledToGroup().duplicate()
 
 	func OnFire(Targets) -> bool:
 		Log.append(["Fire", _group(), Desc(Targets), TTimeManager.GetTimeStamp()])
@@ -132,7 +132,7 @@ class EntityLog:
 
 ## Answers eiIsReady in its group with Ready.
 class ReadySwitch:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Ready := true
 
 	func _DeclareEvents(e: Array) -> void:
@@ -172,7 +172,7 @@ func after_each() -> void:
 	_game_entity = null
 	_manager = null
 	_log = null
-	TEntity.LastScriptError = ""
+	TEntity.SetLastScriptError("")
 	super()
 
 
@@ -536,7 +536,7 @@ func test_real_crystal_power() -> void:
 		x.Blackboard.SetValue(C.eiTeamID, [], 1)
 		x.Position = Vector2(0, 10)
 	var golem := TEntity.CreateFromScript("Units\\Colorless\\SmallCasterGolem", _bus, init)
-	check(golem != null, "golem: " + TEntity.LastScriptError)
+	check(golem != null, "golem: " + TEntity.GetLastScriptError())
 	if golem == null:
 		return
 	golem.Deploy()
@@ -576,7 +576,7 @@ func test_real_gatling_turret() -> void:
 		x.Blackboard.SetValue(C.eiTeamID, [], 1)
 		x.Position = Vector2(0, 10)
 	var turret := TEntity.CreateFromScript("Units\\Blue\\GatlingTurret", _bus, init)
-	check(turret != null, "turret: " + TEntity.LastScriptError)
+	check(turret != null, "turret: " + TEntity.GetLastScriptError())
 	if turret == null:
 		return
 	turret.Deploy()

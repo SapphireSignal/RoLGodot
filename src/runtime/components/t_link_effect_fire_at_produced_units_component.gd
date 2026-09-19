@@ -1,5 +1,5 @@
 class_name TLinkEffectFireAtProducedUnitsComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TLinkEffectFireAtProducedUnitsComponent (GameServer/BaseConflict.EntityComponents.Server.Welas.pas:720,
 ## implementation :2391), server only, a link's continuous effect. On the link's eiAfterCreate it hooks the
 ## eiWelaUnitProduced trigger of its destination (eiLinkDest[0], epLast); each unit the destination produces makes the

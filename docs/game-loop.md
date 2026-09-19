@@ -136,12 +136,13 @@ without handlers, 4.2 us per Trigger nobody gets (`tests/bench_eventbus.gd`): GD
 
 The original runs each server game on its own `TGameThread` (a `TThread`) with its globals as `threadvar`s
 (`CurrentEvent`, `Eventstack`, `GameTimeManager`, `Game`, `Map`, `GlobalEventbus`, `EntityDataCache`, `Overwatch`,
-`ServerGame`, `NOT_PAYED_RESOURCES`). The port: `TThreadContext` (`src/runtime/engine/`) holds the per-thread state;
-the static names the code uses (`TEventbus.CurrentEvent_*`, `TEntity._ScriptEventbusStack` / `LastScriptError`,
-`TWelaEffectPayCostComponent.NOT_PAYED_RESOURCES`, the lazy subscription-pattern and component-class caches,
-`TEventbus.Prof`) are static properties over `TThreadContext.Current()`; the game clock is its `GameTimeManager` (a
-C++ `TTimeManager`: `TickTack`, `ZDiff`), as the original's threadvar. The bus fetches the context once per event.
-Game / Map / EntityDataCache already live on each side's global bus.
+`ServerGame`, `NOT_PAYED_RESOURCES`). The port: `TThreadContext` (C++, `native/src/engine/`) holds the per-thread
+state (C++ reaches it through a `thread_local`, `TThreadContext::Get()`); the static accessors the code uses
+(`TEventbus.GetCurrentEvent_*`, `TEntity.GetLastScriptError`, `TWelaEffectPayCostComponent.NOT_PAYED_RESOURCES`, the
+running scripts' bus stack, the lazy subscription-pattern, component-class and script-index caches,
+`TEventbus.GetProf`) read `TThreadContext.Current()`; the game clock is its `GameTimeManager` (a C++ `TTimeManager`:
+`TickTack`, `ZDiff`), as the original's threadvar. The bus fetches the context once per event. Game / Map /
+EntityDataCache live on each side's global bus.
 
 A bug of the original, fixed (`docs/original-bugs.md`): `TTimeManager.Create`
 (`Engine.Helferlein.Windows.pas:2216`) starts `LetzteZeit` from the raw performance counter while `TickTack` reads

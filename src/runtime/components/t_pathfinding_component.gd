@@ -1,5 +1,5 @@
 class_name TPathfindingComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TPathfindingComponent (BaseConflict.EntityComponents.Shared.pas:497, implementation :2161).
 ## Keeps the owner's current pathfinding tile (eiPathfindingTile). The owner blocks its tile when created and
 ## whenever it stands; moving onto another tile unblocks the old one without blocking the new one (so walking

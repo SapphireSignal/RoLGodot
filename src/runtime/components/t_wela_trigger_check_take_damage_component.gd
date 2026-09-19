@@ -1,5 +1,5 @@
 class_name TWelaTriggerCheckTakeDamageComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TWelaTriggerCheckTakeDamageComponent (BaseConflict.EntityComponents.Shared.Wela.pas:527,
 ## implementation :1784), abstract. eiWelaTriggerCheck read [Amount, DamageType, InflictorID] in its group: an
 ## on-damage-taken wela fires only if every check says yes (empty = yes).

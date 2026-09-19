@@ -62,7 +62,7 @@ func test_cache() -> void:
 	_setup()
 	var cache: TEntityDataCache = _bus.EntityDataCache
 	check_eq(cache.Read(DROP, 4, 2, C.eiCooldown), 27250, "charge cooldown (eventbus read)")
-	check_eq(TEntity.LastScriptError, "", "no script error")
+	check_eq(TEntity.GetLastScriptError(), "", "no script error")
 	check_eq(cache.Read(DROP, 4, 2, C.eiResourceCap, [], C.reCharge), 4, "charge cap (indexed)")
 	check_eq(cache.Read(DROP, 1, 1, C.eiResourceCap, [], C.reCharge), 1, "league 1: its own entity")
 	check_eq(cache.Read(DROP, 1, 1, C.eiCooldown), 37000, "league 1 cooldown")
@@ -81,7 +81,7 @@ func test_cache_spell() -> void:
 	_setup()
 	var cache: TEntityDataCache = _bus.EntityDataCache
 	check_eq(cache.Read("Spells\\Black\\Freeze.sps", 1, 1, C.eiWelaUnitPattern, [5]), "Spells\\Black\\Freeze", "group 5 reads 0")
-	check_eq(TEntity.LastScriptError, "", "no script error")
+	check_eq(TEntity.GetLastScriptError(), "", "no script error")
 	check_eq(cache.Read("Spells\\Black\\Freeze.sps", 1, 1, C.eiWelaUnitPattern, [1]), null, "group 1 stays 1")
 
 
@@ -108,7 +108,7 @@ func test_real_add_drop() -> void:
 	var commander := _unit()
 	var info := TCardInfoManager.Instance().ResolveCardUID("bb588865-ea26-4cec-930a-7753ca688afe", 4, 2)
 	commander.ApplyScript("Commander\\CommanderMethods.dws", "AddDrop", [commander, info, 0])
-	check_eq(TEntity.LastScriptError, "", "no script error")
+	check_eq(TEntity.GetLastScriptError(), "", "no script error")
 	var group := -1
 	for g in range(0, 64):
 		if commander.Blackboard.GetValue(C.eiWelaUnitPattern, [g]) == DROP:
@@ -135,8 +135,8 @@ func test_ready_spawned_legendary() -> void:
 	commander.Blackboard.SetValue(C.eiOwnerCommander, [], commander.ID)
 	TWelaReadySpawnedComponent.new().CreateGrouped(commander, [3])
 	check_eq(commander.Eventbus.Read(C.eiIsReady, [], [3]), true, "no legendary unit yet: ready")
-	check_eq(TEntity.LastScriptError, "", "no script error")
-	var data := _bus.EntityDataCache.GetEntity("Units\\Black\\TyrusDrop", 1, 1)
+	check_eq(TEntity.GetLastScriptError(), "", "no script error")
+	var data: TEntity = _bus.EntityDataCache.GetEntity("Units\\Black\\TyrusDrop", 1, 1)
 	check_eq(data.Eventbus.Read(C.eiOwnerCommander, []), commander.ID, "owner commander written into the data entity")
 	commander.Blackboard.SetValue(C.eiUnitProperties, [], [C.upHasLegendaryUnit])
 	check_eq(commander.Eventbus.Read(C.eiIsReady, [], [3]), false, "a legendary unit alive: not ready")

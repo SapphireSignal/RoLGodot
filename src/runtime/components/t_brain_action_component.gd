@@ -63,7 +63,7 @@ func OnExiled(Exiled) -> bool:
 
 
 func OnPreFire(Targets) -> bool:
-	var CalledToGroup: Array = TEventbus.CurrentEvent_CalledToGroup.duplicate()
+	var CalledToGroup: Array = TEventbus.GetCurrentEvent_CalledToGroup().duplicate()
 	var ActionPoint := RParam.AsInteger(Eventbus().Read(C.eiWelaActionpoint, [], CalledToGroup))
 	if ActionPoint <= 0:
 		Eventbus().Trigger(C.eiFire, [Targets], CalledToGroup)

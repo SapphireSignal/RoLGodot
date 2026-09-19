@@ -1,5 +1,5 @@
 class_name TTutorialDirectorServerComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TTutorialDirectorServerComponent (GameServer/BaseConflict.EntityComponents.Server.pas:452, implementation
 ## :3688), server only: handles all actions in the tutorial, driven by game events (the client sends them as
 ## eiClientCommand [ccTutorialGameEvent, Eventname]). Freezing blocks the thinking (TThinkBlockComponent + eiStand)

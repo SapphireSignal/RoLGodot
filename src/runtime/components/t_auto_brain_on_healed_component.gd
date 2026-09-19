@@ -19,7 +19,7 @@ func _DeclareEvents(e: Array) -> void:
 
 func OnHeal(Amount, HealModifier, InflictorID, Previous):
 	var Result = Previous
-	if not CanThink() or not TEventbus.CurrentEvent_CalledToGroup.is_empty():
+	if not CanThink() or not TEventbus.GetCurrentEvent_CalledToGroup().is_empty():
 		return Result
 	var Ready := RParam.AsBooleanDefaultTrue(Eventbus().Read(C.eiIsReady, [], ComponentGroup))
 	if Ready and RParam.AsBooleanDefaultTrue(Eventbus().Read(C.eiWelaTriggerCheck, [Amount, HealModifier, InflictorID],

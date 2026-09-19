@@ -29,7 +29,7 @@ class FakeGame:
 
 ## Records [name, parameters..., called-to group] of the events around the effects.
 class EffectProbe:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Log: Array = []
 
 	func _DeclareEvents(e: Array) -> void:
@@ -47,7 +47,7 @@ class EffectProbe:
 		e.append(XEvent("OnGameEvent", C.eiGameEvent, C.epFirst, C.etTrigger, C.esGlobal))
 
 	func _group() -> Array:
-		return TEventbus.CurrentEvent_CalledToGroup.duplicate()
+		return TEventbus.GetCurrentEvent_CalledToGroup().duplicate()
 
 	func Named(name: String) -> Array:
 		var Result: Array = []
@@ -110,7 +110,7 @@ class EffectProbe:
 
 ## Answers the global eiGameTickTimeToFirstTick like the game's tick component.
 class TimeToFirstTick:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Value := 0
 
 	func _DeclareEvents(e: Array) -> void:
@@ -123,7 +123,7 @@ class TimeToFirstTick:
 
 ## Sees eiDie after the suicide effect's epLow handler.
 class DieLastProbe:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Died := false
 
 	func _DeclareEvents(e: Array) -> void:
@@ -221,9 +221,9 @@ func test_instant_efficiency() -> void:
 	check_eq(_owner.Eventbus.Read(C.eiEfficiency, [hidden], [1]), -1.0, "-1 against an untargetable one")
 	check_eq(_owner.Eventbus.Read(C.eiEfficiency, [enemy], [2]), null, "other groups: nothing answers")
 	_owner.Blackboard.SetValue(C.eiWelaDamage, [1], 12.5)
-	TEventbus.CurrentEvent_CalledToGroup = [1]  # as during an event called to [1]
+	TEventbus.SetCurrentEvent_CalledToGroup([1])  # as during an event called to [1]
 	check_eq(effect.GetEfficiency([]), 12.5, "GetEfficiency: eiWelaDamage of the called-to group")
-	TEventbus.CurrentEvent_CalledToGroup = []
+	TEventbus.SetCurrentEvent_CalledToGroup([])
 
 
 func test_efficiency_effect_ignores_previous_and_efficiency_components_add() -> void:

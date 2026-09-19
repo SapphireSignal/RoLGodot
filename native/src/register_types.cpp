@@ -15,10 +15,17 @@
 #include "engine/t_2d_grid.h"
 #include "engine/t_priority_queue.h"
 #include "engine/t_ring_buffer.h"
+#include "engine/t_thread_context.h"
 #include "engine/t_time_manager.h"
 #include "engine/t_timer.h"
 #include "entity/d_set.h"
 #include "entity/r_param.h"
+#include "entity/t_blackboard.h"
+#include "entity/t_entity.h"
+#include "entity/t_entity_component.h"
+#include "entity/t_entity_stream.h"
+#include "entity/t_eventbus.h"
+#include "entity/t_remote_subscription.h"
 #include "math/r_cubic_bezier.h"
 #include "math/r_line_2d.h"
 #include "math/r_matrix.h"
@@ -52,12 +59,23 @@ void initialize_rol_native_module(ModuleInitializationLevel p_level) {
 	GDREGISTER_CLASS(RCubicBezier);
 	GDREGISTER_CLASS(TPolygon);
 	GDREGISTER_CLASS(TMultipolygon);
+	GDREGISTER_CLASS(TThreadContext);
+	GDREGISTER_CLASS(TEntityStream);
+	GDREGISTER_CLASS(TBlackboard);
+	GDREGISTER_CLASS(TEventbus);
+	GDREGISTER_CLASS(TEntityComponent);
+	GDREGISTER_CLASS(TRemoteSubscription);
+	GDREGISTER_CLASS(TEntity);
+	TThreadContext::Initialize();
+	TEntityComponent::Initialize();
 }
 
 void uninitialize_rol_native_module(ModuleInitializationLevel p_level) {
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
 		return;
 	}
+	TEntityComponent::Finalize();
+	TThreadContext::Finalize();
 }
 
 extern "C" {

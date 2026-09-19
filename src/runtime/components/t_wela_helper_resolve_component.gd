@@ -1,5 +1,5 @@
 class_name TWelaHelperResolveComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TWelaHelperResolveComponent (BaseConflict.EntityComponents.Shared.Wela.pas:941, implementation :2687).
 ## Answers reads of wela values (eiWelaUnitPattern, eiWelaCount, eiWelaDamage, eiCooldown, ...) at epFirst with the
 ## blackboard value saved under the index of the current source (team ID, level, a resource, the game's tier or the
@@ -49,7 +49,7 @@ func GetCurrentIndex() -> int:
 
 ## Resolves the right index.
 func OnFetch(Previous):
-	var Result = Owner.Blackboard.GetIndexedValue(TEventbus.CurrentEvent_EventIdentifier, TEventbus.CurrentEvent_CalledToGroup, GetCurrentIndex())
+	var Result = Owner.Blackboard.GetIndexedValue(TEventbus.GetCurrentEvent_EventIdentifier(), TEventbus.GetCurrentEvent_CalledToGroup(), GetCurrentIndex())
 	if RParam.IsEmpty(Result):
 		Result = Previous
 	return Result

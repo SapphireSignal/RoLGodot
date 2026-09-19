@@ -246,7 +246,7 @@ func test_real_golem_targets() -> void:
 			x.ID = _manager.GenerateUniqueID()
 			x.Blackboard.SetValue(C.eiTeamID, [], team)
 		var g := TEntity.CreateFromScript("Units\\Colorless\\SmallMeleeGolem", _bus, init)
-		check(g != null, "created: " + TEntity.LastScriptError)
+		check(g != null, "created: " + TEntity.GetLastScriptError())
 		if g == null:
 			return
 		g.Deploy()

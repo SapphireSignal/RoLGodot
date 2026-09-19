@@ -373,7 +373,7 @@ func OnSubPositionByString(Name_, PrevValue):
 	if PrevValue != null or not IsVisible():
 		return PrevValue
 	# hack to prevent meshes added to entity dynamically from answering position requests
-	var called: Array = TEventbus.CurrentEvent_CalledToGroup
+	var called: Array = TEventbus.GetCurrentEvent_CalledToGroup()
 	if (not called.is_empty() and not DSet.Intersects(called, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])) or FMesh == null:
 		return PrevValue
 	var ZoneName := RParam.AsString(Name_).to_lower()

@@ -13,10 +13,10 @@ func _init() -> void:
 	var bus: TEventbus = commander.Eventbus
 	var bb: TBlackboard = commander.Blackboard
 	for ei in [C.eiThink, C.eiThinkChain]:
-		print("event %d: trigger handlers %d" % [ei, bus.FEventhandler[ei * 3 + C.etTrigger].Subscribers.size()])
+		print("event %d: trigger handlers %d" % [ei, bus.SubscriberCount(ei, C.etTrigger)])
 	var e := [C.eiExiled, C.eiIsAlive, C.eiResourceBalance]
 	for ei in e:
-		print("event %d: read handlers %d" % [ei, bus.FEventhandler[ei * 3 + C.etRead].Subscribers.size() if bus.FEventhandler.has(ei * 3 + C.etRead) else 0])
+		print("event %d: read handlers %d" % [ei, bus.SubscriberCount(ei, C.etRead)])
 	_bench("empty loop", func(): pass)
 	_bench("bus.Read(eiExiled)", func(): bus.Read(C.eiExiled, []))
 	_bench("bus.Read(eiIsAlive)", func(): bus.Read(C.eiIsAlive, []))
@@ -24,11 +24,6 @@ func _init() -> void:
 	_bench("bb.GetValue(eiExiled, [])", func(): bb.GetValue(C.eiExiled, []))
 	_bench("DSet.Make([])", func(): DSet.Make([]))
 	_bench("DSet.Make([20])", func(): DSet.Make([20]))
-	_bench("bus.StartEvent+EndEvent", func():
-		TEventbus.StartEvent(TThreadContext.Current(), C.eiExiled, [], [])
-		TEventbus.EndEvent(TThreadContext.Current(), 0, [], []))
-	_bench("BC.EventIdentifierToNetworkSend(eiThink)", func(): BC.EventIdentifierToNetworkSend(C.eiThink))
-	_bench("FEventhandler.get", func(): bus.FEventhandler.get(C.eiExiled * 3 + C.etRead))
 	_bench("RParam.AsBoolean(null)", func(): RParam.AsBoolean(null))
 	var t := TTimer.new().CreateAndStart(250)
 	_bench("TTimer.Expired", func(): t.Expired)
@@ -38,7 +33,6 @@ func _init() -> void:
 	TTimeManager.SetFakeTime(null)
 	TCardInfoManager._Instance = null
 	TScenarioInfoManager._Instance = null
-	TEntityComponent.FComponentSubscriptionPatterns = {}
 	quit(0)
 
 

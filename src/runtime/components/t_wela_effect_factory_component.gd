@@ -28,7 +28,7 @@ func CreateGrouped(Entity = null, Group = []) -> TEntityComponent:
 
 func Fire(Targets: Array) -> void:
 	var Game = GlobalEventbus().Game
-	var CalledToGroup: Array = TEventbus.CurrentEvent_CalledToGroup.duplicate()
+	var CalledToGroup: Array = TEventbus.GetCurrentEvent_CalledToGroup().duplicate()
 	var Count := maxi(1, RParam.AsInteger(Eventbus().Read(C.eiWelaCount, [], CalledToGroup)))
 	for index in Targets.size():
 		var Target: RTarget = Targets[index].Clone()

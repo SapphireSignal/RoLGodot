@@ -1,5 +1,5 @@
 class_name TSuicideOnGameEndComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TSuicideOnGameEndComponent (BaseConflict.EntityComponents.Client.pas:462, implementation :4759), client
 ## only. Frees its owner (DeferFree) when the game ends: the global eiLose [TeamID].
 

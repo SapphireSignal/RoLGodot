@@ -30,19 +30,19 @@ func OverrideTargetToOwner() -> TBrainWelaCommanderComponent:
 
 func CanUseAbility(Targets: Array) -> bool:
 	return IsSandbox() or _TargetsPossible(ATarget.ToRParam(RCommanderAbilityTarget.ToRTargets(Targets, Owner)),
-		TEventbus.CurrentEvent_CalledToGroup.duplicate())
+		TEventbus.GetCurrentEvent_CalledToGroup().duplicate())
 
 
 ## The original asserts eiAbilityTargetCount = the target count here (a debug-build check; dropped like in release).
 func UseAbility(Targets: Array) -> void:
-	var CalledToGroup: Array = TEventbus.CurrentEvent_CalledToGroup.duplicate()
+	var CalledToGroup: Array = TEventbus.GetCurrentEvent_CalledToGroup().duplicate()
 	Eventbus().Trigger(C.eiFire, [ATarget.ToRParam(RCommanderAbilityTarget.ToRTargets(Targets, Owner))], CalledToGroup)
 
 
 func OnCanRunAbility(Targets):
 	if not CanThink():
 		return false
-	var CalledToGroup: Array = TEventbus.CurrentEvent_CalledToGroup.duplicate()
+	var CalledToGroup: Array = TEventbus.GetCurrentEvent_CalledToGroup().duplicate()
 	var Result = Eventbus().Read(C.eiIsReady, [], CalledToGroup)
 	if RParam.AsBooleanDefaultTrue(Result) or IsSandbox():
 		var TargetCount := maxi(1, RParam.AsInteger(Eventbus().Read(C.eiAbilityTargetCount, [], CalledToGroup)))
@@ -56,7 +56,7 @@ func OnCanRunAbility(Targets):
 
 
 func OnUseAbility(Targets) -> bool:
-	if RParam.AsBoolean(Eventbus().Read(C.eiCanUseAbility, [Targets], TEventbus.CurrentEvent_CalledToGroup.duplicate())):
+	if RParam.AsBoolean(Eventbus().Read(C.eiCanUseAbility, [Targets], TEventbus.GetCurrentEvent_CalledToGroup().duplicate())):
 		if FOverrideTargetToOwner:
 			UseAbility([RCommanderAbilityTarget.Create(Owner)])
 		else:

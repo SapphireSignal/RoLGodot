@@ -1,5 +1,5 @@
 class_name TVisualizerComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TVisualizerComponent (BaseConflict.EntityComponents.Client.Visuals.pas:257, implementation :2400), the
 ## master class of unit displays like meshes, and RMatrixAdjustments (:249, :6273). Every frame (global eiIdle) it
 ## computes the bind matrix (game space, RMatrix as Transform3D: see RMatrix) from the entity's display position,

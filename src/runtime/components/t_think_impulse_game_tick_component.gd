@@ -1,5 +1,5 @@
 class_name TThinkImpulseGameTickComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TThinkImpulseGameTickComponent (GameServer/BaseConflict.EntityComponents.Server.Brains.pas:46,
 ## implementation :1719), server only. Thinks in its group at every global eiGameTick, unless the unit is exiled.
 

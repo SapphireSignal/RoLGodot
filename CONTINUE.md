@@ -209,15 +209,29 @@ rewriting the published repository). No `.gd` files at the end (shaders, scenes,
 stay). Done: toolchain, `DSet`, `RParam`, and every leaf helper (`native/src/engine/`: the Delphi RNG / hash / sort /
 RTL / dictionary, `TTimeManager`, `TTimer`, `TGameTimer`, the priority queues, ring buffer, 2D grid; `native/src/math/`:
 `RMatrix`, `RLine2D`, `RRay2D`, `RCubicBezier`, `TPolygon`, `TMultipolygon`); the list, the API changes (statics ->
-Get/Set, constructor args -> `.new().Create(...)`) and the measurements are in `docs/native.md`. The per-thread context
-(`TThreadContext`, holding the game clock `GameTimeManager`) becomes C++ `thread_local`s with the entity core.
-Capture check tooling for C++ moves: a scratch script ran the map viewer's capture mode and `--fps-check` on the three
-setups plus Classic with 2 spawners + 2 drops, once on the change and once on HEAD (git stash -u, build, import), then
-restored and rebuilt; noise floor = two captures of the same build.
-**Next:** step 2, the entity core (`TBlackboard`, `TEventbus`, `TEntity`, `TEntityComponent`, `TThreadContext`); plan
-how GDScript components keep subscribing to a C++ bus (handlers as Callables until their family moves) and measure
-with `tests/bench_eventbus.gd` and `--fps-check`. Visible features (health bars, unit facing, particles, shadows,
-phase 5) wait until the core is C++, unless the owner asks for one.
+Get/Set, constructor args -> `.new().Create(...)`) and the measurements are in `docs/native.md`.
+Step 2, the entity core, is done (2026-09-19): `native/src/entity/` (`TEventbus`, `TBlackboard`, `TEntity` with the
+script runner, `TEntityComponent`, `TRemoteSubscription`, `TEntityStream`, `base_conflict_constants.h`) and
+`native/src/engine/t_thread_context.*` (threadvars as a `thread_local`). **GDScript cannot override a bound C++ method**
+(typed and self calls skip the override), so GDScript components extend the GDScript layer `TGDEntityComponent`
+(`src/runtime/entity/t_gd_entity_component.gd`: constructors, `Destroy`, `_DeclareEvents`, base handlers), which calls
+the C++ bodies `_CreateGrouped` / `_Destroy`; read "GDScript subclasses of C++ classes" in `docs/native.md`. Statics
+became Get/Set (`TEventbus.GetCurrentEvent_CalledToGroup()`, `TEntity.GetLastScriptError()`, `TEventbus.SetProf({})`).
+The transpiler now also writes `native/src/dws/dws_const.h` (`C::eiFree`). Result: bus Read 2.4 -> 0.5 us, Trigger
+11.6 -> 3.1 us, the loaded Classic game 79 -> 136 fps with no frame over 12 ms, server 11 -> 4 ms per frame.
+Capture check tooling for C++ moves: a scratch script ran the map viewer's capture mode (`--capture-out=<dir>
+--wait=4000`), `--fps-check=on` on the three setups plus Classic with `--play=Blue spawner,Red spawner,Blue
+footmen,Red footmen --wait=15000`, and `tests/bench_eventbus.gd`, once on the change and once on HEAD (git stash -u,
+build, import), then restored and rebuilt; noise floor = two captures of the same build (water and wind animation:
+up to 5% of pixels).
+**Next:** step 3, the component families, a whole family per session with all its subclasses (each moved class stops
+extending `TGDEntityComponent` and becomes a C++ subclass of `TEntityComponent` with C++ handlers; the bus then needs a
+direct C++ handler call next to the script call). Hot spots now (`--profile`, loaded Classic): server
+`TMovementComponent.OnMoveTo` 1.7 ms/frame (pathfinding), `TThinkImpulseTimerComponent.OnIdle` 1.3 ms self (520
+calls/frame), movement / collision; client `TMeshComponent.OnSubPositionByString` 2.4 ms/frame (48 calls, 50 us each,
+from the not yet ported `TParticleEffectComponent`), `TMeshComponent.OnIdle`. A good first family: the brains and
+think timers with the movement / pathfinding / collision core. Visible features (health bars, unit facing, particles,
+shadows, phase 5) wait until the families are C++, unless the owner asks for one.
 Owner: `docs/questions-for-devs.md` is the list for the original developers (master-server values); record their
 answers there.
 The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.

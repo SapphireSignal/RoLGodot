@@ -274,34 +274,3 @@ static func ResourceCompare(ResourceType: int, Resource, Comparator: int, Refere
 ## ARMORY_TYPES_NORMAL = [atUnarmored .. atHeavy] (BaseConflict.Constants.Cards.pas:44)
 static func IsNormalArmorType(ArmorType: int) -> bool:
 	return ArmorType >= C.atUnarmored and ArmorType <= C.atHeavy
-
-
-## BaseConflict.Constants.pas:1058 (every Trigger asks: a lookup, not a match over 37 events)
-static func EventIdentifierToNetworkSend(Event: int) -> int:
-	return _NETWORK_SEND.get(Event, C.nsNone)
-
-
-static var _NETWORK_SEND := _MakeNetworkSend()
-
-
-static func _MakeNetworkSend() -> Dictionary:
-	var Result := {}
-	for Event in [C.eiTeamID, C.eiMoveTo, C.eiStand, C.eiSyncPosition, C.eiDie, C.eiRemoveComponent,
-			C.eiKillEntity, C.eiResourceBalance, C.eiResourceCap, C.eiResourceCost, C.eiLose, C.eiPreFire, C.eiFire,
-			C.eiCancelFire, C.eiFireWarhead, C.eiGameCommencing, C.eiGameStart,
-			C.eiRemoveComponentGroup, C.eiReplaceEntity, C.eiWelaSetMainTarget, C.eiGameTick, C.eiLinkEstablish,
-			C.eiLinkBreak, C.eiSetGridFieldBlocking, C.eiExiled, C.eiUnitProperties,
-			C.eiWelaUnitProduced, C.eiCooldownStartingTime, C.eiGameEvent,
-			C.eiWelaActive, C.eiWelaSavedTargets, C.eiSyncPath, C.eiWaveSpawn, C.eiWelaCooldownReset]:
-		Result[Event] = C.nsServer
-	for Event in [C.eiUseAbility, C.eiSurrender, C.eiClientCommand]:
-		Result[Event] = C.nsClient
-	return Result
-
-
-## BaseConflict.Constants.pas:1073
-static func EventIdentifierToBlackboardEvent(Event: int) -> bool:
-	match Event:
-		C.eiTeamID, C.eiPosition, C.eiFront, C.eiOwnerCommander, C.eiExiled, C.eiBuildgridBlockedFields:
-			return true
-	return false

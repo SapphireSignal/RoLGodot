@@ -234,7 +234,7 @@ func test_real_blessing_health() -> void:
 	var bus := TEventbus.new().Create(null)
 	_free.append(bus)
 	var e := TEntity.CreateFromScript("Units\\Colorless\\SmallMeleeGolem", bus)
-	check(e != null, "created: " + TEntity.LastScriptError)
+	check(e != null, "created: " + TEntity.GetLastScriptError())
 	if e == null:
 		return
 	_free.push_front(e)

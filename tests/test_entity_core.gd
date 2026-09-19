@@ -6,7 +6,7 @@ const C = preload("res://src/runtime/dws/dws_const.gd")
 
 
 ## Logs every event it gets into a shared Array; Stop = false makes its trigger handler stop the event.
-class TraceComp extends TEntityComponent:
+class TraceComp extends TGDEntityComponent:
 	var trace: Array = []
 	var tag := ""
 	var stop := false
@@ -56,7 +56,7 @@ class TraceLast extends TraceComp:
 
 
 ## Listens on the global eventbus (XEvent scope esGlobal).
-class GlobalListener extends TEntityComponent:
+class GlobalListener extends TGDEntityComponent:
 	var trace: Array = []
 
 	func _DeclareEvents(e: Array) -> void:

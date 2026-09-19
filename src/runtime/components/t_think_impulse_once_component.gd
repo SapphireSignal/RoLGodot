@@ -1,5 +1,5 @@
 class_name TThinkImpulseOnceComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TThinkImpulseOnceComponent (GameServer/BaseConflict.EntityComponents.Server.Brains.pas:86,
 ## implementation :2387), server only. Thinks once in its group, then frees itself: at the first global eiIdle
 ## (the second with WaitOneFrame; skipped while exiled), or at eiAfterCreate / eiDeploy (epLast) instead.

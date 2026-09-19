@@ -12,8 +12,8 @@ func after_each() -> void:
 	for o in _free:
 		o.Free()
 	_free.clear()
-	TEntity.LastScriptError = ""
-	TEntity.QuietScriptErrors = false
+	TEntity.SetLastScriptError("")
+	TEntity.SetQuietScriptErrors(false)
 
 
 func _bus(side: int) -> TEventbus:
@@ -32,7 +32,7 @@ func _keep(e: TEntity) -> TEntity:
 ## Units\White\Footman.ets CreateData (server side: no tooltip components).
 func test_base_script_data() -> void:
 	var e := _keep(TEntity.CreateDataFromScript("Units\\White\\Footman", _bus(C.nsServer)))
-	check(e != null, "entity created: " + TEntity.LastScriptError)
+	check(e != null, "entity created: " + TEntity.GetLastScriptError())
 	if e == null:
 		return
 	check_eq(e.ScriptFile, "Units\\White\\Footman", "ScriptFile")
@@ -44,7 +44,7 @@ func test_base_script_data() -> void:
 	check_eq(e.Blackboard.GetValue(C.eiWelaDamage, [2]), RParam.ToSingle(10.0), "shield damage")
 	# UnitTemplate.dws InitUnitData
 	check_eq(e.Blackboard.GetValue(C.eiWelaUnitPattern, [C.GROUP_SOUL]), "Projectiles\\Black\\SoulGatherProjectileSpawner", "soul pattern")
-	check_eq(TEntity.LastScriptError, "", "no script error")
+	check_eq(TEntity.GetLastScriptError(), "", "no script error")
 
 
 ## Units\Neutral\LaneNode_Blue.ets: InheritsFrom LaneNode.ets. Base runs first (after the initializer), then the child.
@@ -54,7 +54,7 @@ func test_inherits_from() -> void:
 		seen.append(Entity.IsAbstract)
 		Entity.Blackboard.SetValue(C.eiCooldown, [1], 7)
 	var e := _keep(TEntity.CreateMetaFromScript("Units/Neutral/LaneNode_Blue", _bus(C.nsServer), init))
-	check(e != null, "entity created: " + TEntity.LastScriptError)
+	check(e != null, "entity created: " + TEntity.GetLastScriptError())
 	if e == null:
 		return
 	check_eq(seen, [true], "initializer ran once, on the meta entity")
@@ -72,7 +72,7 @@ func test_inherits_from_preceding_on_client() -> void:
 	var init := func(Entity: TEntity) -> void:
 		Entity.Blackboard.SetValue(C.eiSpeed, [], 1.0)
 	var e := _keep(TEntity.CreateDataFromScript("Projectiles\\Blue\\AegisMissile", bus, init))
-	check(e != null, "entity created: " + TEntity.LastScriptError)
+	check(e != null, "entity created: " + TEntity.GetLastScriptError())
 	if e == null:
 		return
 	check_eq(e.IsServer(), false, "client entity")
@@ -105,20 +105,20 @@ func test_script_globals() -> void:
 func test_apply_script() -> void:
 	var e := _keep(TEntity.new().Create(_bus(C.nsServer)))
 	e.ApplyScript("Modifiers\\Death.dws")
-	check_eq(TEntity.LastScriptError, "", "Apply(Entity) with the entity")
+	check_eq(TEntity.GetLastScriptError(), "", "Apply(Entity) with the entity")
 	e.ApplyScript("\\Scripts\\Modifiers\\Death.dws", "Apply", [e])
-	check_eq(TEntity.LastScriptError, "", "explicit parameters, PATH_SCRIPT prefix kept")
+	check_eq(TEntity.GetLastScriptError(), "", "explicit parameters, PATH_SCRIPT prefix kept")
 	check_eq(e.ApplyScriptReturnGroups("Modifiers\\Death.dws"), [], "no array returned: []")
 
 
 func test_failures() -> void:
-	TEntity.QuietScriptErrors = true
+	TEntity.SetQuietScriptErrors(true)
 	var bus := _bus(C.nsServer)
 	check(TEntity.CreateFromScript("Units\\White\\NoSuchUnit", bus) == null, "missing script")
-	check(TEntity.LastScriptError.contains("Can't find scriptfile"), "missing script error")
+	check(TEntity.GetLastScriptError().contains("Can't find scriptfile"), "missing script error")
 	var e := _keep(TEntity.new().Create(bus))
 	e.ApplyScript("Modifiers\\Death.dws", "Apply", [e, 1])
-	check(TEntity.LastScriptError.contains("Parametercount"), "parameter count must match")
-	TEntity.LastScriptError = ""
+	check(TEntity.GetLastScriptError().contains("Parametercount"), "parameter count must match")
+	TEntity.SetLastScriptError("")
 	e.ApplyScript("AI\\MegaRootDude.dws", "Prepare", [e])
-	check(TEntity.LastScriptError.contains("Error while compiling"), "server cannot compile MegaRootDude")
+	check(TEntity.GetLastScriptError().contains("Error while compiling"), "server cannot compile MegaRootDude")

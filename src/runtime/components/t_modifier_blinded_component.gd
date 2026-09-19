@@ -27,7 +27,7 @@ func SetFireGroup(Group: Array) -> TModifierBlindedComponent:
 
 ## Roll the miss dice.
 func OnFire(_Targets) -> bool:
-	if not DSet.Intersects(TEventbus.CurrentEvent_CalledToGroup, FValueGroup):
+	if not DSet.Intersects(TEventbus.GetCurrentEvent_CalledToGroup(), FValueGroup):
 		return true
 	FWillMiss = randf() <= BLIND_CHANCE
 	if FWillMiss:

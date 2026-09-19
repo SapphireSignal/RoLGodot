@@ -16,13 +16,13 @@ func _DeclareEvents(e: Array) -> void:
 
 
 func OnTransact(ResourceID, Amount) -> bool:
-	if not CanThink() or not TEventbus.CurrentEvent_CalledToGroup.is_empty():
+	if not CanThink() or not TEventbus.GetCurrentEvent_CalledToGroup().is_empty():
 		return true
 	var ResourceType := RParam.AsInteger(ResourceID)
 	var Ready := FResource.has(ResourceType)
 	Ready = Ready and RParam.AsBooleanDefaultTrue(Eventbus().Read(C.eiIsReady, [], ComponentGroup))
 	if Ready:
-		var Group: Array = TEventbus.CurrentEvent_CalledToGroup.duplicate()
+		var Group: Array = TEventbus.GetCurrentEvent_CalledToGroup().duplicate()
 		var Times: int
 		if BC.IsIntResource(ResourceType):
 			Times = RParam.AsInteger(Owner.Cap(ResourceType, Group))

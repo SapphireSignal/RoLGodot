@@ -117,7 +117,7 @@ func test_dying_unit_decays_on_the_client() -> String:
 	_run_for(300.0)
 	check_eq(_client.DecayManager.DecayingCount(), 0, "decayed")
 	check(_gone(mesh), "the mesh is freed")
-	check_eq(TEntity.LastScriptError, "", "no script error")
+	check_eq(TEntity.GetLastScriptError(), "", "no script error")
 	return take_failure()
 
 

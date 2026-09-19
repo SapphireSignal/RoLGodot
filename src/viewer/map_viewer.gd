@@ -447,7 +447,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		_set_view(_views()[0])
 
 
-## The costliest event handlers of a TEventbus.Prof table, per frame: self time (without the handlers they call).
+## The costliest event handlers of a TEventbus.GetProf() table, per frame: self time (without the handlers they call).
 func _print_profile(side: String, table: Dictionary, frames: int) -> void:
 	var rows := []
 	var total := 0
@@ -601,7 +601,7 @@ func _run_capture(maps: PackedStringArray, out_dir: String) -> void:
 				# --profile=on (still phase): every event handler of both sides and the meshes' frame work, timed
 				var profiling: bool = phase == "still" and _user_arg("profile") == "on"
 				if profiling:
-					TEventbus.Prof = {}
+					TEventbus.SetProf({})
 					TMesh.ProfUs = [0, 0, 0]
 					_thread.StopThread()
 					_thread.FContext.Prof = {}
@@ -648,11 +648,11 @@ func _run_capture(maps: PackedStringArray, out_dir: String) -> void:
 				var seconds := (Time.get_ticks_usec() - start_ms) / 1000000.0
 				if profiling:
 					_thread.StopThread()
-					_print_profile("client", TEventbus.Prof, frames)
+					_print_profile("client", TEventbus.GetProf(), frames)
 					_print_profile("server", _thread.FContext.Prof, maxi(1, int(seconds * 1000 / TGameThread.TARGET_FRAMETIME)))
 					_thread.FContext.Prof = null
 					_thread.StartThread()
-					TEventbus.Prof = null
+					TEventbus.SetProf(null)
 					print("profile client: meshes Animate %.3f ms/frame, SetUpCustomShaders %.3f ms/frame (%d mesh frames/frame)" % [
 						TMesh.ProfUs[0] / 1000.0 / frames, TMesh.ProfUs[1] / 1000.0 / frames, TMesh.ProfUs[2] / frames])
 					TMesh.ProfUs = null

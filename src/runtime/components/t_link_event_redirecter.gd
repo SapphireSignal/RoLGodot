@@ -1,5 +1,5 @@
 class_name TLinkEventRedirecter
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TLinkEventRedirecter (GameServer/BaseConflict.EntityComponents.Server.Welas.pas:677, implementation :893),
 ## server only. TWelaLinkEffectComponent adds it (ALLGROUP) to every link it spawns. A link fetches data from its
 ## source if it has none: empty eiCooldown, eiWelaDamage and eiDamageType reads (epFirst) are read from the source
@@ -45,7 +45,7 @@ func OnDamageDone(Amount, DamageType, TargetEntity) -> bool:
 ## Redirect events.
 func OnEvent(Previous):
 	if RParam.IsEmpty(Previous):
-		var Event := TEventbus.CurrentEvent_EventIdentifier
+		var Event := TEventbus.GetCurrentEvent_EventIdentifier()
 		var Source = GetSource()
 		if Source != null:
 			return Source.Eventbus.Read(Event, [], FGroup)

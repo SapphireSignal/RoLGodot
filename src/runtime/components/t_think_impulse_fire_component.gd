@@ -1,5 +1,5 @@
 class_name TThinkImpulseFireComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TThinkImpulseFireComponent (GameServer/BaseConflict.EntityComponents.Server.Brains.pas:57, implementation
 ## :2716), server only. Thinks in TargetGroup (default: the public group []) at every eiFire (epLast) that reaches
 ## its own group, unless the unit is exiled.

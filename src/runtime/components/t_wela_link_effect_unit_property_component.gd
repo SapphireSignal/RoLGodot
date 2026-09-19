@@ -1,5 +1,5 @@
 class_name TWelaLinkEffectUnitPropertyComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TWelaLinkEffectUnitPropertyComponent (GameServer/BaseConflict.EntityComponents.Server.Welas.pas:643,
 ## implementation :2063), server only. Gives a linked unit a property while the link lasts: eiLinkEstablish (epLast)
 ## adds it to the destination entity's blackboard eiUnitProperties, eiLinkBreak (epLower) removes it from the broken

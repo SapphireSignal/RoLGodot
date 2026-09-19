@@ -1,5 +1,5 @@
 class_name TServerCardPlayStatisticsComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TServerCardPlayStatisticsComponent (GameServer/BaseConflict.EntityComponents.Server.pas:330,
 ## implementation :3307), server only. Sits on the commander with a card's group and counts every play of that
 ## card (eiUseAbility in its group, epLast): Game.Statistics.CardPlayed(commander, card script file).

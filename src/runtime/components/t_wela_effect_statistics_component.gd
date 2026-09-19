@@ -1,5 +1,5 @@
 class_name TWelaEffectStatisticsComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TWelaEffectStatisticsComponent (GameServer/BaseConflict.EntityComponents.Server.Statistics.pas:60,
 ## implementation :275), server only. Tracks statistics of single welas: for every name given with Name(..) it
 ## counts in Game.Statistics, owner's commander unless said otherwise (all handlers epLast, reads pass Previous on):

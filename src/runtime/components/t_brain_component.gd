@@ -1,5 +1,5 @@
 class_name TBrainComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TBrainComponent (GameServer/BaseConflict.EntityComponents.Server.Brains.pas:168, implementation :2057),
 ## server only. Base of every brain. A think impulse triggers eiThink, then eiThinkChain, in a group: eiThink
 ## (epMiddle) runs Think in every brain that can think; eiThinkChain runs ThinkChain brain after brain by priority

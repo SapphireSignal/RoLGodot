@@ -1,19 +1,22 @@
 # Entity core (phase 2)
 
-Hand port of `BaseConflict.Entity.pas` into `src/runtime/entity/`, method by method, Delphi names kept.
+Port of `BaseConflict.Entity.pas`, method by method, Delphi names kept. The core is C++ (`native/src/entity/`,
+`docs/native.md`); the components are still GDScript and extend the GDScript layer `TGDEntityComponent`.
 Tests: `tests/test_entity_core.gd` (every expectation is derived from the Pascal method named in its comment).
 
 | File | Original |
 | --- | --- |
-| `t_object.gd` | `TObject`: `Create`, virtual `Destroy`, `Free`, `ClassName` |
-| `t_entity.gd` | `TEntity` |
-| `t_entity_component.gd` | `TEntityComponent` (+ `TSubscribedEvent`) |
-| `t_eventbus.gd` | `TEventbus` (+ `RSubscriber`, `TEventhandler`, `TEventEnumerator`), script side `TEventbusScriptSideHelper` |
-| `t_blackboard.gd` | `TBlackboard`, script side `TBlackboardScriptInvoker` |
-| `t_remote_subscription.gd` | `TRemoteSubscription` |
-| `r_param.gd` | `RParam` accessors (`Engine/Engine.Helferlein.Windows.pas`) |
-| `d_set.gd` | Delphi sets (`SetComponentGroup`, `SetUnitProperty`, ...) |
-| `../base_conflict_constants.gd` | functions of `BaseConflict.Constants.pas` (`EventIdentifierToNetworkSend`, ...) |
+| `native/src/entity/t_entity.*` | `TEntity` (+ the script runner) |
+| `native/src/entity/t_entity_component.*` | `TEntityComponent` (+ `TSubscribedEvent`) |
+| `native/src/entity/t_eventbus.*` | `TEventbus` (+ `RSubscriber`, `TEventhandler`, `TEventEnumerator`), script side `TEventbusScriptSideHelper` |
+| `native/src/entity/t_blackboard.*` | `TBlackboard`, script side `TBlackboardScriptInvoker` |
+| `native/src/entity/t_remote_subscription.*` | `TRemoteSubscription` |
+| `native/src/entity/t_entity_stream.*` | the stream entities are serialized into (stand-in for the network's) |
+| `native/src/engine/t_thread_context.*` | the threadvars (`CurrentEvent`, `GameTimeManager`, ...) |
+| `native/src/entity/r_param.*`, `d_set.*` | `RParam` accessors (`Engine/Engine.Helferlein.Windows.pas`), Delphi sets |
+| `native/src/entity/base_conflict_constants.h` | the `BaseConflict.Constants.pas` functions the core uses (`EventIdentifierToNetworkSend`, ...) |
+| `src/runtime/entity/t_gd_entity_component.gd` | GDScript layer: what GDScript components override (constructors, `Destroy`, `_DeclareEvents`, base handlers) |
+| `src/runtime/entity/t_object.gd` | `TObject`: `Create`, virtual `Destroy`, `Free`, `ClassName` (GDScript classes that are no components) |
 
 ## How the original works (the parts that matter for porting components)
 
@@ -60,7 +63,8 @@ Tests: `tests/test_entity_core.gd` (every expectation is derived from the Pascal
   ```
   A later entry for the same event and type replaces an earlier one (derived class wins). Parameter count comes
   from the method. Trigger/write handlers return `bool`; read handlers return the value.
-- **`var` parameters**: assign with `SetVarParam(index, value)` (writes into `TEventbus.CurrentParameters`).
+- **`var` parameters**: assign with `SetVarParam(index, value)` (writes into the thread's current parameter array,
+  `TEventbus.GetCurrentParameters()`; the bus hands every later handler the array as it is then).
 - **RParam** is a plain Variant, `null` = empty. Read with `RParam.AsInteger/AsSingle/AsBoolean/AsString/
   AsVector2/AsSet/...`. Like the release build of the original these are memory casts: `AsSingle` on an integer
   reinterprets the bits. Script floats become 32-bit singles when stored (`RParam.ToSingle`).
@@ -79,13 +83,18 @@ Tests: `tests/test_entity_core.gd` (every expectation is derived from the Pascal
 - **Two sides in one process**: the original ran client and server as separate programs. Here each `TEventbus`
   has `ApplicationType` (`nsServer`/`nsClient`, replaces `APPLICATIONTYPE`) and `Game` (replaces the `Game`
   global); an entity takes both from its global bus (`TEntity.IsServer()` for `{$IFDEF SERVER}` code paths).
-- **Bus speed-ups** (same behaviour, see `t_eventbus.gd`): each `RSubscriber` carries its handler as a Callable
-  and calls it (the original's `TEntityComponent.OnRead` / `OnTrigger` lookup is gone); an event called to one
-  group walks only the subscribers of that group (`TEventhandler.MatchingIndices`, dropped on any subscribe /
-  unsubscribe and on any component group change via `TEventbus.GroupsVersion`; after a change mid-event the walk
-  goes on as the original's); the event stack lives in `Read` / `Trigger` locals. Change a component's group only
-  through the `ComponentGroup` setter, never by editing `FComponentGroup` in place. `TEventbus.Prof = {}` times
-  every handler (`tests/profile_sandbox.gd`, `tests/bench_eventbus.gd`).
+- **GDScript components** extend `TGDEntityComponent` (never `TEntityComponent` directly): GDScript cannot override a
+  method a C++ class binds, so the C++ `TEntityComponent` binds none of the overridable ones and calls them through
+  the script (`_DeclareEvents`, `ClassName`); the layer's `CreateGrouped` / `Destroy` call the C++ bodies
+  `_CreateGrouped` / `_Destroy`. The threadvars are static Get/Set methods now:
+  `TEventbus.GetCurrentEvent_CalledToGroup()`, `TEventbus.SetProf({})`, `TEntity.GetLastScriptError()`, ...
+- **The bus in C++** (same behaviour): each `RSubscriber` carries its handler name and parameter count and calls the
+  script method directly (the original's `TEntityComponent.OnRead` / `OnTrigger` lookup is gone); a component's
+  groups are a 256-bit mask, so the walk tests each subscriber in a few instructions; the event stack lives in
+  `Read` / `Trigger` locals. A subscriber removed during an event is kept until the event's walk ends (a handler may
+  free its own component). Change a component's group only through the `ComponentGroup` setter, never by editing
+  `FComponentGroup` in place (the mask would not follow). `TEventbus.SetProf({})` times every handler
+  (`tests/profile_sandbox.gd`, `tests/bench_eventbus.gd`); `SubscriberCount(event, type)` for benchmarks.
 
 ## Script runner (`TEntity`, tests in `tests/test_script_runner.gd`)
 
@@ -98,7 +107,8 @@ Tests: `tests/test_entity_core.gd` (every expectation is derived from the Pascal
   `script_index.gd` for the side (`IsServer()`, or the global bus's `ApplicationType` for the static creators),
   and instantiates the script (= `RunMain`). `GlobalEventbus` / `Game` globals are set from the global bus.
 - Where the original raised (missing file, `ORIGINAL_COMPILE_ERROR`, unknown routine, parameter count mismatch):
-  `push_error`, `TEntity.LastScriptError`, creators return `null`. `QuietScriptErrors` silences it for tests.
+  `push_error`, `TEntity.GetLastScriptError()`, creators return `null`. `SetQuietScriptErrors(true)` silences it for
+  tests.
 - `Game`: scripts that declare `var Game` get the bus's `Game` (`_SetScriptGlobals`); the others call the exposed
   function `Game()` (`L.Game()`), a threadvar in the original. Here `ExecuteFunction(..., GlobalEventbus)` keeps a
   stack of the running scripts' buses and `L.Game()` returns `TEntity.ScriptGame()` (the innermost bus's `Game`)

@@ -1,5 +1,5 @@
 class_name TStatisticsUnitComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TStatisticsUnitComponent (GameServer/BaseConflict.EntityComponents.Server.Statistics.pas:35,
 ## implementation :152), server only. Placed in every unit, counts its statistics in Game.Statistics (all handlers
 ## epLast, the reads pass Previous on unchanged):

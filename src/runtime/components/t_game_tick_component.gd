@@ -1,5 +1,5 @@
 class_name TGameTickComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TGameTickComponent (BaseConflict.EntityComponents.Shared.pas:356, implementation :1986), on the game
 ## entity: the game's tick clock. eiGameCommencing starts the warm-up (GAME_WARMING_DURATION); on the server each
 ## eiIdle fires eiGameTick when the timer has run out, and every eiGameTick restarts it with GAME_TICK_DURATION and

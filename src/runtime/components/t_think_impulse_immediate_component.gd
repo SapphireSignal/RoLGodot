@@ -1,5 +1,5 @@
 class_name TThinkImpulseImmediateComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TThinkImpulseImmediateComponent (GameServer/BaseConflict.EntityComponents.Server.Brains.pas:74,
 ## implementation :1033), server only. Thinks in its group every frame (global eiIdle), unless the unit is exiled.
 

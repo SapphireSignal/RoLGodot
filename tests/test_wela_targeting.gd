@@ -31,7 +31,7 @@ class FakeGame:
 
 ## Records eiWelaYoureMyTarget: the IDs of the entities that targeted its owner.
 class TargetProbe:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var TargetedBy: Array = []
 
 	func _DeclareEvents(e: Array) -> void:
@@ -45,7 +45,7 @@ class TargetProbe:
 
 ## Answers eiEnumerateNexus like the nexus entities do.
 class NexusMarker:
-	extends TEntityComponent
+	extends TGDEntityComponent
 
 	func _DeclareEvents(e: Array) -> void:
 		super(e)
@@ -88,7 +88,7 @@ func after_each() -> void:
 	_game_entity = null
 	_manager = null
 	_owner = null
-	TEntity.LastScriptError = ""
+	TEntity.SetLastScriptError("")
 	super()
 
 
@@ -362,7 +362,7 @@ func test_real_golems() -> void:
 			x.Blackboard.SetValue(C.eiTeamID, [], team)
 			x.Position = pos
 		var g := TEntity.CreateFromScript("Units\\Colorless\\SmallMeleeGolem", _bus, init)
-		check(g != null, "created: " + TEntity.LastScriptError)
+		check(g != null, "created: " + TEntity.GetLastScriptError())
 		if g == null:
 			return
 		g.Deploy()

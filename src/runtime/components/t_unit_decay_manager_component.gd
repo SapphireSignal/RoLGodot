@@ -1,5 +1,5 @@
 class_name TUnitDecayManagerComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TUnitDecayManagerComponent (BaseConflict.EntityComponents.Client.pas:595, implementation :3070), on the
 ## client game's entity (TClientGame.DecayManager): the procedural death effect of units. A dying unit's mesh
 ## component (TMeshComponent.OnDie, units and buildings with udHasDeathEffect) hands its mesh over; the mesh keeps

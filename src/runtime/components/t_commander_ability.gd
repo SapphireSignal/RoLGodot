@@ -1,5 +1,5 @@
 class_name TCommanderAbility
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TCommanderAbility (GameServer/BaseConflict.EntityComponents.Server.pas:473, implementation :4786-4861),
 ## server only. One playable card of a commander (in the card's group): it answers eiEnumerateCommanderAbilities
 ## (epLast) by adding itself to the list, and is what the bot plays. Use / CanUse go to the card's group, or with

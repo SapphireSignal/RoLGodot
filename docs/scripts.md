@@ -94,7 +94,7 @@ ancestors; root classes get `TObject` (`Create`, `Free`, `ClassName`). Two class
 | `TFoo.Create(E)` / `CreateGrouped` (constructor) | `TFoo.new().Create(E)`: the runtime's constructors are instance methods returning `self` |
 | `.FireAtGround` (parameterless method) | `.FireAtGround()`; the symbol table decides method vs property |
 | names in any case | the declared spelling (`eiAttentionRange` → `C.eiAttentionrange`, as in the Delphi enum) |
-| enum values, exposed constants | `C.<name>` (`src/runtime/dws/dws_const.gd`, generated) |
+| enum values, exposed constants | `C.<name>` (`src/runtime/dws/dws_const.gd`, generated; for C++ `native/src/dws/dws_const.h`, `C::<name>`) |
 | Math.dws, built-ins | `L.<name>` (`src/runtime/dws/dws_lib.gd`, hand-written): `L.i/ii/f/ff`, `L.Div`, `L.Round` (half to even), `L.Random`, `L.Game()` ... |
 | `RVector3.Create(x, y, z)`, `RVector2`, `RIntVector2` | `Vector3(x, y, z)` etc.; `.X` on them → `.x` |
 | `/` | float division (`float(a) / b` unless an operand is a float) |
@@ -121,7 +121,8 @@ declares its class's Delphi constructors with every parameter defaulted and at l
 inherited method, since GDScript overrides may only add defaulted parameters; the body runs the inherited
 constructor, see `docs/entity-core.md`; the public instance methods the scripts call are no-ops, a function
 returning its own class or an ancestor returns self so builder chains like `.FireAtGround` run through, and a
-real ancestor's method is never shadowed),
+real ancestor's method is never shadowed; a stub whose Delphi parent is `TEntityComponent` extends the GDScript layer
+`TGDEntityComponent`, see `docs/native.md`),
 `src/content/scripts/script_index.gd` (lower-case original path → file, per side) and `docs/script-api.md`
 (every member the scripts use, per declaring class: the phase 2 work list). `.uid` files of generated scripts
 are git-ignored.

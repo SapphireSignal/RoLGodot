@@ -23,7 +23,7 @@ func IsPossible(Target: RTarget) -> bool:
 	if TargetBuildZone == null:
 		return false
 	var Result := true
-	var NeededSize := RParam.AsIntVector2(Eventbus().Read(C.eiWelaNeededGridSize, [], TEventbus.CurrentEvent_CalledToGroup))
+	var NeededSize := RParam.AsIntVector2(Eventbus().Read(C.eiWelaNeededGridSize, [], TEventbus.GetCurrentEvent_CalledToGroup()))
 	for X in NeededSize.x:
 		for Y in NeededSize.y:
 			var targetPos := TargetBuildZone.GetCenterOfField(Target.BuildGridCoordinate + Vector2i(X, Y))

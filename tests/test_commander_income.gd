@@ -18,7 +18,7 @@ func after_each() -> void:
 		o.Free()
 	_free.clear()
 	TTimeManager.SetFakeTime(null)
-	TEntity.LastScriptError = ""
+	TEntity.SetLastScriptError("")
 
 
 func _bus(side: int = C.nsServer) -> TEventbus:
@@ -144,7 +144,7 @@ func test_commander_template() -> void:
 	var bus := _bus()
 	bus.Game = TemplateGame.new()
 	var e := TEntity.CreateFromScript("Commander\\CommanderTemplate", bus, func(x): x.Blackboard.SetValue(C.eiOwnerCommander, [], x.ID))
-	check(e != null, "created: " + TEntity.LastScriptError)
+	check(e != null, "created: " + TEntity.GetLastScriptError())
 	if e == null:
 		return
 	_free.push_front(e)

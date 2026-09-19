@@ -38,7 +38,7 @@ func GetPayingGroup(ResType: int) -> Array:
 
 
 func Fire(_Targets: Array) -> void:
-	var Cost: Array = RParam.AsArray(Eventbus().Read(C.eiResourceCost, [], TEventbus.CurrentEvent_CalledToGroup))
+	var Cost: Array = RParam.AsArray(Eventbus().Read(C.eiResourceCost, [], TEventbus.GetCurrentEvent_CalledToGroup()))
 	if Cost.is_empty():
 		push_error("TWelaEffectPayCostComponent: Found paying component, but no cost! Added TResourceManagerComponent to calling entity?")
 		return

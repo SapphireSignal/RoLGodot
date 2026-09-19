@@ -1,5 +1,5 @@
 class_name TThinkImpulseTimerComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TThinkImpulseTimerComponent (GameServer/BaseConflict.EntityComponents.Server.Brains.pas:111,
 ## implementation :1462), server only. Used by all units: thinks in its group at the first global eiIdle after
 ## every THINK_TIME_INTERVAL (250 ms; the timer starts at creation), and at the next eiIdle after

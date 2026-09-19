@@ -12,7 +12,7 @@ var _probes := {}  # entity ID -> HitProbe
 
 ## On a unit: records the damage it takes (after armor and health handlers) with the game time.
 class HitProbe:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Log: Array = []
 	var Team := 0
 	var ScriptFile := ""
@@ -39,11 +39,11 @@ class HitProbe:
 		return Previous
 
 	func OnPreFire(_Targets) -> bool:
-		Log.append(["PreFire", TTimeManager.GetFakeTime(), TEventbus.CurrentEvent_CalledToGroup.duplicate()])
+		Log.append(["PreFire", TTimeManager.GetFakeTime(), TEventbus.GetCurrentEvent_CalledToGroup().duplicate()])
 		return true
 
 	func OnFire(_Targets) -> bool:
-		Log.append(["Fire", TTimeManager.GetFakeTime(), TEventbus.CurrentEvent_CalledToGroup.duplicate()])
+		Log.append(["Fire", TTimeManager.GetFakeTime(), TEventbus.GetCurrentEvent_CalledToGroup().duplicate()])
 		return true
 
 	func OnDie(_KillerID, _KillerCommanderID) -> bool:
@@ -117,7 +117,7 @@ func test_footman_squads_trade_hits() -> void:
 	check(_play(blue, "Units\\White\\FootmanDrop", Vector2(-20, -23)), "blue can drop")
 	check(_play(red, "Units\\White\\FootmanDrop", Vector2(20, -23)), "red can drop")
 	_run_for(30000.0)
-	check_eq(TEntity.LastScriptError, "", "no script error")
+	check_eq(TEntity.GetLastScriptError(), "", "no script error")
 
 	var teams: Array = _probes.values().map(func(p: HitProbe) -> Array: return [p.Team, p.ScriptFile])
 	teams.sort()
@@ -171,7 +171,7 @@ func test_spawner_spawns_its_squad_which_walks_the_lane() -> void:
 	for i in squad.size():
 		check(squad[i].Position.x > start_x[i] + 5.0, "footman %d walks towards the enemy" % i)
 		check_eq(squad[i].TeamID(), 1, "blue footman")
-	check_eq(TEntity.LastScriptError, "", "no script error")
+	check_eq(TEntity.GetLastScriptError(), "", "no script error")
 
 
 ## Footmen dropped in front of the red nexus attack it: 13 per hit (fortified armor takes non-siege damage as is).
@@ -190,4 +190,4 @@ func test_footmen_damage_the_nexus() -> void:
 		health -= 13.0
 		check_eq(hit[4], health, "nexus health goes down by 13")
 	check(_entries(probe.Log, "Fire", [1]).size() >= 1, "the nexus shoots back")
-	check_eq(TEntity.LastScriptError, "", "no script error")
+	check_eq(TEntity.GetLastScriptError(), "", "no script error")

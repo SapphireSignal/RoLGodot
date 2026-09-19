@@ -1,5 +1,5 @@
 class_name TThinkImpulseTimerCooldownComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TThinkImpulseTimerCooldownComponent (GameServer/BaseConflict.EntityComponents.Server.Brains.pas:130,
 ## implementation :1781), server only. Thinks in its group at the first global eiIdle after every eiCooldown of its
 ## group (read once in the constructor; the timer starts then, unless TimerIsReady). Once: only the first time.

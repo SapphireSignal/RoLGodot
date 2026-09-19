@@ -22,7 +22,6 @@ func _init() -> void:
 	# release the global caches, so Godot's exit report shows only real leaks
 	TCardInfoManager._Instance = null
 	TScenarioInfoManager._Instance = null
-	TEntityComponent.FComponentSubscriptionPatterns = {}
 	quit(0 if compile_errors == 0 and counts[1] == 0 else 1)
 
 

@@ -66,7 +66,7 @@ class FakeGame:
 
 ## Records eiRemoveComponent on the global bus.
 class RemoveProbe:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Removed: Array = []
 
 	func _DeclareEvents(e: Array) -> void:
@@ -90,7 +90,7 @@ func after_each() -> void:
 		_bus.Game = null
 		_bus.Free()
 		_bus = null
-	TEntity.LastScriptError = ""
+	TEntity.SetLastScriptError("")
 	super()
 
 
@@ -288,7 +288,7 @@ func test_lanetower_enemies_nearby() -> void:
 	_game(C.nsClient)
 	var tower := TEntity.CreateFromScript("Units\\Neutral\\Lanetower", _bus)
 	_free.push_front(tower)
-	check_eq(TEntity.LastScriptError, "", "script ran")
+	check_eq(TEntity.GetLastScriptError(), "", "script ran")
 	tower.Eventbus.Write(C.eiTeamID, [1])
 	var ready := func() -> bool: return RParam.AsBoolean(tower.Eventbus.Read(C.eiIsReady, [], [12]))
 	check(not ready.call(), "nobody around")

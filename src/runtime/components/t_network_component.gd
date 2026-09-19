@@ -1,5 +1,5 @@
 class_name TNetworkComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TNetworkComponent (BaseConflict.EntityComponents.Shared.pas:257, implementation :1191): handles all
 ## network tasks of a side. eiNetworkSend (fired by TEventbus.Trigger for the events EventIdentifierToNetworkSend
 ## gives to this side) becomes a NET_EVENT packet: entity ID, event, group, component ID, write flag and the raw

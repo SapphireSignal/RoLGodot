@@ -11,7 +11,7 @@ var _manager: TEntityManagerComponent
 
 ## Records its destruction.
 class Tracked:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Freed := false
 
 	func Destroy() -> void:
@@ -21,7 +21,7 @@ class Tracked:
 
 ## Answers eiEnumerateNexus like the nexus entities do: adds its owner to the list.
 class NexusMarker:
-	extends TEntityComponent
+	extends TGDEntityComponent
 
 	func _DeclareEvents(e: Array) -> void:
 		super(e)

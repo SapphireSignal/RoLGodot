@@ -1,5 +1,5 @@
 class_name TTokenMappingComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TTokenMappingComponent (GameServer/BaseConflict.EntityComponents.Server.pas:299, implementation :1476),
 ## server only, on the game entity: the player token -> commander IDs mapping, made by TServerGame.Initialize.
 ## eiTokenMapping [Token] answers a copy of the token's commander IDs, or null for an unknown token.

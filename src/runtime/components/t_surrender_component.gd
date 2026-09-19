@@ -1,5 +1,5 @@
 class_name TSurrenderComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TSurrenderComponent (GameServer/BaseConflict.EntityComponents.Server.pas:316, implementation :2472),
 ## server only, on the game entity: eiSurrender [TeamID] makes the team lose (in the tutorial always the PvE team):
 ## the game notes the surrender, then the team's nexus is killed, or eiLose is fired if it has none.

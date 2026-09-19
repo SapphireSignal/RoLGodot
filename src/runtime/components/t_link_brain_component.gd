@@ -1,5 +1,5 @@
 class_name TLinkBrainComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TLinkBrainComponent (GameServer/BaseConflict.EntityComponents.Server.pas:150, implementation :1500),
 ## server only. The wela "brain" of a link: on each global eiIdle (epMiddle) it fires its warheads whenever the
 ## link's eiCooldown expires. The first idle (timer interval still <= 1 ms) fetches the cooldown and starts the timer;

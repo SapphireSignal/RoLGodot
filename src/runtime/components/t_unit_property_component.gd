@@ -1,5 +1,5 @@
 class_name TUnitPropertyComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TUnitPropertyComponent (BaseConflict.EntityComponents.Shared.pas:36, implementation :2299).
 ## Adds a unit property to an entity as long this component is attached to this entity.
 

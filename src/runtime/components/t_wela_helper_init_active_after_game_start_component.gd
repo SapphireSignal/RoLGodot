@@ -1,5 +1,5 @@
 class_name TWelaHelperInitActiveAfterGameStartComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TWelaHelperInitActiveAfterGameStartComponent (GameServer/BaseConflict.EntityComponents.Server.Welas.pas:794,
 ## implementation :2742), server only. Created before the game runs (and its group active or unset), it writes
 ## eiWelaActive := False to its group, then at the first global eiGameTick := True (unless

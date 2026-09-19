@@ -20,7 +20,7 @@ var _game_entity: TEntity
 
 ## On the game entity: records the global game flow events.
 class FlowProbe:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Log: Array = []
 
 	func _DeclareEvents(e: Array) -> void:
@@ -190,7 +190,7 @@ func _units(game: TServerGame, property: int) -> Array:
 
 func test_sandbox_game_sets_up_the_scenario_and_the_commanders() -> void:
 	var game := _sandbox()
-	check_eq(TEntity.LastScriptError, "", "no script error")
+	check_eq(TEntity.GetLastScriptError(), "", "no script error")
 	check(game.IsSandbox() and game.IsPvP() and game.IsOneLane() and not game.HasShowdown(), "a one lane sandbox")
 	check_eq(game.League(), 1, "test server league")
 	check_eq(game.InGameStatus, BC.gsLoading, "loading")
@@ -266,7 +266,7 @@ func test_sandbox_game_starts_when_the_players_play() -> void:
 	check_eq(TTimeManager.GetFakeTime(), first_tick + 3 * 1024.0, "4th tick frame")
 	check_eq(_bus_of(game).Read(C.eiGameTickCounter, []), 4, "a tick per 1024 ms")
 	check_eq(_balance(player, C.reGold), 100340.0, "10 gold per tick")
-	check_eq(TEntity.LastScriptError, "", "no script error")
+	check_eq(TEntity.GetLastScriptError(), "", "no script error")
 
 
 func test_team_lost_finishes_the_game() -> void:

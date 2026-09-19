@@ -1,5 +1,5 @@
 class_name TWelaEffectOnlyByChanceComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TWelaEffectOnlyByChanceComponent (GameServer/BaseConflict.EntityComponents.Server.Welas.pas:280,
 ## implementation :2803), server only. Stops eiFire (epMiddle, before the effects at epLast) unless a random roll
 ## falls within eiWelaChance of its group. An empty chance lets every fire through (with an error).

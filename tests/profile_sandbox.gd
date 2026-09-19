@@ -3,7 +3,7 @@ extends SceneTree
 ##   Godot_console.exe --headless --path . --log-file <abs> --script res://tests/profile_sandbox.gd
 ## Both players drop a FootmanDrop and place a FootmanSpawner, then the game runs PROFILE_SECONDS of game time
 ## (env, default 60) at 32 ms frames. Prints the setup time, the wall time per game second and the slowest frames.
-## PROFILE_HANDLERS=1 also times every event handler (TEventbus.Prof; slows the run down) and lists the top 40.
+## PROFILE_HANDLERS=1 also times every event handler (TEventbus.GetProf(); slows the run down) and lists the top 40.
 
 const C = preload("res://src/runtime/dws/dws_const.gd")
 const BC = preload("res://src/runtime/base_conflict_constants.gd")
@@ -28,12 +28,12 @@ func _init() -> void:
 		_play(commander, "Units\\White\\FootmanDrop", RCommanderAbilityTarget.Create(Vector2(-20 if i == 0 else 20, -23)))
 		_play(commander, "Units\\White\\FootmanSpawner", RCommanderAbilityTarget.CreateBuildTarget(i, Vector2i(1, 1)))
 	print("commanders: %d, global eiIdle subscribers: %d" % [game.Commanders.size(),
-		game.GlobalEventbus.FEventhandler[C.eiIdle * 3 + C.etTrigger].Subscribers.size()])
+		game.GlobalEventbus.SubscriberCount(C.eiIdle, C.etTrigger)])
 	var frames: Array = []
 	var units_max := 0
 	var prof_on := OS.get_environment("PROFILE_HANDLERS") != ""
 	if prof_on:
-		TEventbus.Prof = {}
+		TEventbus.SetProf({})
 	var until: float = TTimeManager.GetFakeTime() + seconds * 1000.0
 	while TTimeManager.GetFakeTime() + FRAME <= until and not thread.Terminated:
 		var f0 := Time.get_ticks_usec()
@@ -50,12 +50,12 @@ func _init() -> void:
 		total_ms / (frames.size() * FRAME), units_max])
 	frames.sort_custom(func(a, b): return a[0] > b[0])
 	print("slowest frames (us @ game ms): %s" % str(frames.slice(0, 8)))
-	print("script error: '%s'" % TEntity.LastScriptError)
+	print("script error: '%s'" % TEntity.GetLastScriptError())
 	if prof_on:
 		var rows: Array = []
-		for k in TEventbus.Prof:
-			rows.append([k] + TEventbus.Prof[k])
-		TEventbus.Prof = null
+		for k in TEventbus.GetProf():
+			rows.append([k] + TEventbus.GetProf()[k])
+		TEventbus.SetProf(null)
 		rows.sort_custom(func(a, b): return a[2] > b[2])
 		print("handlers by self time (calls, self ms, incl ms):")
 		for r in rows.slice(0, 40):
@@ -64,7 +64,6 @@ func _init() -> void:
 	TTimeManager.SetFakeTime(null)
 	TCardInfoManager._Instance = null
 	TScenarioInfoManager._Instance = null
-	TEntityComponent.FComponentSubscriptionPatterns = {}
 	quit(0)
 
 

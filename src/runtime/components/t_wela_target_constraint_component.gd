@@ -1,5 +1,5 @@
 class_name TWelaTargetConstraintComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TWelaTargetConstraintComponent (BaseConflict.EntityComponents.Shared.Wela.pas:222, implementation
 ## :1363). Base of the checks on a wela's targets: eiWelaTargetPossible (or, with ConstraintsWarhead,
 ## eiWarheadTargetPossible) read [Targets: ATarget] in its group returns an RTargetValidity that each constraint
@@ -34,7 +34,7 @@ func Check(Targets: Array, Validity: RTargetValidity) -> void:
 
 ## Return the result of the constraint.
 func OnTargetPossible(Targets, PrevValue):
-	var Event := TEventbus.CurrentEvent_EventIdentifier
+	var Event := TEventbus.GetCurrentEvent_EventIdentifier()
 	if ((not FForWarhead and Event == C.eiWelaTargetPossible) or (FForWarhead and Event == C.eiWarheadTargetPossible)) \
 			and IsLocalCall():
 		var TargetList := ATarget.FromRParam(Targets)

@@ -43,19 +43,19 @@ func _client_frame() -> void:
 func test_thread_context() -> String:
 	var main := TThreadContext.Current()
 	var other := TThreadContext.new()
-	TEventbus.CurrentEvent_EventIdentifier = 7
+	TEventbus.SetCurrentEvent_EventIdentifier(7)
 	TThreadContext.Current().GameTimeManager.ZDiff = 16.0
 	var outer := TThreadContext.Enter(other)
 	check(TThreadContext.Current() == other, "entered")
-	check_eq(TEventbus.CurrentEvent_EventIdentifier, 0, "the other context's event")
+	check_eq(TEventbus.GetCurrentEvent_EventIdentifier(), 0, "the other context's event")
 	check_eq(TThreadContext.Current().GameTimeManager.ZDiff, 0.0, "the other context's clock")
 	TThreadContext.Current().GameTimeManager.ZDiff = 32.0
 	TThreadContext.Leave(outer)
 	check(TThreadContext.Current() == main, "left")
-	check_eq(TEventbus.CurrentEvent_EventIdentifier, 7, "main's event kept")
+	check_eq(TEventbus.GetCurrentEvent_EventIdentifier(), 7, "main's event kept")
 	check_eq(TThreadContext.Current().GameTimeManager.ZDiff, 16.0, "main's clock kept")
 	check_eq(other.GameTimeManager.ZDiff, 32.0, "the other's clock written there")
-	TEventbus.CurrentEvent_EventIdentifier = 0
+	TEventbus.SetCurrentEvent_EventIdentifier(0)
 	TThreadContext.Current().GameTimeManager.ZDiff = 0.0
 	return take_failure()
 
@@ -89,7 +89,7 @@ func test_server_on_its_own_thread() -> String:
 	# (HasStarted is the end of the warm-up countdown, 10 s later; Start ran when the state became running)
 	check_eq(_thread.State, TGameThread.gsRunning, "the server started the game once the client was ready")
 	check(_client.EntityManager.DeployedEntityCount >= entities_before, "the client still has the world")
-	check(not TThreadContext._by_thread.has(_thread.ThreadID), "the thread's context is unregistered")
-	check_eq(TEntity.LastScriptError, "", "no script errors on the main thread")
+	check(not TThreadContext.IsThreadRegistered(_thread.ThreadID), "the thread's context is unregistered")
+	check_eq(TEntity.GetLastScriptError(), "", "no script errors on the main thread")
 	check_eq(_thread.FContext.LastScriptError, "", "no script errors on the server thread")
 	return take_failure()

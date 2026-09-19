@@ -1,5 +1,5 @@
 class_name TBuildGridManagerComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TBuildGridManagerComponent (BaseConflict.EntityComponents.Client.pas:504, implementation :2950), on the
 ## client game's entity (TClientGame.BuildgridManager, made after Initialize: the scenario scripts set the build zones
 ## there): the build grid behind each nexus. Per free (not banned) field of every build zone a tile mesh (one of

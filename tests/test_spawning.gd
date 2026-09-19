@@ -58,7 +58,7 @@ class FakeGame:
 
 ## Global traffic, on the game entity: [name, parameters...] in call order.
 class GlobalLog:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Log: Array = []
 
 	func _DeclareEvents(e: Array) -> void:
@@ -99,7 +99,7 @@ class GlobalLog:
 
 ## Entity traffic (ALLGROUP): [name, called-to group, parameters...] in call order.
 class EntityLog:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Log: Array = []
 
 	func _DeclareEvents(e: Array) -> void:
@@ -120,7 +120,7 @@ class EntityLog:
 		return Result
 
 	func _group() -> Array:
-		return TEventbus.CurrentEvent_CalledToGroup.duplicate()
+		return TEventbus.GetCurrentEvent_CalledToGroup().duplicate()
 
 	func OnAfterCreate() -> bool:
 		Log.append(["AfterCreate", _group()])
@@ -164,7 +164,7 @@ class EntityLog:
 
 ## On the kill of From, queues the delayed kill of Next.
 class KillChain:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var From := -1
 	var Next := -1
 
@@ -180,7 +180,7 @@ class KillChain:
 
 ## Records its destruction.
 class Tracked:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Freed := false
 
 	func Destroy() -> void:
@@ -190,7 +190,7 @@ class Tracked:
 
 ## Answers eiWillDealDamage with a fixed amount.
 class WillDealDamage:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Amount = null
 
 	func _DeclareEvents(e: Array) -> void:
@@ -203,7 +203,7 @@ class WillDealDamage:
 
 ## A targeting stand-in: eiWelaUpdateTargets fills the list with Candidates.
 class FakeTargeting:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Candidates: Array = []  # of RTarget
 
 	func _DeclareEvents(e: Array) -> void:
@@ -248,7 +248,7 @@ func after_each() -> void:
 	_game_entity = null
 	_manager = null
 	_log = null
-	TEntity.LastScriptError = ""
+	TEntity.SetLastScriptError("")
 	super()
 
 
@@ -361,7 +361,7 @@ func test_spawn_unit() -> void:
 	var e = _manager.SpawnUnit(Vector2(3, 4), Vector2(1, 0), "Units\\Colorless\\SmallMeleeGolem",
 		TServerEntityManagerComponent.INHERIT_FROM_GAME, TServerEntityManagerComponent.INHERIT_FROM_GAME, 2, 7, creator,
 		callback, pre, post)
-	check(e != null, "spawned: " + TEntity.LastScriptError)
+	check(e != null, "spawned: " + TEntity.GetLastScriptError())
 	if e == null:
 		return
 	check_eq(e.ID, 3, "the next unique ID (game 1, creator 2)")
@@ -392,7 +392,7 @@ func test_spawn_unit() -> void:
 func test_spawn_unit_script_form() -> void:
 	_setup()
 	var e = _manager.SpawnUnit(-5.0, 2.0, "Units\\Colorless\\SmallMeleeGolem", 1)
-	check(e != null, "spawned: " + TEntity.LastScriptError)
+	check(e != null, "spawned: " + TEntity.GetLastScriptError())
 	if e == null:
 		return
 	check_eq([e.Position, e.Front, e.TeamID()], [Vector2(-5, 2), Vector2(0, 1), 1], "position, front, team")
@@ -401,7 +401,7 @@ func test_spawn_unit_script_form() -> void:
 	check_eq(_bus.Game.Statistics.GetCount(-1, "unit_spawns_SmallMeleeGolem"), 1, "counted for commander -1")
 	_bus.Game.Map.Clamped.clear()
 	var s = _manager.SpawnUnit(Vector2(1, 1), Vector2(0, 1), "Units\\Black\\VoidSkeletonSpawner", 5, 2, 1)
-	check(s != null, "spawner spawned: " + TEntity.LastScriptError)
+	check(s != null, "spawner spawned: " + TEntity.GetLastScriptError())
 	check_eq(_bus.Game.Map.Clamped, [], "a spawner is not clamped")
 	check_eq([s.CardLeague(), s.CardLevel()], [5, 2], "explicit league and level")
 
@@ -440,7 +440,7 @@ func test_delayed_kill() -> void:
 func test_spawn_variants() -> void:
 	_setup()
 	var altar = _manager.SpawnUnit(0.0, 0.0, "Units\\Black\\VoidAltar", 1)
-	check(altar != null, "altar: " + TEntity.LastScriptError)
+	check(altar != null, "altar: " + TEntity.GetLastScriptError())
 	if altar == null:
 		return
 	check_eq(altar.Blackboard.GetValue(C.eiCooldown, [C.GROUP_BUILDING_LIFETIME]), 90000, "a limited lifetime")
@@ -468,7 +468,7 @@ func test_spawn_spawner() -> void:
 	_setup()
 	var zone := _build_zone()
 	var s = _manager.SpawnSpawner(1, Vector2i(0, 0), "Units\\Black\\VoidSkeletonSpawner", 1, 7, null)
-	check(s != null, "spawned: " + TEntity.LastScriptError)
+	check(s != null, "spawned: " + TEntity.GetLastScriptError())
 	if s == null:
 		return
 	check_eq([s.Position, s.Front], [Vector2(3, -3), Vector2(0, 1)], "field centre, zone front")
@@ -722,7 +722,7 @@ func test_real_spawner_spawns_its_squad() -> void:
 	_setup()
 	var zone := _build_zone()
 	var s = _manager.SpawnSpawner(1, Vector2i(0, 0), "Units\\Black\\VoidSkeletonSpawner", 1, 7, null)
-	check(s != null, "spawner: " + TEntity.LastScriptError)
+	check(s != null, "spawner: " + TEntity.GetLastScriptError())
 	if s == null:
 		return
 	check_eq(zone.GetFieldID(Vector2i(0, 0)), s.ID, "its field is blocked")
@@ -756,7 +756,7 @@ func test_real_golem_soul_reaches_gatherer() -> void:
 		x.Blackboard.SetValue(C.eiTeamID, [], 2)
 		x.Position = Vector2(0, 10)
 	var golem := TEntity.CreateFromScript("Units\\Colorless\\SmallMeleeGolem", _bus, init)
-	check(golem != null, "golem: " + TEntity.LastScriptError)
+	check(golem != null, "golem: " + TEntity.GetLastScriptError())
 	if golem == null:
 		return
 	golem.Deploy()

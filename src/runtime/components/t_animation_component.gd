@@ -1,5 +1,5 @@
 class_name TAnimationComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TAnimationComponent (BaseConflict.EntityComponents.Client.Visuals.pas:1022, implementation :1525).
 ## Turns what the entity does (created, attacks, links, stands, walks) into eiPlayAnimation for its mesh group.
 
@@ -45,7 +45,7 @@ func OnAfterCreate() -> bool:
 func PlayAttack(Target: Array) -> void:
 	if FIsLink:
 		return
-	var called: Array = TEventbus.CurrentEvent_CalledToGroup
+	var called: Array = TEventbus.GetCurrentEvent_CalledToGroup()
 	if DSet.Intersects(called, FAbilityGroup):
 		_play(C.ANIMATION_ABILITY_1, _fire_mode(), 0)
 		return
@@ -71,13 +71,13 @@ func PlayAttack(Target: Array) -> void:
 
 
 func OnPreFire(Targets) -> bool:
-	if RParam.AsInteger(Eventbus().Read(C.eiWelaActionpoint, [], TEventbus.CurrentEvent_CalledToGroup)) > 0:
+	if RParam.AsInteger(Eventbus().Read(C.eiWelaActionpoint, [], TEventbus.GetCurrentEvent_CalledToGroup())) > 0:
 		PlayAttack(ATarget.FromRParam(Targets))
 	return true
 
 
 func OnFire(Targets) -> bool:
-	if RParam.AsInteger(Eventbus().Read(C.eiWelaActionpoint, [], TEventbus.CurrentEvent_CalledToGroup)) <= 0:
+	if RParam.AsInteger(Eventbus().Read(C.eiWelaActionpoint, [], TEventbus.GetCurrentEvent_CalledToGroup())) <= 0:
 		PlayAttack(ATarget.FromRParam(Targets))
 	return true
 

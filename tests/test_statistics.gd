@@ -56,7 +56,7 @@ class FakeGame:
 
 ## Global traffic: [name, parameters...] in call order. Wave spawns are seen after the filter (epLast).
 class GlobalLog:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Log: Array = []
 
 	func _DeclareEvents(e: Array) -> void:
@@ -82,7 +82,7 @@ class GlobalLog:
 
 ## Local traffic of an entity.
 class LocalProbe:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Log: Array = []
 
 	func _DeclareEvents(e: Array) -> void:
@@ -101,7 +101,7 @@ class LocalProbe:
 
 ## Answers the global eiIncome read with a fixed income per commander ID.
 class IncomeSource:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Incomes := {}
 
 	func _DeclareEvents(e: Array) -> void:

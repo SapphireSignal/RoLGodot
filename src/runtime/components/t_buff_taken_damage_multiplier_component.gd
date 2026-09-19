@@ -1,5 +1,5 @@
 class_name TBuffTakenDamageMultiplierComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TBuffTakenDamageMultiplierComponent (GameServer/BaseConflict.EntityComponents.Server.pas:61, implementation
 ## :2065), server only. Scales the damage the owner takes (eiTakeDamage read, epLow: after armor, before health) by
 ## eiWelaModifier of its group (< 1 reduces, > 1 boosts; Flat: subtracts it instead, at least 1 left) when the damage

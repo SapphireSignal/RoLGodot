@@ -1,5 +1,5 @@
 class_name TWelaHelperBeaconComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TWelaHelperBeaconComponent (GameServer/BaseConflict.EntityComponents.Server.Welas.pas:781,
 ## implementation :2928), server only. Marks its group for searches: eiWelaSearch read [SetUnitProperty] adds its
 ## component group to the result if the searched properties meet its TriggerAt properties.

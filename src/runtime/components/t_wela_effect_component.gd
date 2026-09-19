@@ -1,5 +1,5 @@
 class_name TWelaEffectComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TWelaEffectComponent (GameServer/BaseConflict.EntityComponents.Server.Welas.pas:268, implementation
 ## :1095), server only. Master class of a wela's effects: eiFire [ATarget] called to its group (a local call; a
 ## groupless fire reaches only groupless effects) runs Fire(Targets) at epLast.

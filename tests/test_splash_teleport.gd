@@ -46,7 +46,7 @@ class FakeGame:
 
 
 class GlobalLog:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Log: Array = []
 
 	func _DeclareEvents(e: Array) -> void:
@@ -60,7 +60,7 @@ class GlobalLog:
 
 ## Traffic of one entity (ALLGROUP): [name, parameters...].
 class EntityLog:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Log: Array = []
 
 	func _DeclareEvents(e: Array) -> void:
@@ -100,13 +100,13 @@ class EntityLog:
 		return true
 
 	func OnKillDone(ID) -> bool:
-		Log.append(["KillDone", ID, TEventbus.CurrentEvent_CalledToGroup.duplicate()])
+		Log.append(["KillDone", ID, TEventbus.GetCurrentEvent_CalledToGroup().duplicate()])
 		return true
 
 
 ## Answers eiEnumerateNexus like the nexus entities do.
 class NexusMarker:
-	extends TEntityComponent
+	extends TGDEntityComponent
 
 	func _DeclareEvents(e: Array) -> void:
 		super(e)
@@ -145,7 +145,7 @@ func after_each() -> void:
 	_game_entity = null
 	_manager = null
 	_log = null
-	TEntity.LastScriptError = ""
+	TEntity.SetLastScriptError("")
 	super()
 
 
@@ -328,7 +328,7 @@ func _real(script: String, team: int, pos: Vector2) -> TEntity:
 		x.Blackboard.SetValue(C.eiTeamID, [], team)
 		x.Position = pos
 	var e := TEntity.CreateFromScript(script, _bus, init)
-	check(e != null, script + ": " + TEntity.LastScriptError)
+	check(e != null, script + ": " + TEntity.GetLastScriptError())
 	if e != null:
 		e.Deploy()
 		e.Eventbus.Trigger(C.eiAfterCreate)

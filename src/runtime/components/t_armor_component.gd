@@ -1,5 +1,5 @@
 class_name TArmorComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TArmorComponent (BaseConflict.EntityComponents.Shared.pas:521, implementation :2041).
 ## Takes different armor into account while damaging (type and value).
 

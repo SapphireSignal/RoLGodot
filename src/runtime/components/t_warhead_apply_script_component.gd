@@ -1,5 +1,5 @@
 class_name TWarheadApplyScriptComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TWarheadApplyScriptComponent (BaseConflict.EntityComponents.Shared.Wela.pas:855, implementation :2317).
 ## Applies a script (routine 'Apply' or Methodname) to entities: by default to every entity target of eiFireWarhead
 ## called to its group; ApplyToProducedUnits: to the units of eiWelaUnitProduced instead; ApplyToSelfAtCreate: to

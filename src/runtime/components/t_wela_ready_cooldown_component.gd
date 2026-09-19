@@ -1,5 +1,5 @@
 class_name TWelaReadyCooldownComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TWelaReadyCooldownComponent (BaseConflict.EntityComponents.Shared.Wela.pas:767, implementation :1922).
 ## Ready after a cooldown (eiCooldown - eiWelaActionpoint of ReadyGroup, or a fixed Cooldown(ms)), restarted by
 ## eiFire in FireGroup (default: any). eiWelaActive false pauses it. The server writes the timer's start to
@@ -92,7 +92,7 @@ func IsReady() -> bool:
 
 
 func OnIsReady(Previous):
-	if not DSet.Intersects(TEventbus.CurrentEvent_CalledToGroup, FReadyGroup):
+	if not DSet.Intersects(TEventbus.GetCurrentEvent_CalledToGroup(), FReadyGroup):
 		return Previous
 	var Result: bool = RParam.IsEmpty(Previous) or RParam.AsBoolean(Previous)
 	return IsReady() and Result
@@ -110,7 +110,7 @@ func OnAfterCreate() -> bool:
 
 ## Restart cooldown.
 func OnFire(_Targets) -> bool:
-	if FFireGroup.is_empty() or DSet.Intersects(FFireGroup, TEventbus.CurrentEvent_CalledToGroup):
+	if FFireGroup.is_empty() or DSet.Intersects(FFireGroup, TEventbus.GetCurrentEvent_CalledToGroup()):
 		StartTimer()
 		if IsServerSide():
 			SaveTimer()

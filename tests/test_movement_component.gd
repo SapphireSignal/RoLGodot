@@ -14,7 +14,7 @@ var _mc: TMovementComponent  # the last _unit's
 
 ## Records the movement events: Log holds [event name, parameters...] in call order.
 class MoveProbe:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Log: Array = []
 
 	func _DeclareEvents(e: Array) -> void:
@@ -87,7 +87,7 @@ func after_each() -> void:
 		_map = null
 	TTimeManager.SetFakeTime(null)
 	TThreadContext.Current().GameTimeManager.ZDiff = 0.0
-	TEntity.LastScriptError = ""
+	TEntity.SetLastScriptError("")
 	super()
 
 
@@ -326,7 +326,7 @@ func test_client_optimizes_the_path() -> void:
 func test_footman_walks() -> void:
 	var bus := _bus()
 	var e := TEntity.CreateFromScript("Units\\White\\Footman", bus)
-	check(e != null, "created: " + TEntity.LastScriptError)
+	check(e != null, "created: " + TEntity.GetLastScriptError())
 	if e == null:
 		return
 	_free.push_front(e)

@@ -11,7 +11,7 @@ func _DeclareEvents(e: Array) -> void:
 
 func OnCooldown(Previous):
 	# modify cooldown if there is a cooldown value and the read doesn't come from our value group
-	if not RParam.IsEmpty(Previous) and not DSet.Intersects(TEventbus.CurrentEvent_CalledToGroup, FValueGroup):
+	if not RParam.IsEmpty(Previous) and not DSet.Intersects(TEventbus.GetCurrentEvent_CalledToGroup(), FValueGroup):
 		# the original asserts a value for eiWelaModifier in ValueGroup (debug builds only)
 		var Factor = Eventbus().Read(C.eiWelaModifier, [], FValueGroup)
 		return L.Round(RParam.AsInteger(Previous) * RParam.AsSingleDefault(Factor, 1.0))

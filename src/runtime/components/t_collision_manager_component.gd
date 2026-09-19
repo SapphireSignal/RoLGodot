@@ -1,5 +1,5 @@
 class_name TCollisionManagerComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TCollisionManagerComponent (BaseConflict.EntityComponents.Shared.pas:443, implementation :1659): the
 ## spatial index of the game (Game.CollisionManager, on the game entity). TCollisionComponent registers every
 ## unit as a circle in a loose quadtree over Game.Map.MapBoundaries (min node width 16); the global reads

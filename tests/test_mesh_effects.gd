@@ -109,7 +109,7 @@ func test_sandbox_crystals_and_tower_spawn() -> String:
 			nexi.append(copy)
 		elif copy.ScriptFile.contains("Lanetower"):
 			towers.append(copy)
-	check_eq(TEntity.LastScriptError, "", "no script error")
+	check_eq(TEntity.GetLastScriptError(), "", "no script error")
 	check(nexi.size() == 2 and towers.size() >= 2, "nexus and towers")
 	_client.GlobalEventbus.Trigger(C.eiIdle, [])
 	for nexus: TEntity in nexi:

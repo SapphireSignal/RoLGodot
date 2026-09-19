@@ -171,7 +171,7 @@ func test_sandbox_entities_reach_the_client() -> String:
 	for copy: TEntity in _client.EntityManager.GetDeployedEntityList():
 		if copy.ScriptFile.contains("Nexus"):
 			nexi.append(copy)
-	check_eq(TEntity.LastScriptError, "", "no script error")
+	check_eq(TEntity.GetLastScriptError(), "", "no script error")
 	check_eq(nexi.size(), 2, "two nexus")
 	_client.GlobalEventbus.Trigger(C.eiIdle, [])
 	for nexus: TEntity in nexi:

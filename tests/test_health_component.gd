@@ -16,7 +16,7 @@ func after_each() -> void:
 	for o in _free:
 		o.Free()
 	_free.clear()
-	TEntity.LastScriptError = ""
+	TEntity.SetLastScriptError("")
 
 
 func _bus(side: int = C.nsServer) -> TEventbus:
@@ -204,7 +204,7 @@ func test_killer_resolution() -> void:
 ## Real script: SmallMeleeGolem (68 health, atLight) built by UnitTemplate.dws on the server side.
 func test_small_melee_golem() -> void:
 	var e := TEntity.CreateFromScript("Units\\Colorless\\SmallMeleeGolem", _bus())
-	check(e != null, "created: " + TEntity.LastScriptError)
+	check(e != null, "created: " + TEntity.GetLastScriptError())
 	if e == null:
 		return
 	_free.push_front(e)

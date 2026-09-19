@@ -1,5 +1,5 @@
 class_name TLogicToWorldComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TLogicToWorldComponent (BaseConflict.EntityComponents.Client.pas:418, implementation :2851). The client
 ## adds it to every entity it gets from the server (TClientNetworkComponent.DeserializeEntity): the logic position
 ## and front become the display position / front (on the ground, y = 0), up is UNITY; the entity's display fields

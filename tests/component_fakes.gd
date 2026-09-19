@@ -7,7 +7,7 @@ const C = preload("res://src/runtime/dws/dws_const.gd")
 
 ## Records the events around a component: Log holds [event name, parameters...] in call order.
 class Probe:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Log: Array = []
 
 	func _DeclareEvents(e: Array) -> void:

@@ -37,7 +37,7 @@ class FakeGame:
 
 ## Answers the global eiGameEventTimeTo read [Name] like the game's event timers.
 class GameEventClock:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var TimeTo := {}
 
 	func _DeclareEvents(e: Array) -> void:
@@ -80,7 +80,7 @@ func _golem(team: int) -> TEntity:
 		x.ID = _manager.GenerateUniqueID()
 		x.Blackboard.SetValue(C.eiTeamID, [], team)
 	var g := TEntity.CreateFromScript("Units\\Colorless\\SmallMeleeGolem", _bus, init)
-	check(g != null, "golem created: " + TEntity.LastScriptError)
+	check(g != null, "golem created: " + TEntity.GetLastScriptError())
 	if g != null:
 		g.Deploy()
 	return g

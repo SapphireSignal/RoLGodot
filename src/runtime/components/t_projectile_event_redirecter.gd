@@ -1,5 +1,5 @@
 class_name TProjectileEventRedirecter
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TProjectileEventRedirecter (GameServer/BaseConflict.EntityComponents.Server.Welas.pas:660, implementation
 ## :2626), server only. A projectile notifies its creator (eiCreator) of some things, like dealt damage for life
 ## leech: eiWillDealDamage asks the creator (a non-empty answer replaces the previous value), eiDamageDone and

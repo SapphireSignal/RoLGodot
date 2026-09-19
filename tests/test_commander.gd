@@ -37,7 +37,7 @@ class FakeGame:
 
 ## Logs eiUseAbility in its group.
 class UseProbe:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Log: Array = []
 
 	func _DeclareEvents(e: Array) -> void:
@@ -194,7 +194,7 @@ func test_card_stats() -> void:
 	check_eq(drop.ChargeCount(cache), 4, "charges")
 	check_eq(drop.ChargeCooldown(cache), 27250, "charge cooldown")
 	check_eq(drop.SquadSize(cache), 2, "squad size")
-	check_eq(TEntity.LastScriptError, "", "no script error")
+	check_eq(TEntity.GetLastScriptError(), "", "no script error")
 
 
 # --- commander abilities ---
@@ -217,7 +217,7 @@ func test_commander_ability_component_applies_cards() -> void:
 	TCommanderAbilityComponent.new().CreateGroupedSlot(commander, [], RCommanderCard.Create(GATLING_TURRET_BUILDING, 1, 1), 1)
 	TCommanderAbilityComponent.new().CreateGroupedSlot(commander, [], RCommanderCard.Create(ARCHER_SPAWNER, 1, 1), 2)
 	TCommanderAbilityComponent.new().CreateGroupedSlot(commander, [], RCommanderCard.Create(FREEZE, 1, 1), 3)
-	check_eq(TEntity.LastScriptError, "", "no script error")
+	check_eq(TEntity.GetLastScriptError(), "", "no script error")
 	var drop_group := _card_group(commander, "Units\\Black\\VoidSkeletonDrop")
 	check(drop_group >= 0, "AddDrop ran")
 	check_eq(commander.Blackboard.GetValue(C.eiAbilityTargetType, [drop_group]), C.ctCoordinate, "a drop targets a spot")
@@ -255,7 +255,7 @@ func test_commander_ability_not_ready_before_game_start() -> void:
 	check(not drop.CanUseAbility(targets), "cannot be used")
 	drop.UseAbility(targets)
 	check_eq(_bus.Game.Statistics.GetCount(commander.ID, "global_drops"), 0, "not played")
-	check_eq(TEntity.LastScriptError, "", "no script error")
+	check_eq(TEntity.GetLastScriptError(), "", "no script error")
 
 
 func test_commander_ability_modes() -> void:

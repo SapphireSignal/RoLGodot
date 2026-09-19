@@ -20,7 +20,7 @@ func FireOnlyAtUnitsInOwnGroup() -> TAutoBrainWelaTargetProducedUnitComponent:
 
 func OnWelaUnitProduced(EntityID) -> bool:
 	if not CanThink() or (FOnlyOwnGroup and
-		not DSet.Intersects(ComponentGroup, TEventbus.CurrentEvent_CalledToGroup)):
+		not DSet.Intersects(ComponentGroup, TEventbus.GetCurrentEvent_CalledToGroup())):
 		return true
 	var Target := ATarget.ToRParam(ATarget.Make(RParam.AsInteger(EntityID)))
 	if RParam.AsBooleanDefaultTrue(Eventbus().Read(C.eiIsReady, [], FFireGroup)) and \

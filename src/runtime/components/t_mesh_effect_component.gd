@@ -1,5 +1,5 @@
 class_name TMeshEffectComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TMeshEffectComponent (BaseConflict.EntityComponents.Client.Visuals.pas:989, implementation :5751): gives
 ## its effects (clones, one per mesh) to the meshes of its target group when triggered: on die, fire, pre-fire, lose
 ## (its team), a produced unit (to that unit), at once otherwise. As written, SetEffect applies the effect at once

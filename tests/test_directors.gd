@@ -100,7 +100,7 @@ class FakeGame:
 
 ## On the game entity: answers eiGameTickCounter and records the global events the directors send.
 class GlobalProbe:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Tick := 0
 	var Log: Array = []
 
@@ -141,7 +141,7 @@ class GlobalProbe:
 
 ## On an entity: records resource transactions, stand and fire, with the group they were called to.
 class EntityProbe:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Log: Array = []
 
 	func _DeclareEvents(e: Array) -> void:
@@ -152,7 +152,7 @@ class EntityProbe:
 		e.append(XEvent("OnFire", C.eiFire, C.epFirst, C.etTrigger))
 
 	func OnTransaction(Resource, Amount) -> bool:
-		Log.append(["Transaction", Resource, Amount, TEventbus.CurrentEvent_CalledToGroup.duplicate()])
+		Log.append(["Transaction", Resource, Amount, TEventbus.GetCurrentEvent_CalledToGroup().duplicate()])
 		return true
 
 	func OnCapTransaction(Resource, Amount, Overwrite) -> bool:
@@ -164,7 +164,7 @@ class EntityProbe:
 		return true
 
 	func OnFire(Targets) -> bool:
-		Log.append(["Fire", Targets, TEventbus.CurrentEvent_CalledToGroup.duplicate()])
+		Log.append(["Fire", Targets, TEventbus.GetCurrentEvent_CalledToGroup().duplicate()])
 		return true
 
 

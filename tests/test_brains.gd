@@ -46,7 +46,7 @@ class FakeGame:
 
 ## Records brain traffic on its entity (ALLGROUP): [name, called-to group, parameters...] in call order.
 class BrainProbe:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Log: Array = []
 
 	func _DeclareEvents(e: Array) -> void:
@@ -65,7 +65,7 @@ class BrainProbe:
 		e.append(XEvent("OnDamageDone", C.eiDamageDone, C.epFirst, C.etTrigger))
 
 	func _group() -> Array:
-		return TEventbus.CurrentEvent_CalledToGroup.duplicate()
+		return TEventbus.GetCurrentEvent_CalledToGroup().duplicate()
 
 	## The entries of one event.
 	func Of(name: String) -> Array:
@@ -145,7 +145,7 @@ class BrainProbe:
 ## Logs "ThinkChainEnd" into a BrainProbe's Log when eiThinkChain gets to epLast (one handler per event and type per
 ## class, so the probe needs a second component for it).
 class ChainEndProbe:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Log: Array = []
 
 	func _DeclareEvents(e: Array) -> void:
@@ -153,13 +153,13 @@ class ChainEndProbe:
 		e.append(XEvent("OnThinkChainEnd", C.eiThinkChain, C.epLast, C.etTrigger))
 
 	func OnThinkChainEnd() -> bool:
-		Log.append(["ThinkChainEnd", TEventbus.CurrentEvent_CalledToGroup.duplicate()])
+		Log.append(["ThinkChainEnd", TEventbus.GetCurrentEvent_CalledToGroup().duplicate()])
 		return true
 
 
 ## Answers eiEnumerateNexus like the nexus entities do.
 class NexusMarker:
-	extends TEntityComponent
+	extends TGDEntityComponent
 
 	func _DeclareEvents(e: Array) -> void:
 		super(e)
@@ -174,7 +174,7 @@ class NexusMarker:
 ## A targeting wela stand-in: eiWelaUpdateTargets adds Candidates not in the list yet (up to eiWelaTargetCount,
 ## default 1), eiWelaValidateTarget answers whether the target is in Valid.
 class FakeTargeting:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Candidates: Array = []  # of RTarget
 	var Valid: Array = []  # of entity IDs
 
@@ -223,7 +223,7 @@ func after_each() -> void:
 	_bus = null
 	_game_entity = null
 	_manager = null
-	TEntity.LastScriptError = ""
+	TEntity.SetLastScriptError("")
 	super()
 
 
@@ -840,7 +840,7 @@ func test_real_golems_fight_to_the_death() -> void:
 			x.Blackboard.SetValue(C.eiTeamID, [], team)
 			x.Position = pos
 		var g := TEntity.CreateFromScript("Units\\Colorless\\SmallMeleeGolem", _bus, init)
-		check(g != null, "created: " + TEntity.LastScriptError)
+		check(g != null, "created: " + TEntity.GetLastScriptError())
 		if g == null:
 			return
 		g.Deploy()

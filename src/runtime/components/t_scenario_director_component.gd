@@ -1,5 +1,5 @@
 class_name TScenarioDirectorComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TScenarioDirectorComponent (GameServer/BaseConflict.EntityComponents.Server.pas:797, implementation
 ## :2498-3445), server only: the PvE scenarios' director (Game.ScenarioDirector). The scenario scripts set it up
 ## (team, KI players, unit faction, boss waves) and queue timed actions; at every global eiGameTick it runs the

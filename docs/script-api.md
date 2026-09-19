@@ -202,7 +202,7 @@ Delphi overloads share one GDScript method: see the declarations for their param
 
 ## TGame (BaseConflict.Game.pas:47)
 
-`CharmCountCap` CS, `CharmCountCap :=` CS, `GadgetCountCap` CS, `GadgetCountCap :=` CS, `GameDirector` CS, `GoldCap` CS, `GoldCap :=` CS, `GoldCapPerTier :=` CS, `GoldCapPerTier` S, `HasShowdown()` CS, `IncomeRatePerIncomeUpgrade` CS, `IncomeRatePerIncomeUpgrade :=` CS, `IncomeUpgradeCap` CS, `IncomeUpgradeCap :=` CS, `IncomeUpgradeCostPerIncomeUpgrade` CS, `IncomeUpgradeCostPerIncomeUpgrade :=` CS, `IsDuo()` CS, `IsOneLane()` CS, `IsPvP()` CS, `IsTwoLane()` CS, `League()` CS, `Map` CS, `StartingGold` CS, `StartingGold :=` CS, `StartingIncomeRate` CS, `StartingIncomeRate :=` CS, `StartingIncomeUpgradeCost` CS, `StartingIncomeUpgradeCost :=` CS, `StartingTier` CS, `StartingTier :=` CS, `StartingWood` CS, `StartingWood :=` CS
+`CharmCountCap` CS, `CharmCountCap :=` CS, `GadgetCountCap` CS, `GadgetCountCap :=` CS, `GameDirector` CS, `GoldCap` CS, `GoldCap :=` CS, `GoldCapPerTier` S, `GoldCapPerTier :=` CS, `HasShowdown()` CS, `IncomeRatePerIncomeUpgrade` CS, `IncomeRatePerIncomeUpgrade :=` CS, `IncomeUpgradeCap` CS, `IncomeUpgradeCap :=` CS, `IncomeUpgradeCostPerIncomeUpgrade` CS, `IncomeUpgradeCostPerIncomeUpgrade :=` CS, `IsDuo()` CS, `IsOneLane()` CS, `IsPvP()` CS, `IsTwoLane()` CS, `League()` CS, `Map` CS, `StartingGold` CS, `StartingGold :=` CS, `StartingIncomeRate` CS, `StartingIncomeRate :=` CS, `StartingIncomeUpgradeCost` CS, `StartingIncomeUpgradeCost :=` CS, `StartingTier` CS, `StartingTier :=` CS, `StartingWood` CS, `StartingWood :=` CS
 
 ## TGameDirectorComponent (BaseConflict.EntityComponents.Shared.pas:59)
 
@@ -470,7 +470,7 @@ Delphi overloads share one GDScript method: see the declarations for their param
 
 ## TServerGame (GameServer/BaseConflict.Game.Server.pas:93)
 
-`ScenarioDirector :=` S, `ScenarioDirector` S, `ServerEntityManager` S
+`ScenarioDirector` S, `ScenarioDirector :=` S, `ServerEntityManager` S
 
 ## TShowOnMinimapComponent (BaseConflict.EntityComponents.Client.GUI.pas:681)
 

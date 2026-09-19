@@ -1,5 +1,5 @@
 class_name TModifierComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TModifierComponent (BaseConflict.EntityComponents.Shared.Wela.pas:32, implementation :984).
 ## Base of the components that adjust a value other components read (cooldown, damage, range, cost, ...).
 ## The value to apply is read from FValueGroup (default: own group); with a ReadyGroup the modifier only works

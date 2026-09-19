@@ -1,5 +1,5 @@
 class_name TGameEventEnumeratorComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TGameEventEnumeratorComponent (BaseConflict.EntityComponents.Shared.pas:630, implementation :2455).
 ## eiGameEvent (global read, [Event]) enumerates the entities listening to that game event: each adds its owner
 ## to the list (an Array of TEntity here, TList<TEntity> in the original; created by the first one).

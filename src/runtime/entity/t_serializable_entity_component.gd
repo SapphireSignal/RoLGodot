@@ -1,5 +1,5 @@
 class_name TSerializableEntityComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TSerializableEntityComponent (BaseConflict.Entity.pas:304, implementation :2117): a component the server
 ## sends with its entity. On eiSerialize (TEntity.Serialize, server) it writes its class (GetBaseType: the first class
 ## up the hierarchy marked XNetworkBasetype, else its own), its UniqueID and ComponentGroup, then its fields;

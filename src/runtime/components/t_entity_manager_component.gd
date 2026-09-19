@@ -1,5 +1,5 @@
 class_name TEntityManagerComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TEntityManagerComponent (BaseConflict.EntityComponents.Shared.pas:276, implementation :1282).
 ## Manages all deployed entities (eiNewEntity registers them) and frees entities, components and component groups
 ## deferred, at the next Idle. Reached as Game.EntityManager.

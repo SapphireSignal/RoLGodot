@@ -1,5 +1,5 @@
 class_name TCommanderIncomeComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TCommanderIncomeComponent (BaseConflict.EntityComponents.Shared.pas:531, implementation :2490).
 ## Manages the default income of a commander. WARNING: Component only for commander!
 ## eiIncome (global read, [CommanderID]) returns an RIncome; each income component of that commander adjusts it.

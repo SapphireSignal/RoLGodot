@@ -133,7 +133,7 @@ func test_join_receives_world_and_starts_the_game() -> String:
 	_frame()  # the server gets NET_CLIENT_READY
 	check_eq(_thread.NetworkComponent.FPlayers[0].State, TServerNetworkComponent.psPlaying, "player playing")
 	check_eq(_thread.State, TGameThread.gsRunning, "game started")
-	check_eq(TEntity.LastScriptError, "", "no script error")
+	check_eq(TEntity.GetLastScriptError(), "", "no script error")
 	return take_failure()
 
 
@@ -174,5 +174,5 @@ func test_played_cards_come_back_as_units_that_walk_and_fight() -> String:
 	check_eq(_thread.InternalGame.EntityManager.FilterEntities([C.upUnit], []).size(), 0, "all fell on the server")
 	var left := _client.EntityManager.GetDeployedEntityList().filter(func(e: TEntity) -> bool: return e.ScriptFile.ends_with("Footman"))
 	check_eq(left.size(), 0, "and on the client")
-	check_eq(TEntity.LastScriptError, "", "no script error")
+	check_eq(TEntity.GetLastScriptError(), "", "no script error")
 	return take_failure()

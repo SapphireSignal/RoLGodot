@@ -1,5 +1,5 @@
 class_name TWarheadComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TWarheadComponent (GameServer/BaseConflict.EntityComponents.Server.Warheads.pas:29, implementation
 ## :684), server only. Master class of the warheads, the things that act on the targets (deal damage, heal, ...):
 ## eiFireWarhead [ATarget] reaching its group runs FireWarhead at epLast (RedirectToSelf: on its owner instead).

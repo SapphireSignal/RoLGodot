@@ -1,5 +1,5 @@
 class_name TThinkImpulseNowComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TThinkImpulseNowComponent (GameServer/BaseConflict.EntityComponents.Server.Brains.pas:37, implementation
 ## :2843), server only. Thinks once in its group right in its constructor, unless the unit is exiled.
 

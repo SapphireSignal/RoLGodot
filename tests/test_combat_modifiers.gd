@@ -50,7 +50,7 @@ class FakeGame:
 
 ## Entity traffic (ALLGROUP): [name, called-to group, parameters...] in call order.
 class EntityLog:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Log: Array = []
 
 	func _DeclareEvents(e: Array) -> void:
@@ -66,7 +66,7 @@ class EntityLog:
 		return Result
 
 	func OnFire(Targets) -> bool:
-		Log.append(["Fire", TEventbus.CurrentEvent_CalledToGroup.duplicate(),
+		Log.append(["Fire", TEventbus.GetCurrentEvent_CalledToGroup().duplicate(),
 			ATarget.FromRParam(Targets).map(func(t): return t.EntityID)])
 		return true
 
@@ -77,7 +77,7 @@ class EntityLog:
 
 ## Answers eiWelaUpdateTargets in its group with the targets it holds.
 class FakeTargeting:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Targets: Array = []
 
 	func _DeclareEvents(e: Array) -> void:
@@ -114,7 +114,7 @@ func after_each() -> void:
 	_bus = null
 	_game_entity = null
 	_manager = null
-	TEntity.LastScriptError = ""
+	TEntity.SetLastScriptError("")
 	randomize()
 	super()
 
@@ -140,7 +140,7 @@ func _real(script: String, team: int, pos: Vector2) -> TEntity:
 		x.Blackboard.SetValue(C.eiTeamID, [], team)
 		x.Position = pos
 	var e := TEntity.CreateFromScript(script, _bus, init)
-	check(e != null, script + ": " + TEntity.LastScriptError)
+	check(e != null, script + ": " + TEntity.GetLastScriptError())
 	if e != null:
 		e.Deploy()
 		e.Eventbus.Trigger(C.eiAfterCreate)

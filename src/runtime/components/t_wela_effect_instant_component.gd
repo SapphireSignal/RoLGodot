@@ -15,13 +15,13 @@ func CreateGrouped(Entity = null, Group = []) -> TEntityComponent:
 
 
 func Fire(Targets: Array) -> void:
-	var Validity := RTargetValidity.FromRParam(Eventbus().Read(C.eiWarheadTargetPossible, [ATarget.ToRParam(Targets)], TEventbus.CurrentEvent_CalledToGroup))
+	var Validity := RTargetValidity.FromRParam(Eventbus().Read(C.eiWarheadTargetPossible, [ATarget.ToRParam(Targets)], TEventbus.GetCurrentEvent_CalledToGroup()))
 	if Validity.IsValid():
 		Eventbus().Trigger(C.eiFireWarhead, [ATarget.ToRParam(Targets)], FTargetGroup)
 
 
 func GetEfficiency(_TargetsInRange: Array) -> float:
-	return RParam.AsSingle(Eventbus().Read(C.eiWelaDamage, [], TEventbus.CurrentEvent_CalledToGroup))
+	return RParam.AsSingle(Eventbus().Read(C.eiWelaDamage, [], TEventbus.GetCurrentEvent_CalledToGroup()))
 
 
 func GetEfficiencyToTarget(Entity) -> float:

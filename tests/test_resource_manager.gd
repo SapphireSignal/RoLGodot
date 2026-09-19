@@ -28,7 +28,7 @@ func after_each() -> void:
 	for o in _free:
 		o.Free()
 	_free.clear()
-	TEntity.LastScriptError = ""
+	TEntity.SetLastScriptError("")
 
 
 func _bus(side: int = C.nsServer) -> TEventbus:
@@ -181,7 +181,7 @@ func test_card_league_nexus() -> void:
 		Entity.Blackboard.SetIndexedValue(C.eiResourceBalance, [], C.reCardLevel, 1)
 		Entity.Blackboard.SetIndexedValue(C.eiResourceBalance, [], C.reCardLeague, 2)
 	var e := _keep(TEntity.CreateDataFromScript("Units\\Neutral\\NexusLevel1", bus, init))
-	check(e != null, "entity created: " + TEntity.LastScriptError)
+	check(e != null, "entity created: " + TEntity.GetLastScriptError())
 	if e != null:
 		check_eq(e.CardLeague(), 2, "CardLeague")
 		check_eq(e.CardLevel(), 1, "CardLevel")
@@ -192,11 +192,11 @@ func test_card_league_nexus() -> void:
 	game.duo = true
 	game.pvp = true
 	var duo := _keep(TEntity.CreateDataFromScript("Units\\Neutral\\NexusLevel1", bus, init))
-	check(duo != null, "duo entity created: " + TEntity.LastScriptError)
+	check(duo != null, "duo entity created: " + TEntity.GetLastScriptError())
 	if duo != null:
 		check_eq(duo.Blackboard.GetIndexedValue(C.eiResourceCap, [], C.reWelaCharge), 16, "duo charge cap")
 		check_eq(duo.Blackboard.GetIndexedValue(C.eiResourceCap, [], C.reHealth), 6500.0, "duo health cap")
-	check_eq(TEntity.LastScriptError, "", "no script error")
+	check_eq(TEntity.GetLastScriptError(), "", "no script error")
 	bus.Game = null
 
 
@@ -208,7 +208,7 @@ func test_card_league_drop_client() -> void:
 		Entity.Blackboard.SetIndexedValue(C.eiResourceBalance, [], C.reCardLevel, 2)
 		Entity.Blackboard.SetIndexedValue(C.eiResourceBalance, [], C.reCardLeague, 4)
 	var e := _keep(TEntity.CreateDataFromScript("Units\\Black\\VoidSkeletonDrop", _bus(C.nsClient), init))
-	check(e != null, "entity created: " + TEntity.LastScriptError)
+	check(e != null, "entity created: " + TEntity.GetLastScriptError())
 	if e == null:
 		return
 	check_eq(e.IsServer(), false, "client entity")
@@ -219,4 +219,4 @@ func test_card_league_drop_client() -> void:
 	check_eq(RResourceCost.GetValue(cost, C.reGold), 100.0, "gold cost")
 	check_eq(RResourceCost.GetValue(cost, C.reTier), 1, "tier")
 	check_eq(RResourceCost.GetValue(cost, C.reCharge), 1, "charge cost")
-	check_eq(TEntity.LastScriptError, "", "no script error")
+	check_eq(TEntity.GetLastScriptError(), "", "no script error")

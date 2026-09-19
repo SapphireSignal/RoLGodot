@@ -46,7 +46,7 @@ class FakeGame:
 
 ## Records [name, parameters..., called-to group] of the events the warheads send.
 class WarheadProbe:
-	extends TEntityComponent
+	extends TGDEntityComponent
 	var Log: Array = []
 
 	func _DeclareEvents(e: Array) -> void:
@@ -68,7 +68,7 @@ class WarheadProbe:
 		e.append(XEvent("OnDelayedKill", C.eiDelayedKillEntity, C.epFirst, C.etTrigger, C.esGlobal))
 
 	func _group() -> Array:
-		return TEventbus.CurrentEvent_CalledToGroup.duplicate()
+		return TEventbus.GetCurrentEvent_CalledToGroup().duplicate()
 
 	func Named(name: String) -> Array:
 		var Result: Array = []
@@ -140,7 +140,7 @@ class WarheadProbe:
 
 ## Doubles the owner's damage through eiWillDealDamage (like a life-leech or crit modifier would read it).
 class DoubleDamage:
-	extends TEntityComponent
+	extends TGDEntityComponent
 
 	func _DeclareEvents(e: Array) -> void:
 		super(e)
@@ -177,7 +177,7 @@ func after_each() -> void:
 	_manager = null
 	_owner = null
 	_probe = null
-	TEntity.LastScriptError = ""
+	TEntity.SetLastScriptError("")
 	super()
 
 
@@ -415,7 +415,7 @@ func test_real_golem_hits_golem() -> void:
 			x.Blackboard.SetValue(C.eiTeamID, [], team)
 			x.Position = Vector2(2.0 * team, 10)
 		var g := TEntity.CreateFromScript("Units\\Colorless\\SmallMeleeGolem", _bus, init)
-		check(g != null, "created: " + TEntity.LastScriptError)
+		check(g != null, "created: " + TEntity.GetLastScriptError())
 		if g == null:
 			return
 		g.Deploy()

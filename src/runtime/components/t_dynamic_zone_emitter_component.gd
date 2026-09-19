@@ -1,5 +1,5 @@
 class_name TDynamicZoneEmitterComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TDynamicZoneEmitterComponent (BaseConflict.EntityComponents.Shared.pas:581, implementation :2226).
 ## Emits a dynamic zone around this unit. Abstract: subclasses override IsInDynamicZone.
 ## eiInDynamicZone (global read, [Position, TeamID, Zone]) returns empty, true or false; once false, nothing turns

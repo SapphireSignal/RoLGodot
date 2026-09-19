@@ -1,5 +1,5 @@
 class_name TGameDirectorComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TGameDirectorComponent (BaseConflict.EntityComponents.Shared.pas:59, implementation :2370), on the game
 ## entity (Game.GameDirector): named game events at game ticks (the scenario scripts add them, e.g. tech level 2 at
 ## tick 180). On the server each eiGameTick fires eiGameEvent [Name] for every due action, last added first, and

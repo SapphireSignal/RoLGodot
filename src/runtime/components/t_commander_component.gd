@@ -1,5 +1,5 @@
 class_name TCommanderComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TCommanderComponent (BaseConflict.EntityComponents.Client.pas:199, implementation :2694), client only
 ## (the client CommanderTemplate adds it). Adds its commander to the global eiEnumerateCommanders read (epFirst):
 ## the list (an Array of entities) starts empty.

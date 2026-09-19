@@ -1,5 +1,5 @@
 class_name TServerSandboxCommandComponent
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TServerSandboxCommandComponent (GameServer/BaseConflict.EntityComponents.Server.pas:443, implementation
 ## :3482), server only: the sandbox commands a client sends (global eiClientCommand [Command, Param1], BC.cc*).
 ## Kills go through eiDelayedKillEntity (next Idle). Clearing lane or golem towers respawns neutral lane nodes at the

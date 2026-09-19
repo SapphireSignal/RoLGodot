@@ -1,5 +1,5 @@
 class_name TWelaEventRedirecter
-extends TEntityComponent
+extends TGDEntityComponent
 ## Port of TWelaEventRedirecter (BaseConflict.EntityComponents.Shared.Wela.pas:832, implementation :2272).
 ## Some welas produce entities and need data from them: reads of eiResourceCost, eiWelaNeededGridSize, eiWelaDamage,
 ## eiWelaRange, eiWelaTargetCount, eiCooldown, eiColorIdentity (and eiCollisionRadius) that find nothing are answered
@@ -27,17 +27,17 @@ func GetPattern(TargetGroup: Array) -> String:
 func Redirect(Event: int, Previous):
 	var Result = Previous
 	if RParam.IsEmpty(Previous):
-		Result = Cache().Read(GetPattern(TEventbus.CurrentEvent_CalledToGroup), CardLeague(), CardLevel(), Event)
+		Result = Cache().Read(GetPattern(TEventbus.GetCurrentEvent_CalledToGroup()), CardLeague(), CardLevel(), Event)
 	return Result
 
 
 func OnRedirect(Previous):
-	return Redirect(TEventbus.CurrentEvent_EventIdentifier, Previous)
+	return Redirect(TEventbus.GetCurrentEvent_EventIdentifier(), Previous)
 
 
 func OnCollisionRadius(Previous):
 	if RParam.IsEmpty(Previous):
-		var DataEntity := Cache().GetEntity(GetPattern(TEventbus.CurrentEvent_CalledToGroup), CardLeague(), CardLevel())
+		var DataEntity := Cache().GetEntity(GetPattern(TEventbus.GetCurrentEvent_CalledToGroup()), CardLeague(), CardLevel())
 		# port: the original crashes on a pattern without data entity; here the value stays empty
 		return DataEntity.CollisionRadius if DataEntity != null else Previous
 	return Previous
