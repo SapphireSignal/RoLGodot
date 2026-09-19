@@ -18,6 +18,9 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 ## Tools
 - Godot: `D:\Godot\Godot_v4.7.1-stable_win64.exe` (console build `..._console.exe` for headless runs)
 - Delphi: `C:\Program Files (x86)\Embarcadero\Studio\37.0\bin\`
+- C++ game code (`native/`, read `docs/native.md`): Visual Studio 2022 C++ tools (MSVC 14.44), SCons (`pip install
+  --user scons`), godot-cpp fetched by `tools/fetch_godot_cpp.ps1`; `tools/build_native.ps1` builds `bin/`
+  (incremental; the test runner and `play.bat` call it first).
 - Tests: `powershell -ExecutionPolicy Bypass -File tools\run_tests.ps1` (import + compile sweep + tests,
   hard timeout, logs in `logs/`; any GDScript runtime `SCRIPT ERROR` in the log fails the run; then a windowed
   shader compile check (`tests/check_shaders.gd`: headless Godot never compiles shaders); last, two smoke tests start the game through
@@ -28,6 +31,7 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - `docs/port-plan.md`: phases 0-9. `docs/gap-list.md`: user-visible behaviours and their status.
 - `docs/unused-features.md`: things the original can do but never uses (whole classes: `tools/find_unused_classes.py`);
   add every unused option found while porting.
+- `docs/native.md`: the C++ game code: build, conventions, the order the game moves to C++, the measurements.
 - `docs/scripts.md`: how the original runs scripts, the construct survey, the transpiler and its output.
 - `docs/script-api.md` (generated): every class member the scripts use, per class. Phase 2 work list.
 - `docs/entity-core.md`: TEntity/eventbus/blackboard semantics and the conventions for porting components.
@@ -170,3 +174,7 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   6-13 ms). The HUD's technical panel (FPS, ping) in the map viewer; `--fps-check` / `--profile` measure frame times
   with a real right-drag. Fonts and ping icons imported. 387 tests green. Next: the owner's decision on a C++ core
   (see CONTINUE.md).
+- 2026-09-19: The owner chose C++ for all game code (GDExtension; C# ruled out: GC pauses, .NET build). Toolchain
+  (godot-cpp pinned, SCons, MSVC; `tools/build_native.ps1`, runner and `play.bat` build first), `docs/native.md`
+  (conventions, order, rules); `DSet` and `RParam` moved to C++, their GDScript deleted. 387 tests green. Next: the
+  rest of the leaf helpers, then the entity core (see CONTINUE.md).

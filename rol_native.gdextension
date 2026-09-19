@@ -1,0 +1,11 @@
+; The port's C++ core (native/, docs/native.md), built by tools/build_native.ps1 into bin/.
+[configuration]
+
+entry_symbol = "rol_native_library_init"
+compatibility_minimum = "4.7"
+reloadable = false
+
+[libraries]
+
+windows.debug.x86_64 = "res://bin/rol_native.windows.template_debug.x86_64.dll"
+windows.release.x86_64 = "res://bin/rol_native.windows.template_release.x86_64.dll"

@@ -22,7 +22,7 @@ static func GetValue(Cost: Array, ResourceType: int):
 	for c in Cost:
 		if c.ResourceType == ResourceType:
 			return c.Amount
-	return RParam.RPARAMEMPTY
+	return null
 
 
 ## AResourceCostHelper.TryGetValue(ResourceType, out Amount): returns [found, Amount].
@@ -30,7 +30,7 @@ static func TryGetValue(Cost: Array, ResourceType: int) -> Array:
 	for c in Cost:
 		if c.ResourceType == ResourceType:
 			return [true, c.Amount]
-	return [false, RParam.RPARAMEMPTY]
+	return [false, null]
 
 
 ## AResourceCostHelper.ToRParam

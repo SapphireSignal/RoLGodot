@@ -16,7 +16,7 @@ func OnResourceCost(Previous):
 	if RParam.IsEmpty(Previous) or not IsLocalCall():
 		return Previous
 	var CostOffset = Eventbus().Read(C.eiWelaModifier, [], FValueGroup)
-	var Factor = RParam.RPARAMEMPTY
+	var Factor = null
 	if FScalesWithResource != C.reNone:
 		Factor = Owner.Balance(FScalesWithResource, ComponentGroup)
 	var Costs: Array = RParam.AsArray(Previous)

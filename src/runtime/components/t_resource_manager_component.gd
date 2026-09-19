@@ -72,7 +72,7 @@ func OnGetResourceCap(ResourceID, _Previous):
 func OnGetResourceCost(_Previous):
 	var Map: Dictionary = FOwner.Blackboard.GetIndexMap(C.eiResourceCost, TEventbus.CurrentEvent_CalledToGroup)
 	if Map.is_empty():
-		return RParam.RPARAMEMPTY
+		return null
 	var keys := Map.keys()
 	keys.sort()
 	var Cost: Array = []
@@ -118,7 +118,7 @@ func OnSetResource(ResourceID, Amount) -> bool:
 func OnSetResourceCap(ResourceID, Amount) -> bool:
 	FOwner.Blackboard.SetIndexedValue(C.eiResourceCap, TEventbus.CurrentEvent_CalledToGroup, RParam.AsInteger(ResourceID), Amount)
 	# refresh resource if cap has been reduced, this will cap it again, else it will do nothing
-	OnTransact(ResourceID, RParam.RPARAMEMPTY)
+	OnTransact(ResourceID, null)
 	return true
 
 

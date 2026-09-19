@@ -3,8 +3,7 @@ extends RefCounted
 ## The original's threadvars (a game server runs in its own TGameThread): the executing event and its stack
 ## (BaseConflict.Entity.pas CurrentEvent / Eventstack), the game clock (BaseConflict.Globals.pas GameTimeManager) and
 ## the per-game NOT_PAYED_RESOURCES (TWelaEffectPayCostComponent class threadvar); the port adds what it keeps in
-## statics for the same reasons: the running script's bus stack, the last script error, the single-precision buffer,
-## the event-group version. Game / Map / GlobalEventbus / EntityDataCache already hang on each side's global bus.
+## statics for the same reasons: the running script's bus stack, the last script error, the event-group version. Game / Map / GlobalEventbus / EntityDataCache already hang on each side's global bus.
 ##
 ## The shared code keeps using its static names (TEventbus.CurrentEvent_CalledToGroup, TTimeManager.ZDiff, ...):
 ## those are static properties that read and write Current(), the calling thread's context. The event bus's own hot
@@ -27,7 +26,6 @@ var ScriptEventbusStack: Array = []
 var LastScriptError := ""
 ## TWelaEffectPayCostComponent.DEFAULT_NOT_PAYED_RESOURCES = [reLevel, reTier]
 var NotPayedResources: Array = [C.reLevel, C.reTier]
-var SingleBuffer := PackedFloat32Array([0.0])
 ## lazy caches (filled per thread instead of locked): TEntityComponent.FComponentSubscriptionPatterns,
 ## TEntity._component_classes
 var SubscriptionPatterns := {}

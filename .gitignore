@@ -9,6 +9,16 @@
 *.import.tmp
 /android/
 
+# C++ core (docs/native.md): godot-cpp and the API dump are fetched by tools/fetch_godot_cpp.ps1, the library and
+# object files are built by tools/build_native.ps1
+/native/godot-cpp/
+/native/extension_api.json
+/native/**/*.obj
+/native/**/*.os
+/native/**/*.o
+/native/.sconsign.dblite
+/bin/
+
 # Build output and logs
 /build/
 /logs/

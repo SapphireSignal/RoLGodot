@@ -1,0 +1,20 @@
+#!/usr/bin/env python
+# The C++ core of the port (docs/native.md): a GDExtension library built with godot-cpp against the extension API of
+# the project's Godot build (tools/fetch_godot_cpp.ps1 fetches godot-cpp and dumps it). Build it with
+# tools/build_native.ps1, which the test runner and play.bat call; the library lands in ../bin/.
+
+import os
+
+ARGUMENTS.setdefault("custom_api_file", os.path.join(Dir(".").srcnode().abspath, "extension_api.json"))
+env = SConscript("godot-cpp/SConstruct", {"api_version": "4.7"})
+
+env.Append(CPPPATH=["src/"])
+# the original's code relies on exact 32-bit float rounding (Delphi singles): no fast-math
+sources = Glob("src/*.cpp") + Glob("src/*/*.cpp")
+
+library = env.SharedLibrary(
+    "../bin/rol_native{}{}".format(env["suffix"], env["SHLIBSUFFIX"]),
+    source=sources,
+)
+env.NoCache(library)
+Default(library)

@@ -304,7 +304,7 @@ func Read(Eventname: int, Parameters: Array = [], Group: Array = [], ComponentID
 	var OuterGroup := Ctx.CurrentEvent_CalledToGroup
 	var OuterParameters := Ctx.CurrentParameters
 	StartEvent(Ctx, Eventname, Group, Parameters)
-	var Result = RParam.RPARAMEMPTY
+	var Result = null  # RPARAMEMPTY
 	if FOwner != null:
 		Result = FOwner.FBlackboard.GetValue(Eventname, Group)
 	var EventHandler: TEventhandler = FEventhandler.get(_key(Eventname, C.etRead))

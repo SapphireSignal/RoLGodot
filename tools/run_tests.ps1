@@ -39,6 +39,14 @@ if (Test-Path (Join-Path $root 'reference\rise-of-legions\Scripts')) {
     Write-Host 'reference/ missing: skipped the generated-scripts check'
 }
 
+# The C++ core (incremental; a failed build fails the run before any test)
+& powershell -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'build_native.ps1')
+if ($LASTEXITCODE -ne 0) {
+    Write-Host 'tests: 0 passed, 1 failed'
+    Write-Host '  FAIL the C++ core does not build (tools\build_native.ps1)'
+    exit 1
+}
+
 $null = Invoke-Godot @('--import') 'import.log'
 $code = Invoke-Godot @('--script', 'res://tests/run_tests.gd') 'tests.log'
 # GDScript runtime errors (invalid access, null calls, ...) do not fail a check, so count them from the log

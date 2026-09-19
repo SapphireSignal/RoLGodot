@@ -53,7 +53,7 @@ func OnAfterCreate() -> bool:
 func GetCommanderUnitProperties(Previous):
 	if FGiveOwner:
 		return _Apply(RParam.AsSet(Previous))
-	return RParam.RPARAMEMPTY
+	return null
 
 
 ## Adds the unit properties.

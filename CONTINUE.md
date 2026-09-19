@@ -192,14 +192,24 @@ thread like the original (section "Threads" in `docs/game-loop.md`, `TThreadCont
 gone. The map viewer has the HUD's technical panel (FPS, ping; `TTechnicalPanel`, `GFXD.FPS`) and `--fps-check=on`
 (a real fast right-drag) with `--profile=on`; results and hot spots in "Performance" of `docs/game-loop.md`. Still slow
 with units: client 9 ms/frame and server 12 of 32 ms with 42 entities, mostly event bus overhead (2.3 us per Read).
-**Open decision for the owner**: a C++ GDExtension core (event bus, blackboard, the hottest components; MSVC 14.44 is
-installed, godot-cpp would be fetched) vs. GDScript-only speed-ups. Ask / follow the owner's answer before the next
-work item. Measure every change with `--fps-check` on all three setups (1 lane, 2 lanes, PvE), empty and with
-spawners, nothing else running (ask the owner to close the viewer).
-**Next (after the decision):** pick by visibility: health bars and unit facing (orienters / positioners: check first whether client units
-face their walk / attack direction), then particle effects (every hit, projectile and spell: the biggest look difference left,
-366 `.pfx`; Distortion follows them), shadow mapping (palms on the sand), or phase 5's camera component and card hand
-on top of the network.
+Measure every change with `--fps-check` on all three setups (1 lane, 2 lanes, PvE), empty and with spawners, nothing
+else running (ask the owner to close the viewer).
+
+## The move to C++ (decided 2026-09-19, the current main line of work)
+The owner decided: **all game code becomes C++** (GDExtension inside Godot; C# ruled out: GC pauses, .NET build), kept
+are Godot, shaders, importers / converters, assets, docs, the transpiler (to emit C++ later) and the tests as the
+spec. **Read `docs/native.md` first**: build, conventions, the order (leaf helpers, entity core, component families by
+profile, game loop / network / map / graphics, transpiler to C++, viewers / HUD / tests), the rules. The owner wants
+the result to look like a project built in C++ from day one: delete every GDScript file in the same change its C++
+replacement lands, comments cite only the original's Delphi source, no transition traces; at the end the C++ moves to
+the conventional layout and the finished project gets a **fresh git history** (confirm with the owner right before
+rewriting the published repository). No `.gd` files at the end (shaders, scenes, project files and the Python tools
+stay). Done: toolchain, `DSet`, `RParam`. The per-thread context (`TThreadContext`) becomes C++ `thread_local`s with
+the entity core.
+**Next:** the rest of the leaf helpers (`DelphiRandom`, `DelphiHash`, `DelphiSort`, `DelphiRtl`, `DelphiDictionary`,
+`TTimer` / `TTimeManager`, `RMatrix`, containers), then the entity core; measure each step (`tests/bench_eventbus.gd`,
+`--fps-check`). Visible features (health bars, unit facing, particles, shadows, phase 5) wait until the core is C++,
+unless the owner asks for one.
 Owner: `docs/questions-for-devs.md` is the list for the original developers (master-server values); record their
 answers there.
 The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.
