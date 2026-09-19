@@ -10,10 +10,12 @@ extends Node3D
 ## Controls: WASD / arrows scroll, right mouse drag pans, wheel zooms, Q / E rotate, R resets.
 ## Capture mode (checks without a person):
 ##   -- --capture-out=<absolute folder> [--maps=Single,Classic] [--hide=Terrain,Water,Vegetation,Entities] [--wait=ms]
-##      [--play=<card label,...>] [--death-burst=N] [--post-effects=off|none] [--dump-glow=on]
+##      [--play=<card label,...>] [--death-burst=N] [--post-effects=off|none] [--dump-glow=on] [--ghost-check=on]
+##      [--fps-check=on [--fps-phases=still,dragging] [--profile=on]]
 ## writes views of each scenario on those maps (game camera at a few places, an overview; after the game ran --wait
 ## ms), then quits. Launcher smoke
 ## test:  -- --smoke-test=<file>  after a few drawn frames writes "ok ..." or "FAIL ..." to <file> and quits.
+const GameCursor = preload("res://src/viewer/game_cursor.gd")
 
 const C = preload("res://src/runtime/dws/dws_const.gd")
 const BC = preload("res://src/runtime/base_conflict_constants.gd")
@@ -46,6 +48,7 @@ var _client: TClientGame
 var _thread: TGameThread
 var _entities: Node3D
 var _entity_count := 0
+var _drop_count := 0  # footmen drops so far: each goes to the next lane
 var _scenario_index := 0
 var _camera: Camera3D
 var _post_effects: TPostEffectManager
@@ -65,6 +68,7 @@ var _loading_overlay: ColorRect
 
 
 func _ready() -> void:
+	GameCursor.Apply(get_tree())
 	_build_scene()
 	_build_ui()
 	_no_keyboard_focus(self)
@@ -223,7 +227,7 @@ func _unload() -> void:
 	if _entities != null:
 		_entities.queue_free()
 		_entities = null
-	GFXD.MainScene = null
+	GFXD.SetMainScene(null)
 
 
 ## The scenario's server game, then the client game (map, decorations, the scenario's client part) and the server's
@@ -241,7 +245,7 @@ func _load_scenario(index: int) -> void:
 	_entities = Node3D.new()
 	_entities.name = "Entities"
 	add_child(_entities)
-	GFXD.MainScene = _entities
+	GFXD.SetMainScene(_entities)
 	var client_info := TGameInformation.new().Create()
 	client_info.ScenarioUID = uid
 	client_info.League = LEAGUE
@@ -374,11 +378,21 @@ func _play_card(team_index: int, pattern: String) -> void:
 					if zone.IsFree(Vector2i(x, y)):
 						candidates.append(RCommanderAbilityTarget.CreateBuildTarget(zone.ID, Vector2i(x, y)))
 	else:
+		# a drop 30 in front of the own nexus on a lane (every press the next lane), inside the map's drop zone: the
+		# game's client only sends targets there (the sandbox server checks no targets, TBrainWelaCommanderComponent
+		# .CanUseAbility)
 		var nexus = _client.EntityManager.NexusByTeamID(commander.TeamID())
 		if nexus == null:
 			return
 		var position: Vector2 = nexus.Position
-		candidates.append(RCommanderAbilityTarget.Create(Vector2(position.x - signf(position.x) * 30.0, position.y)))
+		var lanes: Array = _client.Map.Lanes.Lanes
+		var lane: TLane = lanes[_drop_count % lanes.size()]
+		_drop_count += 1
+		var point := Vector2(position.x - signf(position.x) * 30.0, lane.FWayPoints[0].ProjectionCenter.y)
+		var drop_zone: TMultipolygon = _client.Map.Zones.get(C.ZONE_DROP)
+		if drop_zone != null and not drop_zone.IsPointInMultiPolygon(point):
+			point = drop_zone.NextPointOnBorder(point)
+		candidates.append(RCommanderAbilityTarget.Create(point))
 	if not candidates.is_empty():
 		var targets := RCommanderAbilityTarget.ArrayToRParam([candidates[0]])
 		commander.Eventbus.Trigger(C.eiUseAbility, [targets], [group])
@@ -516,6 +530,59 @@ func _finish_smoke_test(result_path: String) -> void:
 	get_tree().quit()
 
 
+## --ghost-check: drags the view for 12 frames (30 px per frame), grabs the frame, then grabs two still frames from the
+## same camera. Prints the share of pixels that differ between the dragged and the still frame, next to the still pair
+## (the animation's noise: water, wind, units).
+func _ghost_check(view: Array, out_dir: String, map_name: String) -> void:
+	_set_view(view)
+	for f in 10:
+		await RenderingServer.frame_post_draw
+	var size := Vector2(get_viewport().get_visible_rect().size)
+	var cursor := size * Vector2(0.3, 0.5)
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_RIGHT
+	press.pressed = true
+	press.position = cursor
+	Input.parse_input_event(press)
+	await get_tree().process_frame
+	for f in 12:
+		var motion := InputEventMouseMotion.new()
+		motion.relative = Vector2(30, 0)
+		cursor += motion.relative
+		motion.position = cursor
+		Input.parse_input_event(motion)
+		await RenderingServer.frame_post_draw
+	var dragged := get_viewport().get_texture().get_image()
+	var release := press.duplicate()
+	release.pressed = false
+	release.position = cursor
+	Input.parse_input_event(release)
+	for f in 6:
+		await RenderingServer.frame_post_draw
+	var still := get_viewport().get_texture().get_image()
+	for f in 6:
+		await RenderingServer.frame_post_draw
+	var still2 := get_viewport().get_texture().get_image()
+	dragged.save_png(out_dir.path_join("ghost_%s_dragged.png" % map_name))
+	still.save_png(out_dir.path_join("ghost_%s_still.png" % map_name))
+	print("ghost-check: %s dragged vs still %.2f%% of pixels differ, still vs still %.2f%%" % [map_name,
+		_differing_share(dragged, still), _differing_share(still, still2)])
+
+
+## Share of pixels (every second one in x and y) whose color differs by more than 16 / 255 in a channel, in percent.
+static func _differing_share(a: Image, b: Image) -> float:
+	var counted := 0
+	var differ := 0
+	for y in range(0, mini(a.get_height(), b.get_height()), 2):
+		for x in range(0, mini(a.get_width(), b.get_width()), 2):
+			var ca := a.get_pixel(x, y)
+			var cb := b.get_pixel(x, y)
+			counted += 1
+			if absf(ca.r - cb.r) > 16.0 / 255.0 or absf(ca.g - cb.g) > 16.0 / 255.0 or absf(ca.b - cb.b) > 16.0 / 255.0:
+				differ += 1
+	return 100.0 * differ / maxi(counted, 1)
+
+
 func _run_capture(maps: PackedStringArray, out_dir: String) -> void:
 	DirAccess.make_dir_recursive_absolute(out_dir)
 	# --hide=Water,Vegetation: capture with those layers off (to isolate a render problem)
@@ -581,6 +648,10 @@ func _run_capture(maps: PackedStringArray, out_dir: String) -> void:
 					for z in [-23.0, 0.0]:
 						heights.append("%.2f" % (_map.Terrain.GetTerrainHeight(Vector2(x, z)) as Vector3).y)
 				print("drag-check: terrain heights along z = -23 / 0, x -100..100: ", ", ".join(heights))
+		# --ghost-check=on: a fast right drag through the input system; the frame drawn while dragging must match a still
+		# frame from the same camera (outlines and glow drawn from the camera of an earlier frame show up as ghosts)
+		if _user_arg("ghost-check") == "on":
+			await _ghost_check(views[1], out_dir, SCENARIOS[i][2])
 		# --wait=<ms>: let the game run that long before the checks and captures (units spawn and walk)
 		var wait_until := Time.get_ticks_msec() + int(_user_arg("wait"))
 		while Time.get_ticks_msec() < wait_until:
@@ -591,7 +662,9 @@ func _run_capture(maps: PackedStringArray, out_dir: String) -> void:
 			_set_view(views[0])
 			for f in 30:
 				await get_tree().process_frame
-			for phase in ["dragging", "still"]:
+			# --fps-phases=still,dragging measures in that order (default: dragging, then still)
+			var phases := _user_arg("fps-phases").split(",", false) if _user_arg("fps-phases") != "" else PackedStringArray(["dragging", "still"])
+			for phase in phases:
 				var frames := 0
 				var slow := 0
 				var client_sum := 0.0

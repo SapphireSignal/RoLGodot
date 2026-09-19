@@ -122,8 +122,8 @@ func HeightFactor(Factor = null):
 
 
 func SetUpShader(CurrentShader, Stage: int, PassIndex: int) -> void:
-	if FFrame != GFXD.FrameCount:
-		FFrame = GFXD.FrameCount
+	if FFrame != GFXD.GetFrameCount():
+		FFrame = GFXD.GetFrameCount()
 		FZDiff = FSpawnTimer.ZeitDiffProzent(true)
 	CurrentShader.SetShaderConstant("glow", 1.0 if Stage == TMesh.RS_GLOW else 0.0)
 	CurrentShader.SetShaderConstant("progress", FZDiff)

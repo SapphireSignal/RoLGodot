@@ -93,7 +93,7 @@ func test_footman_mesh_loads_with_its_descriptor() -> String:
 	check_eq(mesh.GeometryFile, "footman.msh", "the raw mesh release builds load (LOAD_RAW_MESH)")
 	check_eq(mesh.MeshInstances.size(), 1, "one surface (the raw mesh holds the collapsed subsets)")
 	check_eq(mesh.FrameCount(), 122, "take length (the script's walk ends at frame 122)")
-	check_eq(mesh.Geometry.SkinBones.size(), 24, "24 skin links")
+	check_eq(mesh.AnimationDriverBone.SkinLinkCount(), 24, "24 skin links")
 	# footman.msh header: RAABB Min (-37.77591, 0.120251, -12.4349), size y 86.14995 (file units)
 	var box := mesh.GetUntransformedBoundingBox()
 	check(absf(box.size.y - 86.14995) < 0.001, "raw height %s" % box.size.y)
@@ -107,9 +107,9 @@ func test_raw_mesh_bones_lift_the_nexus_crystal() -> String:
 	if not TMesh.Exists(CRYSTAL):
 		return ""
 	var mesh := _load(CRYSTAL)
-	check_eq(mesh.Geometry.BoneNames.size(), 9, "bones")
-	check_eq(mesh.Geometry.BoneNames[0], "RootNode", "root")
-	check_eq(mesh.Geometry.SkinBones.size(), 1, "skin links")
+	check_eq(mesh.AnimationDriverBone.BoneCount(), 9, "bones")
+	check_eq(mesh.AnimationDriverBone.BoneIndex("RootNode"), 0, "root")
+	check_eq(mesh.AnimationDriverBone.SkinLinkCount(), 1, "skin links")
 	check_eq(mesh.FrameCount(), 200, "keyframes 0..200")
 	var raw := mesh.GetUntransformedBoundingBox()
 	check(absf(raw.position.y - (-70.16459)) < 0.001, "raw bottom %s" % raw.position.y)
@@ -117,4 +117,20 @@ func test_raw_mesh_bones_lift_the_nexus_crystal() -> String:
 	var posed := mesh.GetPosedBoundingBox()
 	check(posed.position.y > 14.175, "posed above the base: %s" % posed.position.y)
 	check(absf(posed.size.y - raw.size.y) < 0.01, "moved, not stretched")
+	return take_failure()
+
+
+## TMesh.Release of a skinned mesh in a scene: the controller drops its drivers at once, the node leaves the tree at the
+## end of the frame, and that frame's animation and bone upload must still run without errors (the runner fails on any
+## script error). The runner's tree does not run frames, so the test takes Release's steps before the deferred free.
+func test_released_skinned_mesh_draws_its_last_frame() -> String:
+	if not TMesh.Exists(FOOTMAN):
+		return ""
+	var mesh := _load(FOOTMAN)
+	mesh.AnimationController.Clear()
+	mesh.AnimationDriverMorph = null
+	GFXD.NextFrame()
+	mesh.Animate()
+	mesh.SetUpCustomShaders()
+	check(mesh.TryGetBonePosition("RootNode") != null, "the bones answer until the mesh is gone")
 	return take_failure()

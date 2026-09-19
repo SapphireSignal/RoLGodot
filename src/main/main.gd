@@ -1,10 +1,12 @@
 extends Control
 ## Entry scene. Placeholder until the client boot flow (splash, login, main menu) is ported; offers the dev viewers.
+const GameCursor = preload("res://src/viewer/game_cursor.gd")
 
 const VIEWERS := [["Mesh viewer", "res://src/viewer/mesh_viewer.tscn"], ["Map viewer", "res://src/viewer/map_viewer.tscn"]]
 
 
 func _ready() -> void:
+	GameCursor.Apply(get_tree())
 	print("RoLGodot boot: %s" % ProjectSettings.get_setting("application/config/name"))
 	var buttons := {}
 	var center := get_viewport_rect().size / 2.0

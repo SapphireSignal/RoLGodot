@@ -26,6 +26,8 @@
 #include "entity/t_entity_stream.h"
 #include "entity/t_eventbus.h"
 #include "entity/t_remote_subscription.h"
+#include "graphics/gfxd.h"
+#include "graphics/t_skinned_mesh_animation_driver.h"
 #include "math/r_cubic_bezier.h"
 #include "math/r_line_2d.h"
 #include "math/r_matrix.h"
@@ -66,6 +68,8 @@ void initialize_rol_native_module(ModuleInitializationLevel p_level) {
 	GDREGISTER_CLASS(TEntityComponent);
 	GDREGISTER_CLASS(TRemoteSubscription);
 	GDREGISTER_CLASS(TEntity);
+	GDREGISTER_CLASS(GFXD);
+	GDREGISTER_CLASS(TSkinnedMeshAnimationDriver);
 	TThreadContext::Initialize();
 	TEntityComponent::Initialize();
 }

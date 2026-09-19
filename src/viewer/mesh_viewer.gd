@@ -5,6 +5,7 @@ extends Node3D
 ## Capture mode (for checking renders without a person): run with
 ##   -- --capture=<substring>[,<substring>...] --capture-out=<absolute folder>
 ## to write one PNG per matching mesh (and a few turned views of it), then quit.
+const GameCursor = preload("res://src/viewer/game_cursor.gd")
 
 const ALL_MESHES_ROOT := "res://assets/graphics"
 
@@ -29,6 +30,7 @@ var _reduction: CheckBox
 
 
 func _ready() -> void:
+	GameCursor.Apply(get_tree())
 	TLightManager.CreateFromMap("Classic").SynchronizeLightWithGFXD()
 	_collect(ALL_MESHES_ROOT, _paths)
 	_paths.sort()

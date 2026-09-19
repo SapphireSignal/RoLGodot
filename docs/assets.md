@@ -61,9 +61,11 @@ so file coordinates are used as they are and `TMesh.ComputeTransformationMatrix`
 `basis = G * Base(Left, Up, Front) * G * Scaling`, `G = diag(-1, 1, 1)`. `TMesh.TransformationMatrix()` is the
 original's game-space matrix (with the mirror) for bone positions and bounds.
 
-**Animations** (`t_animation_controller.gd` = `Engine.Animation.pas`, drivers in `t_mesh.gd`). One take per file
+**Animations** (`t_animation_controller.gd` = `Engine.Animation.pas`; the skinned driver is C++,
+`native/src/graphics/t_skinned_mesh_animation_driver.*`, parsed once per geometry and copied per mesh like the
+original's `GetCopy`, with the original's cap of 9 animations per bone and frame; the morph driver is in `t_mesh.gd`). One take per file
 (`AnimStack::Take 001`, `TMesh.FBX_DEFAULT_ANIMATIONTRACK`), keys every 1000 / 30 ms. `TAnimationController`: a stack
-of playing animations with 500 ms fades and a looping default animation, one update per frame (`GFXD.FrameCount`),
+of playing animations with 500 ms fades and a looping default animation, one update per frame (`GFXD.GetFrameCount()`, C++ `native/src/graphics/gfxd.*`),
 times from `TTimeManager`. `TSkinnedMeshAnimationDriver`: per animation the channels with their times normalized by
 its length; `CreateNewAnimation` (ExtractPart) cuts frames start..end (both included) out of the take; each update
 finds the two keys around the time key, lerps / slerps (`RVector4.SLerp`) and adds the weighted result to the bone;

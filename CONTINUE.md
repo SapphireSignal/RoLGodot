@@ -224,14 +224,24 @@ Capture check tooling for C++ moves: a scratch script ran the map viewer's captu
 footmen,Red footmen --wait=15000`, and `tests/bench_eventbus.gd`, once on the change and once on HEAD (git stash -u,
 build, import), then restored and rebuilt; noise floor = two captures of the same build (water and wind animation:
 up to 5% of pixels).
-**Next:** step 3, the component families, a whole family per session with all its subclasses (each moved class stops
-extending `TGDEntityComponent` and becomes a C++ subclass of `TEntityComponent` with C++ handlers; the bus then needs a
-direct C++ handler call next to the script call). Hot spots now (`--profile`, loaded Classic): server
-`TMovementComponent.OnMoveTo` 1.7 ms/frame (pathfinding), `TThinkImpulseTimerComponent.OnIdle` 1.3 ms self (520
-calls/frame), movement / collision; client `TMeshComponent.OnSubPositionByString` 2.4 ms/frame (48 calls, 50 us each,
-from the not yet ported `TParticleEffectComponent`), `TMeshComponent.OnIdle`. A good first family: the brains and
-think timers with the movement / pathfinding / collision core. Visible features (health bars, unit facing, particles,
-shadows, phase 5) wait until the families are C++, unless the owner asks for one.
+**Next, in this order (the owner's playtest, 2026-09-19, found the port slow and missing basics; they want everything
+the same as the real game or better, and the gaps found by Claude, not by them):**
+1. The server thread spikes: in the map viewer the heavy Classic game (`--play=Blue spawner` x4, `Red spawner` x4, both
+   footmen x2, `--wait=25000 --fps-check=on`) takes 10-90 ms per server frame with spikes to 290 ms, while the same game
+   headless (DoComputeGame on the main thread, no client joined) stays under 20 ms. Not the CPU (capping the drawing
+   at 60 fps and a high thread priority did not help; the machine is an i9-14900KF with efficiency cores). Suspects:
+   the network path to the joined client (serializing new entities and events), contention with the main thread.
+   Measure inside the thread (per-part timings of a frame), fix, then move the hottest server families to C++
+   (targeting constraints, health, collision queries, think timers, pathfinding).
+2. The audit of client defaults (gap list, "Audit to do next"): every `GetDefault` option of
+   `BaseConflict.Settings.Client.pas` and everything the main unit / `TGameStateManager` set up, each difference fixed
+   or entered in the gap list. The cursor and vsync were such misses.
+3. An automated all-units test: every unit card spawned on both sides, fighting, no script errors, frame times.
+4. Classic's cross-river targeting: ported as the source does it (units walk the lanes' inner edge; the river is 20 wide,
+   attention 22); the owner remembers otherwise: show them the numbers and settle it.
+Then step 3 of the C++ move (component families). Tools added: map viewer `--ghost-check=on` (a dragged frame against a
+still frame from the same camera), `--fps-phases=still,dragging`; `tests/test_graphics.gd` covers a released mesh's last
+frame.
 Owner: `docs/questions-for-devs.md` is the list for the original developers (master-server values); record their
 answers there.
 The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.

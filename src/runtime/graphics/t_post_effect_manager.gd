@@ -437,3 +437,7 @@ func _sync_cameras() -> void:
 		Camera_.near = Camera.near
 		Camera_.far = Camera.far
 		Camera_.projection = Camera.projection
+		# a Node3D's transform reaches the renderer with the scene tree's transform notifications, which run in the
+		# next frame when set this late: the stage would draw from the last frame's camera (outlines and glow trailing
+		# the picture while the view moves). The renderer takes it now.
+		RenderingServer.camera_set_transform(Camera_.get_camera_rid(), Camera.global_transform)

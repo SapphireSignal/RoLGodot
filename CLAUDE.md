@@ -192,3 +192,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   layer `TGDEntityComponent` (GDScript cannot override bound C++ methods, `docs/native.md`). Bus Read 2.4 -> 0.5 us;
   loaded Classic 79 -> 136 fps, server 11 -> 4 ms/frame; captures unchanged. 388 tests green, no errors. Next: the
   component families (see CONTINUE.md).
+- 2026-09-19: Owner's playtest fixes: outlines / glow no longer trail the picture while dragging (the extra stages'
+  cameras reach the renderer in the same frame, `--ghost-check`); the game's cursors (Default / Hover); vsync off like
+  the original; skinned animation and GFXD in C++ (heavy game 35 -> 69 fps); the viewer drops footmen inside the drop
+  zone. 389 tests green. Next: the server thread spikes, the client-defaults audit, an all-units test (CONTINUE.md).
+

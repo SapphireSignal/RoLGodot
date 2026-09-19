@@ -69,8 +69,8 @@ class TAnimation:
 var FStatus := asStopped
 var FDefaultAnimation: TAnimation = null
 var FAnimationStack: Array[TAnimation] = []
-## Drivers: objects with AnimationData (name -> {Length, FrameCount}), UpdateAnimation(name, start, end, weight)
-## and UpdateWithoutAnimation(). The TMesh owning this controller.
+## Drivers: objects with HasAnimation(name), AnimationLength(name), AnimationFrameCount(name), UpdateAnimation(name,
+## start, end, weight) and UpdateWithoutAnimation(). The TMesh owning this controller.
 var FDrivers: Array = []
 var FFrameCounter := 0
 var FLastPosition := 0.0
@@ -106,7 +106,7 @@ func Clear() -> void:
 
 func HasAnimation(Animation: String) -> bool:
 	for Driver in FDrivers:
-		if Driver.AnimationData.has(Animation):
+		if Driver.HasAnimation(Animation):
 			return true
 	return false
 
@@ -122,30 +122,30 @@ func GetAnimationLength(Name: String) -> int:
 	if not AssertHasAnimation(Name):
 		return 0
 	for Driver in FDrivers:
-		if Driver.AnimationData.has(Name):
-			return Driver.AnimationData[Name].Length
+		if Driver.HasAnimation(Name):
+			return Driver.AnimationLength(Name)
 	return 0
 
 
 ## GetAnimationInfoExtendedForItem: {Name, Length, FrameCount} or null.
 func GetAnimationInfoExtendedForItem(Animation: String):
 	for Driver in FDrivers:
-		if Driver.AnimationData.has(Animation):
-			var data: Dictionary = Driver.AnimationData[Animation]
-			return {"Name": Animation, "Length": data.Length, "FrameCount": data.FrameCount}
+		if Driver.HasAnimation(Animation):
+			return {"Name": Animation, "Length": Driver.AnimationLength(Animation),
+				"FrameCount": Driver.AnimationFrameCount(Animation)}
 	return null
 
 
 ## [start, end] of the current frame's time span; paused controllers keep the last one.
 func GetCurrentTime() -> Array:
 	if Status == asPaused:
-		FFrameCounter = GFXD.FrameCount
+		FFrameCounter = GFXD.GetFrameCount()
 	else:
 		# prevent get different timekey per frame if UpdateAnimations is called more then once per frame
-		if GFXD.FrameCount != FFrameCounter:
+		if GFXD.GetFrameCount() != FFrameCounter:
 			# new timeframe starts 1 ms after last timeframe
 			FTimeStamp = [FTimeStamp[1] + 1, TTimeManager.GetTimeStamp()]
-			FFrameCounter = GFXD.FrameCount
+			FFrameCounter = GFXD.GetFrameCount()
 	return FTimeStamp
 
 
@@ -156,7 +156,7 @@ func GetPosition() -> float:
 ## Updates all drivers once per frame: the stack from the top down takes the weight it needs, the default
 ## animation gets the rest.
 func UpdateAnimations() -> void:
-	if FFrameCounter == GFXD.FrameCount:
+	if FFrameCounter == GFXD.GetFrameCount():
 		return
 	if Status == asPlaying or Status == asPaused:
 		var weightRemaining := 1.0

@@ -8,7 +8,7 @@ extends Node3D
 ## relative blend shapes (weights = the morph driver's weights / 100) and, for skinned meshes, the bone weights and
 ## indices in CUSTOM0 / CUSTOM1: the shader skins like Standardshader.fx (sum of weight * BoneTransforms[index]),
 ## BoneTransforms[i] = the skin link's bone CombinedMatrix * its BoneSpaceOffsetMatrix (TSkin.ComputeAnimatedMatrices).
-## Bones: the raw bone hierarchy (TBone), animated by TSkinnedMeshAnimationDriver (PassAnimationToHierarchy).
+## Bones: the raw bone hierarchy (TBone), animated by the C++ TSkinnedMeshAnimationDriver (native/src/graphics/).
 ##
 ## Space: the original loads the right-handed file data unchanged into its left-handed world and mirrors X in the
 ## world matrix ("all meshes are loaded mirrored along x-axis, so now mirror back"). The port maps a game position
@@ -52,13 +52,8 @@ static var _geometries := {}
 class TGeometry:
 	var Raw: TEngineRawMesh
 	var Surface: ArrayMesh
-	## TBone hierarchy flattened depth first (the file's order): names, OriginalMatrix, children, name lookup.
-	var BoneNames := PackedStringArray()
-	var BoneOriginal: Array[Transform3D] = []
-	var BoneChildren: Array[PackedInt32Array] = []
-	var BoneLookup := {}  # lower-case name -> index (GetBoneByName; a later duplicate wins, AddOrSetValue)
-	var SkinBones := PackedInt32Array()  # per skin link: its bone
-	var SkinOffsets: Array[Transform3D] = []
+	## the skeleton and the bone animations, parsed once (each mesh takes its own GetCopy)
+	var BoneDriver: TSkinnedMeshAnimationDriver
 	var HasSkin := false
 	var MorphtargetCount := 0
 
@@ -159,9 +154,6 @@ var AnimationDriverBone: TSkinnedMeshAnimationDriver = null
 var AnimationDriverMorph: TMeshMorphAnimationDriver = null
 ## Per bone of this mesh (TBone): the frame's weighted animations [[translation, scale, rotation (x y z w), weight]],
 ## the frame they belong to, and CombinedMatrix (null = zero, never passed down yet).
-var _bone_animations: Array = []
-var _bone_frame := -1
-var _bone_combined: Array = []
 ## Meshes of client entities (TMeshComponent) animate every drawn frame; the mesh viewer poses its meshes itself
 ## (ShowFrame) and leaves this off.
 var DrivenByController := false
@@ -239,11 +231,7 @@ func _load(descriptor_path: String, data: Dictionary) -> void:
 	MeshInstance.custom_aabb = AABB(sphere_center - Vector3.ONE * r, Vector3.ONE * 2.0 * r)
 	add_child(MeshInstance)
 	MeshInstances = [MeshInstance]
-	_bone_combined.resize(Geometry.BoneNames.size())
-	_bone_animations.resize(Geometry.BoneNames.size())
-	for i in _bone_animations.size():
-		_bone_animations[i] = []
-	AnimationDriverBone = TSkinnedMeshAnimationDriver.new(self)
+	AnimationDriverBone = Geometry.BoneDriver.GetCopy()
 	AnimationDriverMorph = TMeshMorphAnimationDriver.new(self)
 	AnimationController.AddDriver(AnimationDriverBone)
 	AnimationController.AddDriver(AnimationDriverMorph)
@@ -262,41 +250,12 @@ static func _geometry(path: String) -> TGeometry:
 		return null
 	var g := TGeometry.new()
 	g.Raw = raw
-	# every mesh has at least one root bone; loading it loads the children (depth first)
-	var parents: Array[int] = []
-	for i in raw.BoneData.size():
-		var bone: Dictionary = raw.BoneData[i]
-		g.BoneNames.append(bone.Name)
-		g.BoneOriginal.append(bone.Matrix)
-		g.BoneChildren.append(PackedInt32Array())
-	_link_bones(g, raw.BoneData, 0)
-	for i in g.BoneNames.size():
-		g.BoneLookup[g.BoneNames[i].to_lower()] = i
+	g.BoneDriver = TSkinnedMeshAnimationDriver.new().Create(raw.BoneData, raw.SkinData, raw.BoneAnimationData)
 	g.HasSkin = not raw.SkinData.is_empty()
-	for link: Dictionary in raw.SkinData:
-		var bone: int = g.BoneLookup.get(String(link.TargetBoneName).to_lower(), -1)
-		if bone < 0:
-			push_error("TMesh: referenced bone \"%s\" not found in %s" % [link.TargetBoneName, path])
-			bone = 0
-		g.SkinBones.append(bone)
-		g.SkinOffsets.append(link.OffsetMatrix)
-	if raw.SkinData.size() > HW_MAX_BONES:
-		push_error("TMesh: %s has too many bones (%d, max %d)" % [path, raw.SkinData.size(), HW_MAX_BONES])
 	g.MorphtargetCount = raw.MorphtargetMapping.size()
 	g.Surface = _build_mesh(raw, g.HasSkin)
 	_geometries[path] = g
 	return g
-
-
-## TBone.Create(Data): each bone takes its ChildCount children from the rest of the list. Returns the next index.
-static func _link_bones(g: TGeometry, data: Array, index: int) -> int:
-	var next := index + 1
-	for c in int(data[index].ChildCount):
-		if next >= data.size():
-			break
-		g.BoneChildren[index].append(next)
-		next = _link_bones(g, data, next)
-	return next
 
 
 static func _build_mesh(raw: TEngineRawMesh, skinned: bool) -> ArrayMesh:
@@ -694,102 +653,13 @@ func BoundingSphereTransformed() -> Array:
 	return [box.get_center(), box.size.length() / 2.0]
 
 
-# ---- bones (TMeshAnimatedGeometry.TBone, TSkin) --------------------------------------------------------------
-
-## TBone.AddBoneAnimation: collects the frame's weighted animations of a bone.
-func AddBoneAnimation(Bone: int, Translation: Vector3, Scale: Vector3, Rotation: Vector4, Weight: float) -> void:
-	_clear_bone_animations_if_old()
-	_bone_animations[Bone].append([Translation, Scale, Rotation, Weight])
-
-
-func _clear_bone_animations_if_old() -> void:
-	# new frame? -> all old animated matrices not longer useful
-	if GFXD.FrameCount != _bone_frame:
-		for list: Array in _bone_animations:
-			list.clear()
-		_bone_frame = GFXD.FrameCount
-
-
-## TBone.PassAnimationToHierarchy from the root with the identity: a bone with animations sums translation and scale
-## by weight and slerps the rotations in order (the weight sum stays the first one's, as in the original).
-func PassAnimationToHierarchy() -> void:
-	_clear_bone_animations_if_old()
-	if not Geometry.BoneNames.is_empty():
-		_pass_bone(0, Transform3D.IDENTITY)
-
-
-func _pass_bone(Bone: int, Parent: Transform3D) -> void:
-	var animated: Transform3D
-	var list: Array = _bone_animations[Bone]
-	if not list.is_empty():
-		var translation := Vector3.ZERO
-		var scale_ := Vector3.ZERO
-		for entry: Array in list:
-			translation += entry[3] * entry[0]
-			scale_ += entry[3] * entry[1]
-		var rotation: Vector4 = list[0][2]
-		var weight_sum: float = list[0][3]
-		for i in range(1, list.size()):
-			rotation = QuaternionSlerp(rotation, list[i][2], list[i][3] / (list[i][3] + weight_sum))
-		animated = Transform3D(QuaternionToBasis(rotation) * Basis.from_scale(scale_), translation)
-	else:
-		animated = Geometry.BoneOriginal[Bone]
-	var combined := Parent * animated
-	_bone_combined[Bone] = combined
-	for child in Geometry.BoneChildren[Bone]:
-		_pass_bone(child, combined)
-
-
-## RVector4Helper.QuaternionToMatrix4x3 (the rotation of an unnormalized x y z w quaternion).
-static func QuaternionToBasis(q: Vector4) -> Basis:
-	var sqw := q.w * q.w
-	var sqx := q.x * q.x
-	var sqy := q.y * q.y
-	var sqz := q.z * q.z
-	var invs := sqx + sqy + sqz + sqw
-	invs = 1.0 if invs == 0.0 else 1.0 / invs
-	var m11 := (sqx - sqy - sqz + sqw) * invs
-	var m22 := (-sqx + sqy - sqz + sqw) * invs
-	var m33 := (-sqx - sqy + sqz + sqw) * invs
-	var m12 := 2.0 * (q.x * q.y + q.z * q.w) * invs
-	var m21 := 2.0 * (q.x * q.y - q.z * q.w) * invs
-	var m13 := 2.0 * (q.x * q.z - q.y * q.w) * invs
-	var m31 := 2.0 * (q.x * q.z + q.y * q.w) * invs
-	var m23 := 2.0 * (q.y * q.z + q.x * q.w) * invs
-	var m32 := 2.0 * (q.y * q.z - q.x * q.w) * invs
-	# Column[i] = (_i1, _i2, _i3)
-	return Basis(Vector3(m11, m12, m13), Vector3(m21, m22, m23), Vector3(m31, m32, m33))
-
-
-## RVector4.SLerp (its sin(Dot) for sin(om) cancels in the final normalization).
-static func QuaternionSlerp(a: Vector4, b: Vector4, s: float) -> Vector4:
-	var q1 := a.normalized()
-	var q2 := b.normalized()
-	var dot := q1.dot(q2)
-	if dot < 0:
-		q2 = -q2
-		dot = -dot
-	var scale0 := 1.0 - s
-	var scale1 := s
-	if (1.0 - dot) > 0.00001:
-		var om := acos(dot)
-		var sinom := sin(dot)
-		scale0 = sin((1.0 - s) * om) / sinom
-		scale1 = sin(s * om) / sinom
-	return (scale0 * q1 + scale1 * q2).normalized()
-
-
 ## TSkin.ComputeAnimatedMatrices -> the shader's bone_transforms (TSkinnedMeshAnimationDriver.SetShaderSettings);
 ## the morph driver's weights -> the blend shapes (TMeshMorphAnimationDriver.SetShaderSettings: weight / 100).
 func UploadBoneTransforms() -> void:
 	if Geometry == null:
 		return
-	if Geometry.HasSkin:
-		var matrices: Array[Projection] = []
-		for i in HW_MAX_BONES:
-			matrices.append(Projection(_skin_matrix(i) if i < Geometry.SkinBones.size() else Transform3D()))
-		for m in Materials():
-			m.set_shader_parameter("bone_transforms", matrices)
+	if Geometry.HasSkin and AnimationDriverBone != null:
+		AnimationDriverBone.SetShaderSettings(Materials())
 	if AnimationDriverMorph != null and AnimationDriverMorph.HasMorph():
 		for k in mini(Geometry.MorphtargetCount, Geometry.Surface.get_blend_shape_count()):
 			MeshInstance.set_blend_shape_value(k, AnimationDriverMorph.CurrentMorphweights[k] / 100.0)
@@ -798,13 +668,13 @@ func UploadBoneTransforms() -> void:
 ## TRawMesh.TryGetBonePosition: the game-space matrix of a bone (the transformation matrix * its CombinedMatrix, or
 ## its OriginalMatrix if never animated), base columns normalized; null if the mesh has no such bone.
 func TryGetBonePosition(BoneName: String):
-	if Geometry == null or not Geometry.BoneLookup.has(BoneName.to_lower()):
+	if Geometry == null or AnimationDriverBone == null:
 		return null
-	var bone: int = Geometry.BoneLookup[BoneName.to_lower()]
+	var bone := AnimationDriverBone.BoneIndex(BoneName)
+	if bone < 0:
+		return null
 	AnimationController.UpdateAnimations()
-	var combined = _bone_combined[bone]
-	var bone_matrix: Transform3D = combined if combined != null else Geometry.BoneOriginal[bone]
-	var result := TransformationMatrix() * bone_matrix
+	var result := TransformationMatrix() * AnimationDriverBone.BoneMatrix(bone)
 	result.basis = Basis(result.basis.x.normalized(), result.basis.y.normalized(), result.basis.z.normalized())
 	return result
 
@@ -848,7 +718,6 @@ static var ProfUs = null
 ## free itself inside one of its own methods.
 static func Release(mesh: TMesh) -> void:
 	mesh.AnimationController.Clear()
-	mesh.AnimationDriverBone = null
 	mesh.AnimationDriverMorph = null
 	if mesh.is_inside_tree():
 		mesh.queue_free()
@@ -874,14 +743,14 @@ func AnimationNames() -> PackedStringArray:
 
 ## Frames of the file's take (its last keyframe index).
 func FrameCount() -> int:
-	if AnimationDriverBone == null or not AnimationDriverBone.AnimationData.has(FBX_DEFAULT_ANIMATIONTRACK):
+	if AnimationDriverBone == null or not AnimationDriverBone.HasAnimation(FBX_DEFAULT_ANIMATIONTRACK):
 		return 0
-	return AnimationDriverBone.AnimationData[FBX_DEFAULT_ANIMATIONTRACK].FrameCount - 1
+	return AnimationDriverBone.AnimationFrameCount(FBX_DEFAULT_ANIMATIONTRACK) - 1
 
 
 ## Shows one frame of the file's take (frame numbers as CreateNewAnimation counts them), weight 1.
 func ShowFrame(frame: float) -> void:
-	if AnimationDriverBone == null or not AnimationDriverBone.AnimationData.has(FBX_DEFAULT_ANIMATIONTRACK):
+	if AnimationDriverBone == null or not AnimationDriverBone.HasAnimation(FBX_DEFAULT_ANIMATIONTRACK):
 		return
 	var frames := maxi(FrameCount(), 1)
 	GFXD.NextFrame()
@@ -897,7 +766,7 @@ func GetPosedBoundingBox() -> AABB:
 	if not Geometry.HasSkin:
 		return raw.BoundingBox
 	var skin: Array[Transform3D] = []
-	for i in Geometry.SkinBones.size():
+	for i in AnimationDriverBone.SkinLinkCount():
 		skin.append(_skin_matrix(i))
 	var box := AABB()
 	for v in raw.Positions.size():
@@ -920,113 +789,10 @@ func GetPosedBoundingBox() -> AABB:
 
 ## BoneTransforms[link] = CombinedMatrix * BoneSpaceOffsetMatrix (a bone never passed down has a zero matrix).
 func _skin_matrix(link: int) -> Transform3D:
-	var combined = _bone_combined[Geometry.SkinBones[link]]
-	if combined == null:
-		return Transform3D(Basis(Vector3.ZERO, Vector3.ZERO, Vector3.ZERO), Vector3.ZERO)
-	return (combined as Transform3D) * Geometry.SkinOffsets[link]
+	return AnimationDriverBone.SkinMatrix(link)
 
 
 # ---- drivers ---------------------------------------------------------------------------------------------------
-
-## TSkinnedMeshAnimationDriver with TSkinnedMeshAnimationData: per animation the channels of existing bones with
-## keyframes, their times normalized by the animation's length (the latest last keyframe; a channel without keyframes
-## resets it to 0, as the original's GetAnimationLength does).
-class TSkinnedMeshAnimationDriver:
-	var FMesh: TMesh
-	## name -> {Name, Length, FrameCount, Sub: [{Bone, Times (0..1), Translations, Scales, Rotations}]}
-	var AnimationData := {}
-
-	func _init(mesh: TMesh) -> void:
-		FMesh = mesh
-		for animation: Dictionary in mesh.Geometry.Raw.BoneAnimationData:
-			var length := 0
-			for channel: Dictionary in animation.Channels:
-				if channel.Times.size() > 0:
-					length = maxi(channel.Times[channel.Times.size() - 1], length)
-				else:
-					length = 0
-			var data := {"Name": animation.Name, "Length": length, "FrameCount": 0, "Sub": []}
-			for channel: Dictionary in animation.Channels:
-				var bone: int = mesh.Geometry.BoneLookup.get(String(channel.TargetBone).to_lower(), -1)
-				if bone < 0 or channel.Times.size() == 0:
-					continue
-				data.FrameCount = maxi(data.FrameCount, channel.Times.size())
-				var times := PackedFloat32Array()
-				for t in channel.Times:
-					# normalize data in range 0..1
-					times.append(float(t) / length if length != 0 else 0.0)
-				data.Sub.append({"Bone": bone, "Times": times, "Translations": channel.Translations,
-					"Scales": channel.Scales, "Rotations": channel.Rotations})
-			AnimationData[animation.Name] = data
-
-	func HasSkin() -> bool:
-		return FMesh.Geometry.HasSkin
-
-	## TAnimationDriver.CreateNewAnimation + TSkinnedMeshAnimationData.ExtractPart: frames Startframe..Endframe (both
-	## included, clamped to every channel's keyframes) become a new animation; its length is the time between the
-	## two keyframes of the first channel.
-	func CreateNewAnimation(NewAnimationName: String, SourceAnimation: String, StartFrame: int, EndFrame: int) -> void:
-		if AnimationData.has(NewAnimationName):
-			push_warning("TAnimationDriver: Animation \"%s\" already exists!" % NewAnimationName)
-			return
-		if not AnimationData.has(SourceAnimation):
-			return
-		var source: Dictionary = AnimationData[SourceAnimation]
-		for sub: Dictionary in source.Sub:
-			StartFrame = mini(StartFrame, sub.Times.size() - 1)
-			EndFrame = mini(EndFrame, sub.Times.size() - 1)
-		var data := {"Name": NewAnimationName, "Length": 0, "FrameCount": 0, "Sub": []}
-		if not source.Sub.is_empty():
-			var first: Dictionary = source.Sub[0]
-			data.Length = roundi(source.Length * (first.Times[EndFrame] - first.Times[StartFrame]))
-			for sub: Dictionary in source.Sub:
-				var times := PackedFloat32Array()
-				for frame in range(StartFrame, EndFrame + 1):
-					times.append(float(frame - StartFrame) / (EndFrame - StartFrame) if EndFrame != StartFrame else NAN)
-				data.Sub.append({"Bone": sub.Bone, "Times": times, "Translations": sub.Translations.slice(StartFrame, EndFrame + 1),
-					"Scales": sub.Scales.slice(StartFrame, EndFrame + 1), "Rotations": sub.Rotations.slice(StartFrame, EndFrame + 1)})
-		AnimationData[NewAnimationName] = data
-
-	## TAnimationDriver.UpdateAnimation -> TSkinnedMeshAnimationData.UpdateAnimation (only the end of the time
-	## frame matters), then the hierarchy is passed down.
-	func UpdateAnimation(Animation_: String, _StartKey: float, EndKey: float, Weight: float) -> void:
-		if AnimationData.has(Animation_):
-			for sub: Dictionary in AnimationData[Animation_].Sub:
-				_update_sub(sub, EndKey, Weight)
-		if HasSkin():
-			FMesh.PassAnimationToHierarchy()
-
-	func UpdateWithoutAnimation() -> void:
-		if HasSkin():
-			FMesh.PassAnimationToHierarchy()
-
-	## RSkinnedMeshSubAnimationData.UpdateAnimation: the two keyframes around the time key (guessed, then searched),
-	## translation and scale lerped, rotation slerped.
-	func _update_sub(sub: Dictionary, Timekey: float, Weight: float) -> void:
-		var times: PackedFloat32Array = sub.Times
-		var count := times.size()
-		if count == 0:
-			return
-		var first := 0
-		var sec := count - 1
-		if count > 2:
-			sec = int((count - 1) * Timekey)
-			first = maxi(sec - 1, 0)
-			while not (times[first] <= Timekey and Timekey <= times[sec]):
-				var direction := signi(int(signf(Timekey - times[sec])))
-				sec = clampi(sec + direction, 0, count - 1)
-				first = clampi(sec - 1, 0, count - 1)
-				if first <= 0 or sec >= count - 1 or direction == 0:
-					break
-		var a := 1.0
-		if first != sec:
-			a = 1.0 - ((Timekey - times[first]) / absf(times[sec] - times[first]))
-		a = clampf(a, 0.0, 1.0)
-		var translation: Vector3 = sub.Translations[first].lerp(sub.Translations[sec], 1.0 - a)
-		var scale_: Vector3 = sub.Scales[first].lerp(sub.Scales[sec], 1.0 - a)
-		var rotation := TMesh.QuaternionSlerp(sub.Rotations[first], sub.Rotations[sec], 1.0 - a)
-		FMesh.AddBoneAnimation(sub.Bone, translation, scale_, rotation, Weight)
-
 
 ## TMeshMorphAnimationDriver with TMorphAnimationData: per animation one weight curve per morph target (times in ms);
 ## the frame's weights of all playing animations add up (CurrentMorphweights, 0..100).
@@ -1061,10 +827,19 @@ class TMeshMorphAnimationDriver:
 	func HasMorph() -> bool:
 		return FMorphtargetCount > 0
 
+	func HasAnimation(Name: String) -> bool:
+		return AnimationData.has(Name)
+
+	func AnimationLength(Name: String) -> int:
+		return AnimationData[Name].Length if AnimationData.has(Name) else 0
+
+	func AnimationFrameCount(Name: String) -> int:
+		return AnimationData[Name].FrameCount if AnimationData.has(Name) else 0
+
 	func _clear_data_if_old() -> void:
-		if GFXD.FrameCount != FLastFrameKey:
+		if GFXD.GetFrameCount() != FLastFrameKey:
 			CurrentMorphweights.fill(0.0)
-			FLastFrameKey = GFXD.FrameCount
+			FLastFrameKey = GFXD.GetFrameCount()
 
 	## TAnimationDriver.CreateNewAnimation + TMorphAnimationData.CreateSlice: the keys between the frames' times
 	## (frame * 1000 / 30), with lerped keys at the borders, shifted to start at 0.

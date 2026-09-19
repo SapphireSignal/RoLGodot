@@ -204,7 +204,7 @@ func test_mesh_animation_drives_bones() -> String:
 	var component := TMeshComponent.new().CreateGrouped(entity, [0], "Units\\Neutral\\Nexus\\NexusCrystal.xml") as TMeshComponent
 	component.CreateNewAnimation(C.ANIMATION_STAND, 0, 200)
 	var mesh := component.FMesh
-	check(mesh.AnimationDriverBone.AnimationData.has(C.ANIMATION_STAND), "the stand clip is cut from the take")
+	check(mesh.AnimationDriverBone.HasAnimation(C.ANIMATION_STAND), "the stand clip is cut from the take")
 	check_eq(mesh.AnimationController.DefaultAnimation, C.ANIMATION_STAND, "stand becomes the default")
 	GFXD.NextFrame()
 	mesh.Animate()
@@ -213,7 +213,7 @@ func test_mesh_animation_drives_bones() -> String:
 	check(mesh.GetPosedBoundingBox().position.y > 14.175, "floating")
 	TTimeManager.SetFakeTime(1234.0)
 	mesh.Animate()
-	check(mesh._skin_matrix(0).is_equal_approx(at_start), "one update per frame (GFXD.FrameCount)")
+	check(mesh._skin_matrix(0).is_equal_approx(at_start), "one update per frame (GFXD.GetFrameCount())")
 	GFXD.NextFrame()
 	mesh.Animate()
 	check(not mesh._skin_matrix(0).is_equal_approx(at_start), "the next frame shows 1234 ms later")

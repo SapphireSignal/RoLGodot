@@ -104,7 +104,7 @@ func StartThread() -> void:
 	var Go := Semaphore.new()
 	var IDs := []
 	FThread = Thread.new()
-	FThread.start(_Execute.bind(Ready, Go, IDs))
+	FThread.start(_Execute.bind(Ready, Go, IDs), Thread.PRIORITY_HIGH)
 	Ready.wait()
 	TThreadContext.RegisterThread(IDs[0], FContext)
 	Go.post()

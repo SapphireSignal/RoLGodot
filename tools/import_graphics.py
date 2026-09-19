@@ -363,6 +363,70 @@ def import_fonts(check: bool, problems: list) -> int:
 GUI_IMAGES = ['GUI/HUD/TechnicalPanel/*.png']
 
 
+def decode_cur(path: Path):
+    """A Windows .cur (BaseConflictMainUnit.LoadCursor loads Graphics/GUI/Cursors/<name>.cur with LoadCursorFromFile):
+    its first image as (width, height, RGBA bytes top-down, hotspot x, hotspot y)."""
+    data = path.read_bytes()
+    _, kind, count = struct.unpack_from('<HHH', data, 0)
+    if kind != 2 or count < 1:
+        raise ValueError(f'{path}: not a cursor file')
+    width, height, _, _, hot_x, hot_y, _, offset = struct.unpack_from('<BBBBHHII', data, 6)
+    width, height = width or 256, height or 256
+    header_size, _, _, _, bpp, compression = struct.unpack_from('<IiiHHI', data, offset)
+    if bpp != 32 or compression != 0:
+        raise ValueError(f'{path}: {bpp} bit cursors are not decoded (the game has 32 bit ones)')
+    pixels = offset + header_size
+    mask = pixels + width * height * 4
+    mask_stride = ((width + 31) // 32) * 4
+    has_alpha = any(data[pixels + i * 4 + 3] for i in range(width * height))
+    rgba = bytearray()
+    for y in range(height):
+        row = height - 1 - y  # bottom-up
+        for x in range(width):
+            b, g, r, a = data[pixels + (row * width + x) * 4: pixels + (row * width + x) * 4 + 4]
+            if not has_alpha:
+                a = 0 if data[mask + row * mask_stride + x // 8] & (0x80 >> (x % 8)) else 255
+            rgba += bytes((r, g, b, a))
+    return width, height, bytes(rgba), hot_x, hot_y
+
+
+def import_cursors(check: bool, problems: list) -> int:
+    """The game cursors (Graphics/GUI/Cursors: Default = crIngame, Hover = crIngameHover) as PNGs with their hotspots
+    (cursors.json) in assets/graphics/gui/cursors/."""
+    from PIL import Image
+    written = 0
+    hotspots = {}
+    for name in ('Default', 'Hover'):
+        source = GRAPHICS / 'GUI' / 'Cursors' / (name + '.cur')
+        if not source.exists():
+            problems.append(f'cursor {source} not found')
+            continue
+        try:
+            width, height, rgba, hot_x, hot_y = decode_cur(source)
+        except Exception as e:
+            problems.append(f'cursor {source}: {e}')
+            continue
+        hotspots[name.lower()] = [hot_x, hot_y]
+        if check:
+            continue
+        target = OUT / 'gui' / 'cursors' / (name.lower() + '.png')
+        if not target.exists():
+            target.parent.mkdir(parents=True, exist_ok=True)
+            Image.frombytes('RGBA', (width, height), rgba).save(target)
+            written += 1
+        import_file = target.with_name(target.name + '.import')
+        if not import_file.exists():
+            import_file.write_text(TEXTURE_IMPORT, encoding='utf-8', newline='\n')
+            written += 1
+    if not check and hotspots:
+        text = json.dumps(hotspots, indent=1, sort_keys=True) + '\n'
+        info = OUT / 'gui' / 'cursors' / 'cursors.json'
+        if not info.exists() or info.read_text(encoding='utf-8') != text:
+            info.write_text(text, encoding='utf-8', newline='\n')
+            written += 1
+    return written
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument('--only', help='only descriptors whose path contains this (case-insensitive)')
@@ -433,6 +497,7 @@ def main() -> int:
     if not args.only:
         written += import_effect_textures(args.check, problems)
         written += import_fonts(args.check, problems)
+        written += import_cursors(args.check, problems)
     map_problems = []
     if not args.only:
         written += import_map_graphics.import_maps(OUT, args.check, copy_if_changed, write_texture, map_problems)

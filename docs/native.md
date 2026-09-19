@@ -126,3 +126,10 @@ wind animation phase; objects leaked at exit 40 -> 23):
 | Classic, 2 spawners + 2 drops (42 entities) | 79 -> 136 | 12.4 / 16.4 / 17.5 -> 7.2 / 9.2 / 9.7 | 8.98 -> 4.21 | 11.2 -> 4.1 |
 
 Loading a scenario: 4.4-8.5 s -> 2.3-6.3 s. Frames over 12 ms with 42 entities: 174 of 3 s -> 0.
+
+2026-09-19, the skinned animation (`TSkinnedMeshAnimationDriver`, `native/src/graphics/`) and `GFXD`. A heavy game
+(Classic, 4 spawners and 2 drops per side, 129 entities, `--fps-check` dragging): 35 -> 69 fps, client step 22 -> 10
+ms/frame; the first bone lookup of a mesh per frame (which runs its animation) 66 -> 12 us. Left there: the server
+thread spikes (70-290 ms per frame while the same game headless stays under 20 ms: next to find),
+`TMeshComponent.OnIdle`, `TParticleEffectComponent.OnIdle`, `SetUpCustomShaders`.
+
