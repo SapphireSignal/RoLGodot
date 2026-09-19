@@ -69,12 +69,11 @@ three constraints), `tests/test_pathfinding.gd` (grid, A*, reservations, the dat
 - **Out parameters**: `TryGetBuildZone` / `TryGetNextWaypoint` return the value or null;
   `GetLanePropertiesOfEntity` returns `[Lane, Direction]`.
 - `TBuildZoneManager.BuildZones` iterates in insertion order (the original: hash order; zones never overlap).
-- **Kept quirks** (1:1): `TLane.DistanceToPoint` returns the distance to the last waypoint (its loop overwrites);
-  `GetNextWaypoint` ignores the direction; the A* source keeps a stale heuristic from earlier searches; with
-  `IgnoreOtherEntities` (units with `udUsePathfinding` off) only permanently blocked tiles are expanded, so such
-  units would get a path only to an adjacent target, else an empty one. Unreachable in the game: those units walk
-  straight (`TMovementComponent.IdleDirect`) and never ask for a path;
-  `ComputeDebugPath` frees its path, which releases slots even though it reserved none.
+- **Fixed bugs of the original** (`docs/original-bugs.md`): `TLane.DistanceToPoint` is the distance to the nearest
+  waypoint (the original's loop returned the last); the A* source gets its heuristic per search; with
+  `IgnoreOtherEntities` (units with `udUsePathfinding` off, which walk straight and never ask) every tile not
+  permanently blocked is expanded (the original's condition was inverted); a path that reserved nothing
+  (`ComputeDebugPath`) releases nothing. `GetNextWaypoint` ignores its direction by design (the caller applies it).
 - Skipped, no effect: `TPathfindingTileNeighbour.Create` computes the lane orientation and never uses it.
   Engine options never used: descending priority order (`TPriorityQueue.Order`), `TPathfinding.MaxUnitSize`
   (stored only), `TPathfindingTile.IsWalkable`'s `UnitSize`.

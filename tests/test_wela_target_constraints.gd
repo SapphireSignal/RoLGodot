@@ -212,13 +212,15 @@ func test_compare_unit_property_and_blacklist() -> void:
 	check(_valid(_unit(2), [2]), "other target")
 
 
-## Quirk kept: the check only compares empty targets, so far apart targets stay valid.
+## Set targets must lie within eiAbilityTargetRange of each other (the original compared only empty targets).
 func test_max_target_distance() -> void:
 	_setup()
 	_owner.Blackboard.SetValue(C.eiAbilityTargetRange, [1], 5.0)
 	TWelaTargetConstraintMaxTargetDistanceComponent.new().CreateGrouped(_owner, [1])
-	check(RTargetValidity.FromRParam(_validity([RTarget.Create(Vector2.ZERO), RTarget.Create(Vector2(100, 0))])).IsValid(),
-			"100 apart, range 5: still valid")
+	check(not RTargetValidity.FromRParam(_validity([RTarget.Create(Vector2.ZERO), RTarget.Create(Vector2(100, 0))])).IsValid(),
+			"100 apart, range 5: invalid")
+	check(RTargetValidity.FromRParam(_validity([RTarget.Create(Vector2.ZERO), RTarget.Create(Vector2(4, 0))])).IsValid(),
+			"4 apart, range 5: valid")
 
 
 func test_trigger_checks() -> void:

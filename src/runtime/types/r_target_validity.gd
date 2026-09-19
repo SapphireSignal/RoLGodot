@@ -2,7 +2,7 @@ class_name RTargetValidity
 extends RefCounted
 ## Port of RTargetValidity (BaseConflict.Types.Target.pas:81, implementation :605): whether a list of targets is
 ## valid, each target and together. A record in the original: Clone before changing a value read from an RParam.
-## Quirks kept: empty targets start invalid, and a single target once invalid never becomes valid again.
+## By design (the original documents it): empty targets start invalid, and a target once invalid stays invalid.
 
 const MAX_TARGETS = 256  # SizeOf(SetByte) * 8
 

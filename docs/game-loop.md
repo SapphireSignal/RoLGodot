@@ -39,9 +39,10 @@ Tests: `tests/test_server_game.gd` (setup, ticks, end) and `tests/test_sandbox_m
   `IsShuttingDown()`, `GameInformation.IsTutorial()`), properties stay properties (`InGameStatus`, `ServerTime`,
   `Map`, `EntityManager`, `Commanders`...). Test fakes of the game must follow this.
 - The globals `Game`, `ServerGame`, `Map`, `GlobalEventbus`, `Overwatch` are the bus's `Game` and its members.
-- `TTimeManager` is static; `TickTack` sets `ZDiff`. The server game keeps its own frame state (the original's
-  per-thread `GameTimeManager`): `DoComputeGame` swaps it in (`SaveClock` / `RestoreClock`), so a client in the same
-  process has its own `ZDiff` (its frame: `TTimeManager.TickTack`, eiIdle, `ReadyWhenLoaded`, `Idle`).
+- The clock (`TTimeManager.GetFloatingTimestamp`) is static; the frame counter is the per-thread `GameTimeManager`
+  (`TThreadContext.Current().GameTimeManager`: `TickTack` sets `ZDiff`). The server game has its own (in its thread
+  context, swapped in by `DoComputeGame`), so a client in the same process keeps its own `ZDiff` (its frame:
+  `GameTimeManager.TickTack`, eiIdle, `ReadyWhenLoaded`, `Idle`).
 
 ## Network
 
@@ -142,7 +143,7 @@ the static names the code uses (`TEventbus.CurrentEvent_*`, `TEntity._ScriptEven
 C++ `TTimeManager`: `TickTack`, `ZDiff`), as the original's threadvar. The bus fetches the context once per event.
 Game / Map / EntityDataCache already live on each side's global bus.
 
-A bug of the original, fixed on purpose (the owner wants no bugs carried over): `TTimeManager.Create`
+A bug of the original, fixed (`docs/original-bugs.md`): `TTimeManager.Create`
 (`Engine.Helferlein.Windows.pas:2216`) starts `LetzteZeit` from the raw performance counter while `TickTack` reads
 `GetTimeTick`, which subtracts `ProgramStart`, so the first TickTack after `TGameThread` creates its clock
 (`BaseConflict.Game.Server.pas:967`, first frame `:1037`) gives a large negative ZDiff (minus the program's start time

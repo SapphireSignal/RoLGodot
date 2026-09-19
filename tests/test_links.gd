@@ -346,10 +346,10 @@ func test_target_count_and_breaks() -> void:
 	check_eq(_log.Kills.back(), _log.Sent[4].ID, "death breaks all")
 
 
-## Breaking all walks the TDictionary in slot order while each break removes its entry. Dest IDs 1001 and 1005 hash
-## to bucket 0 ((2 xor ID) + 1 = 1004 / 1008, 4 slots), 1008 to bucket 3 (1011): slots 0, 1, 3. Removing 1001 shifts
-## 1005 back into slot 0, behind the walk: its link survives the owner's death.
-func test_break_all_skips_a_shifted_link() -> void:
+## Breaking all goes over the links in TDictionary slot order. Dest IDs 1001 and 1005 hash to bucket 0 ((2 xor ID) + 1
+## = 1004 / 1008, 4 slots), 1008 to bucket 3 (1011): slots 0, 1, 3. Removing 1001 shifts 1005 back into slot 0; the
+## original's live walk skipped it (its link survived the owner's death), the snapshot breaks it too.
+func test_break_all_breaks_a_shifted_link() -> void:
 	_setup()
 	var owner := _linker()
 	var a := _unit(1, Vector2(2, 10), [C.upUnit], 68.0, 1001)
@@ -359,9 +359,8 @@ func test_break_all_skips_a_shifted_link() -> void:
 	check_eq(_log.Sent.size(), 3, "three links")
 	var log: EntityLog = EntityLog.new().CreateGroupedAll(owner)
 	owner.Eventbus.Trigger(C.eiDie, [0, 0])
-	check_eq(log.Named("Break"), [[[2], 1001], [[2], 1008]], "1005 is skipped")
-	check_eq(_log.Kills, [owner.ID, _log.Sent[0].ID, _log.Sent[2].ID], "the owner, then two links: b's lives on")
-	check(_props(b).has(C.upInvisible), "b keeps the property")
+	check_eq(log.Named("Break"), [[[2], 1001], [[2], 1005], [[2], 1008]], "all three, in slot order")
+	check_eq(_log.Kills, [owner.ID, _log.Sent[0].ID, _log.Sent[1].ID, _log.Sent[2].ID], "the owner, then all three links")
 
 
 # --- TLinkEventRedirecter ---

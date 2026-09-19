@@ -171,7 +171,7 @@ func test_owning_commander() -> void:
 	check(_manager.TryGetOwningCommander(unit) == commander, "via eiOwnerCommander")
 
 
-## NexusNext / NexusNextEnemy keep the farthest nexus: `bestDistance < distance` in the original.
+## NexusNext / NexusNextEnemy give the nearest nexus (the original's bug kept the farthest).
 func test_nexus_queries() -> void:
 	_setup()
 	var n1 := _deployed(1, Vector2(0, 0))
@@ -182,6 +182,6 @@ func test_nexus_queries() -> void:
 	check_eq(_manager.NexusList().size(), 3, "enumerated")
 	check(_manager.NexusByTeamID(2) == n2, "by team")
 	check(_manager.NexusByTeamID(4) == null, "no nexus of that team")
-	check(_manager.NexusNext(Vector2(1, 0)) == n3, "farthest, as in the original")
-	check(_manager.NexusNextEnemy(Vector2(1, 0), 3) == n2, "farthest enemy")
-	check(_manager.TryGetNexusNextEnemy(n1) == n3, "overload with a reference entity")
+	check(_manager.NexusNext(Vector2(1, 0)) == n1, "nearest")
+	check(_manager.NexusNextEnemy(Vector2(1, 0), 1) == n2, "nearest enemy")
+	check(_manager.TryGetNexusNextEnemy(n3) == n2, "overload with a reference entity")

@@ -274,7 +274,7 @@ func test_shuffle_and_boss_wave() -> void:
 
 
 ## Rows behind the point: cannon fodder, tanks / melee, ranged, siege; each row centred, 3 apart; more than 7 in a
-## row wrap to the next row, the y offset keeps growing.
+## row wrap to the next row, each row centred.
 func test_squad_formation() -> void:
 	_setup()
 	var d := _director().SetTeam(5).ChooseUnitFaction(C.ecColorless)
@@ -299,8 +299,8 @@ func test_squad_formation() -> void:
 	manager.Log.clear()
 	d.SpawnUnits(d.GetUnitsByIdentifier(["SmallMeleeGolem", "SmallMeleeGolem", "SmallMeleeGolem"]), Vector2(0, 0), true)
 	var guards := manager.Kinds("Guard")
-	check_eq(guards.map(func(x): return x[1]), [Vector2(0, -12), Vector2(0, -9), Vector2(0, -6), Vector2(0, -3),
-		Vector2(0, 0), Vector2(0, 3), Vector2(0, 6), Vector2(3, 9), Vector2(3, 12)], "wrapped row")
+	check_eq(guards.map(func(x): return x[1]), [Vector2(0, -9), Vector2(0, -6), Vector2(0, -3), Vector2(0, 0),
+		Vector2(0, 3), Vector2(0, 6), Vector2(0, 9), Vector2(3, -1.5), Vector2(3, 1.5)], "seven centred, then two centred")
 	check_eq([guards[0][4], guards[0][5]], [5, 30], "guards: overwatch and flee 30")
 
 

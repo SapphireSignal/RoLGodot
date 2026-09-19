@@ -2,7 +2,7 @@ class_name TBrainFollowLaneComponent
 extends TBrainComponent
 ## Port of TBrainFollowLaneComponent (GameServer/BaseConflict.EntityComponents.Server.Brains.pas:206,
 ## implementation :1501), server only. The inner need to walk the lane to its end: when not moving (and allowed to
-## move) its chain (epLast) sends eiMoveTo [the enemy nexus (TryGetNexusNextEnemy: the farthest, quirk kept), own
+## move) its chain (epLast) sends eiMoveTo [the enemy nexus (TryGetNexusNextEnemy: the nearest), own
 ## collision radius] and consumes the thought; without an enemy nexus it stands still. Every eiThinkChain it is
 ## reached in returns False. Binds to the nearest lane at eiAfterCreate and on returning from exile, and answers
 ## eiGetLane (TLane or null) / eiGetLaneDirection at epFirst.

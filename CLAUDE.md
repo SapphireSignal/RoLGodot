@@ -6,10 +6,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 ## Project rules
 - Source of truth: `reference/rise-of-legions` at commit `96d5b8e4` (see `docs/source-of-truth.md`).
   Never use Crystal Clash content, the live game, or anything outside that snapshot for decisions.
-- The owner wants no bugs carried over (2026-09-19): an internal bug of the original with no intended gameplay effect
-  (e.g. the clock's first negative ZDiff) is fixed, not reproduced, and noted in the system's doc. Whether the
-  "Quirk kept" behaviours already ported (listed in `docs/entity-core.md`, `docs/map.md`) get fixed too is open:
-  some change how units play; ask the owner before changing gameplay.
+- No bugs of the original are ported (global rule "Never port bugs"): port what the code was meant to do, even when it
+  changes how units play, and list each fix in `docs/original-bugs.md` (original file:line, what it did, the fix).
   Layout: `BaseConflict.*.pas` at its root, engine units in `Engine/` (`Engine/Engine.Mesh.pas`), engine shaders
   in `Engine/Shader/`, effect shaders in `Graphics/Effects/Shader/`, scripts in `Scripts/`.
 - Stay inside `D:\Games\RoLGodot`. Never touch the owner's other repos.
@@ -33,6 +31,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 ## Docs
 - `docs/original-architecture.md`: how the original is built, file formats, gotchas.
 - `docs/port-plan.md`: phases 0-9. `docs/gap-list.md`: user-visible behaviours and their status.
+- `docs/original-bugs.md`: every bug of the original the port fixes instead of copying (and what was checked and is
+  not a bug).
 - `docs/unused-features.md`: things the original can do but never uses (whole classes: `tools/find_unused_classes.py`);
   add every unused option found while porting.
 - `docs/native.md`: the C++ game code: build, conventions, the order the game moves to C++, the measurements.

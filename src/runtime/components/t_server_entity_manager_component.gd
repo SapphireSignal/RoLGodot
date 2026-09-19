@@ -42,13 +42,14 @@ func OnDelayedKillEntity(EntityID) -> bool:
 	return true
 
 
-## Like the original's for loop, the kills queued while this loop runs are dropped by the Clear.
+## Kills the queued entities; kills queued while this runs wait for the next frame. Fixed bug of the original: its
+## Clear after the loop dropped them, so those entities never died (docs/original-bugs.md).
 func Idle() -> void:
 	super()
-	var Count := FEntitiesToKill.size()
-	for i in Count:
-		GlobalEventbus().Trigger(C.eiKillEntity, [FEntitiesToKill[i]])
-	FEntitiesToKill.clear()
+	var ToKill := FEntitiesToKill
+	FEntitiesToKill = []
+	for EntityID in ToKill:
+		GlobalEventbus().Trigger(C.eiKillEntity, [EntityID])
 
 
 ## Initiates the defeat of the team.

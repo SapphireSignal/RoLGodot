@@ -370,10 +370,11 @@ func test_teleport_to_nexus_with_offset() -> void:
 
 ## AsProjectile (Homeland): the unit is exiled and a projectile of eiWelaUnitPattern flies from it; the projectile
 ## carries a teleport warhead in group [0] imprinted with the unit and aimed at the landing spot, which is also its
-## saved target. When it fires, the unit lands there (no second exile or re-key). Its commander is the owner's ID.
+## saved target. When it fires, the unit lands there (no second exile or re-key). Its commander is the owner's commander.
 func test_teleport_as_projectile() -> void:
 	_setup()
 	var owner := _shooter(1, Vector2(0, -20))
+	owner.Blackboard.SetValue(C.eiOwnerCommander, [], 42)
 	var nexus := _shooter(2, Vector2(10, 0))
 	nexus.CollisionRadius = 0.5
 	NexusMarker.new().Create(nexus)
@@ -388,7 +389,7 @@ func test_teleport_as_projectile() -> void:
 	check_eq(t.Position, Vector2(0, 0), "not moved yet")
 	check_eq(log.Log, [["Exiled", true]], "exiled")
 	var p: TEntity = _manager.GetDeployedEntityList().back()
-	check_eq([p.Position, p.Front, p.CommanderID()], [Vector2(0, 0), Vector2(1, 0), owner.ID], "from the unit, towards the nexus")
+	check_eq([p.Position, p.Front, p.CommanderID()], [Vector2(0, 0), Vector2(1, 0), 42], "from the unit, towards the nexus, the owner's commander")
 	var saved: Array = ATarget.FromRParam(p.Eventbus.Read(C.eiWelaSavedTargets, []))
 	check_eq(saved.size() == 1 and saved[0].IsCoordinate() and saved[0].FTargetCoord == Vector2(8, 0), true, "aimed at (8, 0)")
 	var replaced := _log.Log.size()

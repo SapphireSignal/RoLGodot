@@ -183,6 +183,7 @@ func DoPathfinding(Source: TPathfindingTile, Target: TPathfindingTile, Direction
 	# init start node
 	Source.FCostFromSource = 0
 	Source.FParent = null
+	Source.ComputeAndSetHeuristicCost(Source, Target, Direction, UseWaypoints)
 	Source.FBlockingBeginnTime = StartingTime
 	# and after init add them as first node for pahtfinding
 	OpenList.Insert(Source, Source.TotalEstimatedCost())
@@ -208,7 +209,7 @@ func DoPathfinding(Source: TPathfindingTile, Target: TPathfindingTile, Direction
 				PathFound = true
 				break
 			if ((not IgnoreOtherEntities and NeighbourTile.IsWalkableAtTime(StartingTime + EnterNeighbourTime, NeighbourStayDuration))
-					or (IgnoreOtherEntities and NeighbourTile.IsPermanentlyBlocked())) and not ClosedList.has(NeighbourTile):
+					or (IgnoreOtherEntities and not NeighbourTile.IsPermanentlyBlocked())) and not ClosedList.has(NeighbourTile):
 				if not OpenList.Contains(NeighbourTile):
 					NeighbourTile.FParent = CurrentTile
 					NeighbourTile.FCostFromSource = RParam.ToSingle(CurrentTile.FCostFromSource + Neighbour.Cost)
@@ -229,6 +230,7 @@ func DoPathfinding(Source: TPathfindingTile, Target: TPathfindingTile, Direction
 	# construct path from from source (0) to currenttile (high) by backtracking the moved path
 	var Waypoints := GetPathToSource(CurrentTile)
 	var Result := TPath.new()
+	Result.Reserved = ReservePath
 	# block timeslots
 	for i in Waypoints.size():
 		var EnterTimestamp: int = Waypoints[i].FBlockingBeginnTime

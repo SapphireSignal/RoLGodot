@@ -476,6 +476,19 @@ func test_fire_redirects() -> void:
 	_probe.Log.clear()
 	_fire([enemy], [3])
 	check_eq(_log("Fire").slice(1), [[[Vector2(4, 2)], [4]]], "RedirectToGround: at the target, no target checks")
+	# a link's source / destination
+	var source := _unit(1, Vector2(1, 1))
+	var dest := _unit(1, Vector2(2, 2))
+	_owner.Blackboard.SetValue(C.eiLinkSource, [], ATarget.ToRParam(ATarget.Make(source)))
+	_owner.Blackboard.SetValue(C.eiLinkDest, [], ATarget.ToRParam(ATarget.Make(dest)))
+	TWelaEffectFireComponent.new().CreateGrouped(_owner, [5]).TargetGroup([6]).RedirectToLinkSource()
+	TWelaEffectFireComponent.new().CreateGrouped(_owner, [7]).TargetGroup([8]).RedirectToLinkDestination()
+	_probe.Log.clear()
+	_fire([enemy], [5])
+	check_eq(_log("Fire").slice(1), [[[source.ID], [6]]], "RedirectToLinkSource")
+	_probe.Log.clear()
+	_fire([enemy], [7])
+	check_eq(_log("Fire").slice(1), [[[dest.ID], [8]]], "RedirectToLinkDestination")
 
 
 func test_fire_in_creator() -> void:

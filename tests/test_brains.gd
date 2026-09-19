@@ -686,8 +686,8 @@ func test_auto_brains() -> void:
 	TAutoBrainOnDeathComponent.new().CreateGrouped(e, [1]).FireAtGround()
 	TAutoBrainOnDeathComponent.new().CreateGrouped(e, [2]).FireAtKiller()
 	e.Eventbus.Trigger(C.eiDie, [enemy.ID, -1])
-	check_eq(probe.Of("Fire"), [["Fire", [1], [Vector2(1, 2)]], ["Fire", [2], [e.ID]]],
-		"on death: at the ground; FireAtKiller still fires at the dying unit (quirk)")
+	check_eq(probe.Of("Fire"), [["Fire", [1], [Vector2(1, 2)]], ["Fire", [2], [enemy.ID]]],
+		"on death: at the ground; FireAtKiller at the killer")
 	probe.Log.clear()
 
 	var guard := _unit(1, Vector2.ZERO)

@@ -3,8 +3,9 @@ extends TObject
 ## Port of TLane (BaseConflict.Map.pas:138, implementation :671, RWaypoint :898): a lane the units walk along,
 ## made of waypoint lines. Each waypoint projects points onto its line along directions that fan out between
 ## the border directions (index 0 = start, 1 = center, 2 = end; Normal for the left side, Reverse for the right).
-## Kept 1:1 with the original's quirks: DistanceToPoint returns the distance to the LAST waypoint (its loop
-## overwrites), and GetNextWaypoint ignores the lane direction. The client-only DebugRender comes with the client.
+## GetNextWaypoint is the nearest waypoint (the caller, DirectionOnLane, applies the direction). Fixed bug of the
+## original: DistanceToPoint returned the distance to the LAST waypoint (its loop overwrote the minimum it started;
+## docs/original-bugs.md). The client-only DebugRender comes with the client.
 
 const ldNormal = 0  # EnumLaneDirection (BaseConflict.Types.Shared.pas:61)
 const ldReverse = 1
@@ -73,7 +74,7 @@ func GetNextWaypoint(Position: Vector2, _LaneDirection: int) -> RWaypoint:
 func DistanceToPoint(Point: Vector2) -> float:
 	var Result := 3.40282347e+38  # MaxSingle
 	for i in FWayPoints.size():
-		Result = FWayPoints[i].Waypoint.DistanceToPoint(Point)
+		Result = minf(Result, FWayPoints[i].Waypoint.DistanceToPoint(Point))
 	return Result
 
 

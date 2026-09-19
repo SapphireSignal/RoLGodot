@@ -2,14 +2,15 @@ class_name TWarheadSpottyTeleportComponent
 extends TWarheadComponent
 ## Port of TWarheadSpottyTeleportComponent (GameServer/BaseConflict.EntityComponents.Server.Warheads.pas:66,
 ## implementation :925), server only. Teleports an entity: the imprinted one (ImprintTeleportedID) or each entity
-## target to its team's nexus (ToNexus; else the farthest nexus, the NexusNext quirk) or to the fixed target
+## target to its team's nexus (ToNexus; else the nearest nexus, NexusNext) or to the fixed target
 ## (ToTarget / ToCoordinate); without either the owner itself goes to the target.
 ## Unless imprinted: Offset / OffsetByCollisionRadius put it that far (+ both radii) from an entity destination, on
 ## its own side; the entity is exiled and re-keyed (global eiReplaceEntity [ID, new unique ID, True]) so every
 ## targeting lets go of it. Then either the entity arrives at once (position, eiStand, eiSyncPosition, eiExiled
 ## False) or, AsProjectile, a projectile of eiWelaUnitPattern flies from it towards the destination carrying a
 ## teleport warhead in group [0] imprinted with the entity and aimed at the ground at the destination (+ offset).
-## Quirk kept: the projectile's owning commander is the owner's ID (the original passes FOwner.ID).
+## Fixed bug of the original: the projectile's owning commander was the owner's entity ID (FOwner.ID); here it is the
+## owner's commander (docs/original-bugs.md).
 ## Port: a missing nexus (assert in the original, then a crash) skips the teleport.
 
 var FAsProjectile := false
@@ -83,7 +84,7 @@ func FireWarhead(Targets: Array) -> void:
 			Game.ServerEntityManager.SpawnUnit(TeleportedEntity.Position,
 				TWelaTargetingRadialComponent.Normalize(Destination - TeleportedEntity.Position),
 				RParam.AsString(Eventbus().Read(C.eiWelaUnitPattern, [], ComponentGroup)), CardLeague(), CardLevel(),
-				Owner.TeamID(), Owner.ID, Owner, Setup)
+				Owner.TeamID(), RParam.AsInteger(Eventbus().Read(C.eiOwnerCommander, [])), Owner, Setup)
 		else:
 			var TeleportTo := TeleportTarget.GetTargetPosition(Game)
 			TeleportedEntity.Position = TeleportTo + TeleportOffset

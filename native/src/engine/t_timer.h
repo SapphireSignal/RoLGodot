@@ -57,9 +57,9 @@ public:
 	void SetInterval(int64_t p_new_interval);
 	void SetIntervalAndStart(int64_t p_new_interval);
 	bool getPaused() const { return FPaused; }
-	// Kept as in the original, which is inverted: Paused := True on a running timer calls Weiter (no-op), Paused :=
-	// False on a paused timer calls Pause again.
-	void setPaused(bool p_is_expired);
+	// Paused := True pauses, False runs on. Fixed bug of the original (docs/original-bugs.md): its setter was inverted
+	// (True called Weiter, False called Pause).
+	void setPaused(bool p_value);
 	void SetZeitDiffProzent(double p_wert);
 };
 

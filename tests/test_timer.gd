@@ -54,19 +54,35 @@ func test_expire_and_set_interval_and_start() -> void:
 	check_eq(t.ZeitDiffProzent(), 1.0, "30 / 30")
 
 
-## The code, not the doc comment ("3.6 => 2.6"): StartWithRest keeps Min(0, trunc(p) - 1) + frac(p) intervals,
-## so 3.6 -> 0.6 like StartWithFrac, and 0.5 -> -0.5 (the timer starts in the future).
+## As the original documents it (its code had a bug): StartWithRest takes off at most one interval (3.6 -> 2.6,
+## 0.5 -> 0), StartWithFrac all whole ones (2.9 -> 0.9).
 func test_start_with_rest_and_frac() -> void:
 	TTimeManager.SetFakeTime(0.0)
 	var t := TGameTimer.new().CreateAndStart(100)
 	TTimeManager.SetFakeTime(360.0)
 	t.StartWithRest()
-	check_eq(t.TimeSinceStart(), 60.0, "3.6 -> 0.6")
-	TTimeManager.SetFakeTime(350.0)
+	check_eq(t.TimeSinceStart(), 260.0, "3.6 -> 2.6")
+	TTimeManager.SetFakeTime(410.0)
 	t.StartWithRest()
-	check_eq(t.StartingTime, 400.0, "0.5 -> -0.5")
-	check(t.HasStarted(), "HasStarted: FLastTime >= now")
-	check_eq(t.TimeSinceStart(), 0.0, "clamped to 0")
-	TTimeManager.SetFakeTime(690.0)
+	check_eq(t.TimeSinceStart(), 210.0, "3.1 -> 2.1")
+	TTimeManager.SetFakeTime(250.0)
+	t.StartWithRest()
+	check_eq([t.StartingTime, t.TimeSinceStart()], [250.0, 0.0], "0.5 -> 0")
+	TTimeManager.SetFakeTime(540.0)
 	t.StartWithFrac()
 	check_eq(t.TimeSinceStart(), 90.0, "2.9 -> 0.9")
+
+
+## Paused := True pauses, Paused := False runs on (the original's setter was inverted).
+func test_paused_property() -> void:
+	TTimeManager.SetFakeTime(0.0)
+	var t := TTimer.new().CreateAndStart(100)
+	TTimeManager.SetFakeTime(30.0)
+	t.Paused = true
+	check(t.Paused, "paused")
+	TTimeManager.SetFakeTime(80.0)
+	check_eq(t.TimeSinceStart(), 30.0, "frozen while paused")
+	t.Paused = false
+	check(not t.Paused, "running")
+	TTimeManager.SetFakeTime(100.0)
+	check_eq(t.TimeSinceStart(), 50.0, "runs on from 30")

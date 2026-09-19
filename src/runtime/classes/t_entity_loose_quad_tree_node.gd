@@ -2,8 +2,6 @@ class_name TEntityLooseQuadTreeNode
 extends TLooseQuadTreeNode
 ## Port of TEntityLooseQuadTreeNode (BaseConflict.Classes.Shared.pas:75, implementation :367): a loose quadtree
 ## node that counts, per team, the entities in it and beneath it, so team-constrained queries skip whole subtrees.
-## Port note: an item whose center lies outside every child is counted but not stored and never uncounted (as in
-## the original; removing it finds no owner node).
 
 const C = preload("res://src/runtime/dws/dws_const.gd")
 const MAX_TEAMS = 6

@@ -4,11 +4,11 @@ extends TWelaEffectComponent
 ## implementation :997), server only. Replaces each entity target with a new unit of eiWelaUnitPattern (of its
 ## group), e.g. for upgrading a spawner: the target gets eiDelayedKillEntity, the new unit spawns at its position
 ## and front with its card league / level, owning commander and team (or SetNewTeam), the owner's skin. Then
-## KeepTakenDamage takes the target's missing health off the new unit, KeepResource copies a balance of the owner,
-## the target gets eiWelaUnitProduced [new ID] in this group, and the global eiReplaceEntity [owner ID, new ID,
+## KeepTakenDamage takes the target's missing health off the new unit, KeepResource copies a balance of the target,
+## the target gets eiWelaUnitProduced [new ID] in this group, and the global eiReplaceEntity [target ID, new ID,
 ## False] informs all interested parties.
-## Quirks kept: eiReplaceEntity names the owner, not the target (they are the same in every script); KeepResource
-## reads the owner's balance. A non-entity target is logged (HLog.AssertAndLog) and skipped.
+## Fixed bugs of the original: eiReplaceEntity named the owner and KeepResource read the owner's balance, not the
+## replaced target's (the same entity in every script; docs/original-bugs.md). A non-entity target is logged and skipped.
 
 var FNewTeam := 0
 var FKeepTakenDamage := false
@@ -43,10 +43,10 @@ func Fire(Targets: Array) -> void:
 			takenDamage = takenDamage - RParam.AsSingle(TargetEntity.Eventbus.Read(C.eiResourceBalance, [C.reHealth]))
 			newEntity.Eventbus.Trigger(C.eiResourceTransaction, [C.reHealth, RParam.ToSingle(-takenDamage)])
 		if FResource != C.reNone:
-			var OldResource = Eventbus().Read(C.eiResourceBalance, [FResource])
+			var OldResource = TargetEntity.Eventbus.Read(C.eiResourceBalance, [FResource])
 			newEntity.Eventbus.Write(C.eiResourceBalance, [FResource, OldResource])
 		TargetEntity.Eventbus.Trigger(C.eiWelaUnitProduced, [newEntity.ID], ComponentGroup)
-		GlobalEventbus().Trigger(C.eiReplaceEntity, [Owner.ID, newEntity.ID, false])
+		GlobalEventbus().Trigger(C.eiReplaceEntity, [TargetEntity.ID, newEntity.ID, false])
 
 
 func SetNewTeam(NewTeam: int) -> TWelaEffectReplaceComponent:

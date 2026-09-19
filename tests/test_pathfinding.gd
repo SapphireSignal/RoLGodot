@@ -197,10 +197,10 @@ func test_compute_path_reserves_time_slots() -> void:
 	check_eq(pf.ComputePath(_unit, Vector2(4, -23), 100, false, false), [], "no current tile: no path")
 
 
-func test_ignore_other_entities_quirk() -> void:
-	# With IgnoreOtherEntities the original only expands permanently blocked tiles (its condition is inverted),
-	# so in open field only a target next to the source is found.
+func test_ignore_other_entities() -> void:
+	# With IgnoreOtherEntities every tile that is not permanently blocked is walkable (the original's condition was
+	# inverted: it only expanded blocked tiles, so only an adjacent target was found).
 	_setup()
 	_walker(Vector2(0, -23), 0.01)
-	check_eq(_map.Pathfinding.ComputePath(_unit, Vector2(4, -23), 100, false, true), [], "5 tiles away: none")
+	check_eq(_map.Pathfinding.ComputePath(_unit, Vector2(4, -23), 100, false, true).size(), 6, "5 tiles away: found")
 	check_eq(_map.Pathfinding.ComputePath(_unit, Vector2(0.8, -23), 100, false, true).size(), 2, "adjacent: found")

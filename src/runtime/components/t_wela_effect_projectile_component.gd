@@ -10,8 +10,8 @@ extends TWelaEfficiencyEffectComponent
 ## it is independent after launch) and eiWelaSavedTargets = the target (Reverse: flies from the target to the
 ## owner). After deploy the owner gets eiWelaShotProjectile [projectile] in its group, then without group.
 ## Efficiency: 1 against any target that is not upUntargetable, else -1.
-## Quirk kept: a shooter standing exactly at (0, 0) counts as having no position (a commander), so its projectile
-## starts at the target.
+## Fixed bug of the original: it took any shooter standing exactly at (0, 0) for a commander (no position) and started
+## its projectile at the target; here only a commander of the game does (docs/original-bugs.md).
 ## Port: an empty link list falls back to the owner (the original read past the array).
 
 var FReverse := false
@@ -46,7 +46,8 @@ func Fire(Targets: Array) -> void:
 		else:
 			# if a commander shoots a projectile, there is no starting position, so use from target
 			Position = StartingEntity.Position
-			if Position == Vector2.ZERO:
+			var Commanders = Game.get("Commanders")
+			if Commanders != null and Commanders.has(StartingEntity):
 				Position = Target.GetTargetPosition(Game)
 
 		var SkinID: String = Owner.GetSkinID(ComponentGroup)

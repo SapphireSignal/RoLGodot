@@ -162,6 +162,22 @@ class EntityLog:
 		return Result
 
 
+## On the kill of From, queues the delayed kill of Next.
+class KillChain:
+	extends TEntityComponent
+	var From := -1
+	var Next := -1
+
+	func _DeclareEvents(e: Array) -> void:
+		super(e)
+		e.append(XEvent("OnKill", C.eiKillEntity, C.epFirst, C.etTrigger, C.esGlobal))
+
+	func OnKill(EntityID) -> bool:
+		if RParam.AsInteger(EntityID) == From:
+			GlobalEventbus().Trigger(C.eiDelayedKillEntity, [Next])
+		return true
+
+
 ## Records its destruction.
 class Tracked:
 	extends TEntityComponent
@@ -404,6 +420,19 @@ func test_delayed_kill() -> void:
 	_manager.Idle()
 	check(t.Freed, "freed at the Idle after")
 	check_eq(_log.Named("Kill").size(), 1, "killed once")
+	# a kill queued while the kills run waits for the next Idle (the original dropped it)
+	var a := _unit(1, Vector2.ZERO)
+	var b := _unit(1, Vector2(1, 0))
+	var chain := KillChain.new().Create(_game_entity)
+	chain.From = a.ID
+	chain.Next = b.ID
+	_log.Log.clear()
+	_bus.Trigger(C.eiDelayedKillEntity, [a.ID])
+	_manager.Idle()
+	check_eq(_log.Named("Kill"), [[a.ID]], "a killed, b queued meanwhile")
+	_manager.Idle()
+	check_eq(_log.Named("Kill"), [[a.ID], [b.ID]], "b killed at the next Idle")
+	check(not _manager.HasEntityByID(b.ID), "b gone")
 
 
 ## SpawnUnitWithoutLimitedLifetime frees GROUP_BUILDING_LIFETIME (the real VoidAltar's 90 s lifetime) and faces
@@ -502,8 +531,8 @@ func test_factory_build_target() -> void:
 	# field (1, 2) centre: Front * 2 * 0.5 + Left * 2 * -0.5 = (1, 1); 2x1: + Left * 1 = (0, 1)
 	check_eq([u.Position, u.Front, u.TeamID()], [Vector2(0, 1), Vector2(0, 1), 4], "on the fields, zone front, team 4")
 	check_eq(u.Eventbus.Read(C.eiBuildgridOwner, []), 1, "eiBuildgridOwner")
-	check_eq([zone.GetFieldID(Vector2i(1, 2)), zone.GetFieldID(Vector2i(2, 2))], [0, 0],
-		"both fields blocked, with ID 0: the PreProcessing runs before the unit has its ID (quirk kept)")
+	check_eq([zone.GetFieldID(Vector2i(1, 2)), zone.GetFieldID(Vector2i(2, 2))], [u.ID, u.ID],
+		"both fields blocked with the unit's ID")
 	check_eq(u.Eventbus.Read(C.eiBuildgridBlockedFields, []), [[1, Vector2i(1, 2)], [1, Vector2i(2, 2)]], "saved")
 	check_eq(EntityLog.Desc(u.Eventbus.Read(C.eiWelaSavedTargets, [])).size(), 2, "the targets saved")
 	check_eq([u.BalanceInt(C.reCardTimesPlayed), u.Balance(C.reLevel)], [4, 2], "card values passed")
@@ -601,7 +630,8 @@ func test_projectile_reverse_multiple() -> void:
 	check_eq(p.Blackboard.GetValue(C.eiWelaCount, [0]), 3, "eiWelaCount copied")
 
 
-## A shooter standing exactly at (0, 0) counts as a commander without position: the projectile starts at the target.
+## A commander has no position: its projectile starts at the target. A unit standing at (0, 0) shoots from there (the
+## original took it for a commander).
 func test_projectile_from_origin() -> void:
 	_setup()
 	var owner := _unit(1, Vector2(0, 0))
@@ -613,13 +643,22 @@ func test_projectile_from_origin() -> void:
 	var shots := log.Named("Shot")
 	check_eq(shots.size(), 2, "one projectile")
 	if shots.size() == 2:
-		check_eq(_manager.GetEntityByID(shots[0][1]).Position, Vector2(6, 0), "starts at the target")
+		check_eq(_manager.GetEntityByID(shots[0][1]).Position, Vector2(0, 0), "a unit at (0, 0) shoots from there")
+	log.Log.clear()
+	_bus.Game.Commanders.append(owner)
+	owner.Eventbus.Trigger(C.eiFire, [[RTarget.Create(target)]], [5])
+	shots = log.Named("Shot")
+	check_eq(shots.size(), 2, "one more projectile")
+	if shots.size() == 2:
+		check_eq(_manager.GetEntityByID(shots[0][1]).Position, Vector2(6, 0), "a commander's starts at the target")
+	_bus.Game.Commanders.clear()
 
 
 # --- TBrainSpawnerComponent ---
 
-## ApplyGridOffset uses RMatrix2x2.Inverse as coded (the transpose of the inverse): field (0, 0) (centre (3, -3))
-## gives the offset (-3, -3), not (3, 3); the spawn target base is the identity here, so it fires at (7, -3).
+## ApplyGridOffset takes the field's offset into the zone's frame (the inverse of its base): field (0, 0) (centre (3, -3))
+## gives the offset (3, 3) (the original's transposed inverse gave (-3, -3)); the spawn target base is the identity
+## here, so it fires at (13, 3).
 func test_brain_spawner() -> void:
 	_setup()
 	_build_zone()
@@ -632,9 +671,9 @@ func test_brain_spawner() -> void:
 	_bus.Trigger(C.eiWaveSpawn, [1, Vector2i(1, 0)])
 	check_eq(log.Named("Fire"), [], "other grid or field: no spawn")
 	_bus.Trigger(C.eiWaveSpawn, [1, Vector2i(0, 0)])
-	check_eq(log.Named("Fire"), [[[0], [Vector2(7, -3)]]], "fires in its group at the spawn target + offset")
+	check_eq(log.Named("Fire"), [[[0], [Vector2(13, 3)]]], "fires in its group at the spawn target + offset")
 	check_eq(TBrainSpawnerComponent.Matrix2x2Inverse(Transform2D(Vector2(2, 0), Vector2(1, 1), Vector2.ZERO)),
-		Transform2D(Vector2(0.5, -0.5), Vector2(0, 1), Vector2.ZERO), "the coded inverse of [[2, 1], [0, 1]]")
+		Transform2D(Vector2(0.5, 0), Vector2(-0.5, 1), Vector2.ZERO), "the inverse of [[2, 1], [0, 1]]")
 	_log.Log.clear()
 	_bus.Trigger(C.eiGameStart)
 	check_eq(_log.Named("WaveSpawn"), [[1, Vector2i(0, 0)]], "asks for its own wave at game start")
@@ -689,7 +728,7 @@ func test_real_spawner_spawns_its_squad() -> void:
 	check_eq(zone.GetFieldID(Vector2i(0, 0)), s.ID, "its field is blocked")
 	var log: EntityLog = EntityLog.new().CreateGroupedAll(s)
 	_bus.Trigger(C.eiGameStart)
-	check_eq(log.Named("Fire"), [[[0], [Vector2(7, -3)]]], "fires its wave")
+	check_eq(log.Named("Fire"), [[[0], [Vector2(13, 3)]]], "fires its wave")
 	var produced := log.Named("Produced")
 	check_eq(produced.size(), 4, "two skeletons, each announced twice")
 	if produced.size() != 4:
@@ -697,7 +736,7 @@ func test_real_spawner_spawns_its_squad() -> void:
 	var a = _manager.GetEntityByID(produced[0][1])
 	var b = _manager.GetEntityByID(produced[2][1])
 	check_eq(a.ScriptFileName(), "VoidSkeleton", "VoidSkeletons")
-	check_eq([V(a.Position), V(b.Position)], [Vector2(6.6667, -3), Vector2(7.3333, -3)], "side by side")
+	check_eq([V(a.Position), V(b.Position)], [Vector2(12.6667, 3), Vector2(13.3333, 3)], "side by side")
 	check_eq([a.TeamID(), a.CommanderID(), a.Front], [1, 7, Vector2(0, 1)], "team, commander, front")
 	check_eq([a.CardLeague(), a.CardLevel()], [3, 5], "league and level")
 	check_eq(_bus.Game.Statistics.GetCount(7, "unit_spawns_VoidSkeleton"), 2, "two skeletons counted")

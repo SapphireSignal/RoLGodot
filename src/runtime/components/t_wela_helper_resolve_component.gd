@@ -4,7 +4,7 @@ extends TEntityComponent
 ## Answers reads of wela values (eiWelaUnitPattern, eiWelaCount, eiWelaDamage, eiCooldown, ...) at epFirst with the
 ## blackboard value saved under the index of the current source (team ID, level, a resource, the game's tier or the
 ## owner's tier) in the group the read was called to; falls back to the previous value if nothing is saved there.
-## Quirk kept: ResolveTier (owner tier) gives 1 for upTier1 and upTier2 and 3 otherwise.
+## Fixed bug of the original: ResolveTier gave 1 for upTier2 as well; tier 1 / 2 give 1 / 2, others 3 (docs/original-bugs.md).
 
 const BC = preload("res://src/runtime/base_conflict_constants.gd")
 
@@ -41,7 +41,7 @@ func GetCurrentIndex() -> int:
 			if UnitProperties.has(C.upTier1):
 				return 1
 			elif UnitProperties.has(C.upTier2):
-				return 1
+				return 2
 			return 3
 	MakeException("GetCurrentIndex: Missing implementation of resolve source!")
 	return 0

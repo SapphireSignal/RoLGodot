@@ -238,25 +238,25 @@ func TryGetNexusByTeamID(TeamID: int):
 	return null
 
 
-## Retrieves the next hostile nexus: NexusNextEnemy(Position, MyTeamID).
-## Note: like the original, it keeps the nexus with the *largest* distance (`bestDistance < distance`).
+## Retrieves the nearest hostile nexus: NexusNextEnemy(Position, MyTeamID).
 func NexusNextEnemy(Position: Vector2, MyTeamID: int):
 	return TryGetNexusNextEnemy(Position, MyTeamID)
 
 
-## Same bug as NexusNextEnemy: returns the farthest nexus.
+## The nearest nexus of any team. Fixed bug of the original: it kept the farthest one (docs/original-bugs.md).
 func NexusNext(Position: Vector2):
 	var Result = null
 	var bestDistance := -1.0
 	for itemNexus in NexusList():
 		var distance: float = itemNexus.Position.distance_to(Position)
-		if bestDistance < 0 or bestDistance < distance:
+		if bestDistance < 0 or distance < bestDistance:
 			bestDistance = distance
 			Result = itemNexus
 	return Result
 
 
-## TryGetNexusNextEnemy(Position, MyTeamID) or TryGetNexusNextEnemy(reference: TEntity).
+## TryGetNexusNextEnemy(Position, MyTeamID) or TryGetNexusNextEnemy(reference: TEntity): the nearest nexus of another
+## team (fixed bug of the original: the farthest one).
 func TryGetNexusNextEnemy(PositionOrReference, MyTeamID: int = 0):
 	var Position: Vector2
 	if PositionOrReference is TEntity:
@@ -269,7 +269,7 @@ func TryGetNexusNextEnemy(PositionOrReference, MyTeamID: int = 0):
 	for itemNexus in NexusList():
 		if itemNexus.TeamID() != MyTeamID:
 			var distance: float = itemNexus.Position.distance_to(Position)
-			if bestDistance < 0 or bestDistance < distance:
+			if bestDistance < 0 or distance < bestDistance:
 				bestDistance = distance
 				Nexus = itemNexus
 	return Nexus

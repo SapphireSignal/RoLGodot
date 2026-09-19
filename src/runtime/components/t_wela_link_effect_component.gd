@@ -9,9 +9,9 @@ extends TWelaEfficiencyEffectComponent
 ## eiCreatorGroup (CreatorGroup), a TLinkEventRedirecter (ALLGROUP) and the group's skin. eiLinkBreak (epLast) kills
 ## the link entity (eiDelayedKillEntity). Death, exile (eiExiled True), the global eiLose and freeing break all links.
 ## Efficiency: the group's eiWelaDamage; to a target: 1 unless upUntargetable, else -1.
-## The links are a Delphi TDictionary (DelphiDictionary, keyed by RTarget.Hash / Equal): breaking all walks it in
-## slot order while each break removes its entry, so, as in the original, a link shifted back into a visited slot is
-## skipped and stays up.
+## The links are a Delphi TDictionary (DelphiDictionary, keyed by RTarget.Hash / Equal), so they break in its slot
+## order. Fixed bug of the original: it walked the live keys while each break removed its entry, so a link shifted back
+## into a visited slot was skipped and stayed up; here the walk goes over a snapshot (docs/original-bugs.md).
 
 var FCurrentLinks: DelphiDictionary = null  # RTarget -> link entity ID
 var FLinkOrder: Array = []  # of RTarget
@@ -94,12 +94,10 @@ func GetEfficiencyToTarget(Entity) -> float:
 	return 1.0 if IsPossible else -1.0
 
 
-## `for Link in FCurrentLinks.Keys`: a live walk over the slots (see the class comment).
+## Breaks every link, in slot order, walking a snapshot of the keys (see the class comment).
 func BreakAllLinks() -> void:
-	var Slot := FCurrentLinks.NextSlot(-1)
-	while Slot >= 0:
-		Eventbus().Trigger(C.eiLinkBreak, [FCurrentLinks.KeyAt(Slot)], ComponentGroup)
-		Slot = FCurrentLinks.NextSlot(Slot)
+	for Link in FCurrentLinks.Keys():
+		Eventbus().Trigger(C.eiLinkBreak, [Link], ComponentGroup)
 
 
 func BreakLink(LinkTarget: RTarget) -> void:

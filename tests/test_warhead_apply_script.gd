@@ -123,7 +123,7 @@ func test_resolve_tiers() -> void:
 	r.ResolveTier()
 	check_eq(e.Eventbus.Read(C.eiCooldown, [], [2]), 300, "owner without tier: 3")
 	e.Blackboard.SetValue(C.eiUnitProperties, [], [C.upTier2])
-	check_eq(e.Eventbus.Read(C.eiCooldown, [], [2]), 100, "quirk: tier 2 gives 1")
+	check_eq(e.Eventbus.Read(C.eiCooldown, [], [2]), 200, "tier 2 gives 2")
 	e.Blackboard.SetValue(C.eiUnitProperties, [], [C.upTier1])
 	check_eq(e.Eventbus.Read(C.eiCooldown, [], [2]), 100, "tier 1 gives 1")
 

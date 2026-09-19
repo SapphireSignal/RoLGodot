@@ -77,15 +77,16 @@ func Spawn() -> void:
 	Eventbus().Trigger(C.eiFire, [ATarget.ToRParam(Target)], ComponentGroup)
 
 
-## RMatrix2x2.Inverse (Engine/Engine.Math.pas:4479) as coded: it swaps the off-diagonal cells the wrong way round,
-## so it returns the transpose of the inverse (for the spawner's rotation base: the base itself). A singular matrix
-## comes back unchanged. Columns: x = (_11, _12), y = (_21, _22).
+## RMatrix2x2.Inverse (Engine/Engine.Math.pas:4479). A singular matrix comes back unchanged. Columns: x = (_11, _12),
+## y = (_21, _22). Fixed bug of the original: it swapped the off-diagonal cells the wrong way round, returning the
+## transpose of the inverse (for the spawner's rotation base: the base itself, so waves came out mirrored against
+## the spawner's field; docs/original-bugs.md).
 static func Matrix2x2Inverse(M: Transform2D) -> Transform2D:
 	var Determinant := M.x.x * M.y.y - M.x.y * M.y.x
 	if Determinant == 0:
 		return M
-	return Transform2D(Vector2(M.y.y / Determinant, -M.y.x / Determinant),
-		Vector2(-M.x.y / Determinant, M.x.x / Determinant), Vector2.ZERO)
+	return Transform2D(Vector2(M.y.y / Determinant, -M.x.y / Determinant),
+		Vector2(-M.y.x / Determinant, M.x.x / Determinant), Vector2.ZERO)
 
 
 func ApplyRandomOffset() -> TBrainSpawnerComponent:

@@ -107,16 +107,21 @@ func AddItem(Item: TLooseQuadTreeNodeData) -> void:
 	FHasItems = true
 
 
-## Adds an item recursive. Searching for the correct spot to insert. An item whose center lies outside every
-## child is dropped (the tree's assert is the only guard in the original).
+## Adds an item recursive. Searching for the correct spot to insert. An item whose center lies outside every child
+## (outside the world) stays in this node. Fixed bug of the original: it was dropped, counted but stored nowhere, so
+## never found or removed (docs/original-bugs.md).
 func AddItemRecursive(Item: TLooseQuadTreeNodeData) -> void:
 	if Item.Radius >= FBorderSizeHalf or not HasChildren:
 		AddItem(Item)
 	else:
+		var Added := false
 		for i in CHILDCOUNT:
 			if ContainsPoint(FChildren[i].FRealRect, Item.Center):
 				FChildren[i].AddItemRecursive(Item)
+				Added = true
 				break
+		if not Added:
+			AddItem(Item)
 	FHasItems = true
 
 
@@ -130,16 +135,18 @@ func RemoveItem(Item: TLooseQuadTreeNodeData) -> void:
 		UpdateEmptyness()
 
 
-## Removes an item recursive: at its node, then up to the root.
+## Removes an item recursive: at its node, then up to the root, each node updating its emptiness before its parent
+## does. Fixed bug of the original: it updated after the parent, leaving HasItems stale above the parent node
+## (docs/original-bugs.md).
 func RemoveItemRecursive(Item: TLooseQuadTreeNodeData) -> void:
 	if Item == null:
 		return
 	if Item.FOwner == self:
 		RemoveItem(Item)
+	UpdateEmptyness()
 	var P = Parent()
 	if P != null:
 		P.RemoveItemRecursive(Item)
-	UpdateEmptyness()
 
 
 ## Returns recursivly all intersection items.

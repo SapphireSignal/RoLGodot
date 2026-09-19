@@ -2,7 +2,7 @@ class_name TWelaTargetingNexusComponent
 extends TWelaTargetingComponent
 ## Port of TWelaTargetingNexusComponent (GameServer/BaseConflict.EntityComponents.Server.Welas.pas:94,
 ## implementation :2785), server only. The target is the enemy nexus Game.EntityManager.TryGetNexusNextEnemy
-## returns (quirk kept there: the farthest one); valid while it exists and its efficiency is > 0.
+## returns (the nearest); valid while it exists and its efficiency is > 0.
 ## Without a Game (tests) there is no nexus.
 
 

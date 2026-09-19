@@ -7,7 +7,8 @@ extends TWelaEffectComponent
 ## RedirectToGround: the ground at the first target's position (jittered by RandomizeGroundtarget, then clamped
 ## into the walk zone), without target checks. FireInCreator: eiFire [all targets] on the entity of eiCreator in
 ## its eiCreatorGroup (never groupless), ignoring the rest.
-## Quirk kept: RedirectToLinkSource / RedirectToLinkDestination only set flags nothing reads.
+## RedirectToLinkSource / RedirectToLinkDestination: the owner's (a link's) eiLinkSource / eiLinkDest are the targets.
+## Fixed bug of the original: they only set flags nothing read (no script uses them; docs/original-bugs.md).
 ## Port: RedirectToGround with no targets reports an error and fires nothing (the original read past the array).
 
 var FRedirectToSelf := false
@@ -48,6 +49,10 @@ func Fire(Targets: Array) -> void:
 		return
 	if FRedirectToSelf:
 		Targets = ATarget.Make(Owner)
+	if FRedirectToSource:
+		Targets = ATarget.FromRParam(Eventbus().Read(C.eiLinkSource, []))
+	if FRedirectToDestination:
+		Targets = ATarget.FromRParam(Eventbus().Read(C.eiLinkDest, []))
 	if FRedirectToGround:
 		if Targets.is_empty():
 			push_error("TWelaEffectFireComponent.Fire: RedirectToGround without a target!")

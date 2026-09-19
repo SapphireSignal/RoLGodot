@@ -600,7 +600,8 @@ func GetNextBossWaveAction() -> SpawnRandomBossWaveAction:
 
 ## Spawns the units in squad rows behind Position (x grows by SQUAD_ROW_DISTANCE per row): cannon fodder in front,
 ## then tanks and melee, ranged, siege; each row centred on Position.y, SQUAD_UNIT_SPACE apart. A row of more than 7
-## starts a new row every 7 units, the y offset keeps growing (as the original). Targets are clamped to the walk
+## starts a new row every 7 units, each centred. Fixed bug of the original: the wrapped units kept the y offset of
+## one long row, so the new row sat off to one side (docs/original-bugs.md). Targets are clamped to the walk
 ## zone; the units face their next lane. WithOverwatch: guards with overwatch and flee (30).
 func SpawnUnits(Units: Array, Position: Vector2, WithOverwatch: bool = false) -> void:
 	FLastUnitsSpawned.clear()
@@ -635,8 +636,10 @@ func SpawnUnits(Units: Array, Position: Vector2, WithOverwatch: bool = false) ->
 					RowOffset = RowOffset + Vector2(SQUAD_ROW_DISTANCE, 0)
 					counter = 0
 				var AUnit: ScenarioUnit = SquadLine[i]
-				var Target := Position + RowOffset + Vector2(0, i * SQUAD_UNIT_SPACE -
-					(SquadLine.size() - 1) * SQUAD_UNIT_SPACE / 2.0)
+				# the row of up to 7 this unit starts or continues, centred on Position.y
+				var RowSize := mini(7, SquadLine.size() - (i - counter))
+				var Target := Position + RowOffset + Vector2(0, counter * SQUAD_UNIT_SPACE -
+					(RowSize - 1) * SQUAD_UNIT_SPACE / 2.0)
 				if Game != null:
 					Target = Game.Map.ClampToZone(C.ZONE_WALK, Target)
 				var Front: Vector2 = Game.Map.Lanes.GetOrientationOfNextLane(Game, Target, FTeamID)

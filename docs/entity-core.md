@@ -176,20 +176,21 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   constraints pass `TargetGame()` = `GlobalEventbus().Game`. `eiWelaTargetPossible` / `eiWarheadTargetPossible`
   read `[ATarget]` in a wela's group returns an `RTargetValidity` (`FromRParam` for a copy; empty = valid): each
   constraint (epHigher, own group only) can only make targets invalid; empty targets start invalid.
-  `eiWelaTriggerCheck` `[Amount, DamageType, InflictorID]` is the AND of the trigger checks. Quirk kept:
-  MaxTargetDistance only compares empty targets (never fails). Waiting for the map: `TWelaTargetConstraint{Grid,
+  `eiWelaTriggerCheck` `[Amount, DamageType, InflictorID]` is the AND of the trigger checks.
+  MaxTargetDistance: set targets within `eiAbilityTargetRange` of each other (a fixed bug, `docs/original-bugs.md`,
+  like every fix named in this file). Waiting for the map: `TWelaTargetConstraint{Grid,
   BuildTeam,Zone}Component` (stubs), `RTarget.GetBuildZone`, build targets' positions.
 - **Entity manager** (`tests/test_entity_manager.gd`): `eiNewEntity` (sent by `TEntity.Deploy`) registers,
   `GenerateUniqueID` counts from 2. `eiKillEntity` unregisters at once and frees at the next `Idle` (called by the
   game loop); `eiRemoveComponent` / `eiRemoveComponentGroup` / `FreeEntity` are deferred to `Idle` too.
   `eiReplaceEntity` re-keys the entity and its pending kills and updates `Game.Map.BuildZones`;
-  `eiSetGridFieldBlocking` needs `Game.Map` as well (both untested until the map exists). Quirk kept:
-  `NexusNext` / `NexusNextEnemy` return the *farthest* nexus (`bestDistance < distance`). The registry is an
+  `eiSetGridFieldBlocking` needs `Game.Map` as well (both untested until the map exists).
+  `NexusNext` / `NexusNextEnemy` return the nearest nexus (fixed: the original kept the farthest). The registry is an
   insertion-ordered Dictionary (original: hash order). `InvokeEventOnEntity` waits for `InvokeWithRawData`.
 - **Resolve** (`tests/test_warhead_apply_script.gd`): `TWelaHelperResolveComponent` answers wela reads (epFirst)
   with the blackboard value at index = team ID / `reLevel` / a resource / game tier (0-2 by `eiGameEventTimeTo` of
-  tech2/tech3) / owner tier, in the group the read was called to; else the previous value. Quirk kept: owner tier
-  gives 1 for `upTier1` and `upTier2`, 3 otherwise.
+  tech2/tech3) / owner tier, in the group the read was called to; else the previous value. Owner tier: 1 for
+  `upTier1`, 2 for `upTier2` (fixed: the original gave 1), 3 otherwise.
 - **Apply script** (same test file, real `BlessingHealth`, `SummoningSickness`, `Links\Invisible`):
   `TWarheadApplyScriptComponent` runs `Entity.ApplyScript(Script, Methodname or 'Apply', [Entity, Pass* values...])`
   on eiFireWarhead entity targets (local call), or on eiWelaUnitProduced (`ApplyToProducedUnits`), or on its owner
@@ -236,8 +237,8 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   drops) or null. Filter = `Callable(Entity)` or null. Circles touch at `distance <= r1 + r2`. Result order is the
   tree order (children top-left, top-right, bottom-left, bottom-right; a node's items in list order, removal
   swaps the last item into the gap, moving or re-teaming re-adds at the end); it decides ties, so it is ported
-  exactly. Range must be a float (`AsSingle` bit-casts ints). Quirks kept: a center outside the root is counted
-  but stored nowhere; removal leaves `HasItems` stale above the parent node (only makes queries descend more).
+  exactly. Range must be a float (`AsSingle` bit-casts ints). Fixed: a center outside the root stays at the
+  root (the original counted it and stored it nowhere); removal updates `HasItems` bottom-up.
   Distances are doubles (original singles). `TWelaReadyEnemiesNearbyComponent`: ready while an enemy within
   eiWelaRange of ValueGroup passes eiWelaTargetPossible of CheckGroup.
 - **Targeting** (server, `tests/test_wela_targeting.gd`, incl. two real server SmallMeleeGolems finding each
@@ -253,7 +254,7 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   replaces the list with the one unit to approach (least `TLane.GetWeightedDistance` of eiGetLane, else nearest)
   among possible units within eiAttentionrange × 1.2, if it is within eiAttentionrange; its validation (and
   Nexus', Self's) needs efficiency > 0, so a group without efficiency components never keeps its target. Nexus:
-  `TryGetNexusNextEnemy` (farthest, quirk). Self: the owner. Random picks (`PicksRandomTargets[WithRepetition]`)
+  `TryGetNexusNextEnemy` (the nearest). Self: the owner. Random picks (`PicksRandomTargets[WithRepetition]`)
   take the prioritized team first. New targets get `eiWelaYoureMyTarget [Owner]`. Sorting uses `DelphiSort`
   (Delphi 10.1's quicksort; assumed, the snapshot has no RTL) so ties keep the original's order. `Contains` uses
   `RTarget.Equal` (the original compared record memory, garbage fields included). Global / Rectangle targeting are
@@ -305,9 +306,9 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   changes in place and announce `eiWelaSetMainTarget`. Numbers from the golem test: 250 ms think + 533 ms action
   point = first hit at 783 ms, then every 1750 ms (ready 1167 ms after a shot, next think on the 250 ms grid); both
   golems strike in the same frame, so the 8th exchange kills both (the dead one's pending shot still lands: the
-  server entity manager removes a unit one frame later). Quirks kept: `TAutoBrainOnDeathComponent.FireAtKiller`
-  never changes the target (Delphi overloads: the override is never reached from CheckAndFire; `Fire()` /
-  `FireTargets(Targets)` here); the commander brain's target-count assert is dropped (release build). Port notes:
+  server entity manager removes a unit one frame later). `TAutoBrainOnDeathComponent.FireAtKiller` fires at the
+  killer (fixed: the original's override sat on the overload CheckAndFire never calls; `Fire()` / `FireTargets(Targets)`
+  here); the commander brain's target-count assert is dropped (release build). Port notes:
   the original's `Fire(Amount, TargetEntity)` of the deal-damage brain is `FireDamage`; without
   `Game.DelayedEvents` delayed shots / projectile retargets are dropped. Unused and not ported: see `docs/unused-features.md` (link / kill / will-deal-damage /
   on-hit / commander-target / projectile / instant-chain brains).
@@ -326,13 +327,13 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   targets). `TGameStatisticManager` (`Game.Statistics`, optional in fakes) counts per commander; `CardPlayed` waits
   for the card info. Factory: `eiWelaCount` units per target (SpreadSpawns: `RTarget.ComputeSpawningPattern`, or
   random within `eiWelaAreaOfEffect`); build targets sit at `RTarget.GetRealBuildPosition` and block their fields
-  **with ID 0** (quirk: blocked in PreProcessing); `eiWelaUnitProduced [ID]` in the fired group, then groupless.
-  Replace: `eiDelayedKillEntity` for the target, the new unit in its place, then `eiReplaceEntity [owner, new, False]`.
-  Projectile: from the owner (**an owner at exactly (0, 0) shoots from the target**, quirk: "a commander"), values
+  with the unit's ID (fixed: the original's were ID 0); `eiWelaUnitProduced [ID]` in the fired group, then groupless.
+  Replace: `eiDelayedKillEntity` for the target, the new unit in its place, then `eiReplaceEntity [target, new, False]`.
+  Projectile: from the owner (a commander of the game shoots from the target), values
   copied into blackboard group [0], a `TProjectileEventRedirecter` (damage done / kills / will-deal-damage go to the
   creator). Spawner brain: `eiWaveSpawn [GridID, Coord]` for its field fires group 0 at the zone's spawn target +
-  grid offset through `RMatrix2x2.Inverse` **as coded** (the transpose of the inverse; for the rotation base: the
-  base itself, so field (0, 0) of a 4x4 zone facing (0, 1) gives (-3, -3), not (3, 3)). Capture point: team groups in
+  grid offset through the inverse of the zone's base (fixed: the original's `RMatrix2x2.Inverse` transposed it, so
+  field (0, 0) of a 4x4 zone facing (0, 1) gave (-3, -3) instead of (3, 3)). Capture point: team groups in
   `SetTeamGroup` order (original: hash order). Unused options: `docs/unused-features.md`.
 - **Splash and teleport** (server, `tests/test_splash_teleport.gd`, incl. a real MeleeGolemTower's cone splash):
   splash warheads query `eiEntitiesInRange` (all teams) around each target (an empty target ends the fire) with
@@ -344,7 +345,7 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   dtSplash. Teleport: to the team's nexus (else the farthest one), a fixed spot, or the owner to its target; unless
   imprinted it offsets from an entity destination, exiles and re-keys the unit (`eiReplaceEntity [ID, new, True]`:
   the entity manager changes its `ID`); AsProjectile hands the unit to a projectile carrying an imprinted teleport
-  warhead in [0] (commander = the owner's ID, quirk kept).
+  warhead in [0] (commander = the owner's commander).
 - **Links** (server, `tests/test_links.gd`, incl. a real SmallCasterGolem giving an ally Crystal Power and a real
   GatlingTurret firing until its ammo is gone): a link is an entity. `TWelaLinkEffectComponent` fires
   `eiLinkEstablish [owner, target]` (epFirst: an already linked target stops the event; over `eiWelaTargetCount` the
@@ -352,9 +353,9 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   `eiCreatorGroup` and a `TLinkEventRedirecter` (empty `eiCooldown` / `eiWelaDamage` / `eiDamageType` reads come from
   the source in the link effect's group; damage done and kills go to the source). `eiLinkBreak [RTarget]` kills the
   link entity; death, exile, the global eiLose and freeing break all. The links are a `DelphiDictionary`
-  (`src/runtime/engine/`, Delphi's TDictionary: linear probing, 75% grow threshold, backward-shift delete; keys hash
-  with `RTarget.Hash`): breaking all walks it live, so a link shifted back into a visited slot is skipped and **stays
-  up** (quirk kept; use the class wherever the original walks or edits a TDictionary). `TLinkBrainComponent` fires
+  (C++, Delphi's TDictionary: linear probing, 75% grow threshold, backward-shift delete; keys hash with
+  `RTarget.Hash`): breaking all walks a snapshot of its keys in slot order (fixed: the original's live walk skipped a
+  link shifted back into a visited slot; use the class wherever the original walks a TDictionary). `TLinkBrainComponent` fires
   every cooldown on the global eiIdle (TimesExpired, max 50). `TWelaEffectLinkPayCostMyselfComponentServer`: 1 cost at
   once, then per whole second on its group's eiThinkChain; emptying fires FireOnEmpty's group. Continuous effects hook
   the ends with remote subscriptions at eiAfterCreate (damage redirection at epHigher, before armor). Numbers from the
@@ -421,8 +422,8 @@ has an event probe and a fake `Game.EntityManager` for component tests.
 - **Time**: `TTimer` reads `TTimeManager.GetFloatingTimestamp()` (ms). Tests freeze it with
   `TTimeManager.SetFakeTime(ms)` (`null` = the real clock, `GetFakeTime()` reads it). The frame counter is the
   threadvar `GameTimeManager` (`TThreadContext.Current().GameTimeManager`: `TickTack`, `ZDiff`); the pause is not
-  ported yet. `TTimer` keeps the
-  original's quirks: `StartWithRest` behaves like the code, not its comment, and the `Paused` setter is inverted.
+  ported yet. `TTimer.StartWithRest` takes off at most one interval, as documented, and `Paused := True` pauses
+  (both fixed bugs of the original).
 
 - **Damage pipeline** (`eiTakeDamage`, read `[Amount, DamageType, InflictorID]`): `TArmorComponent` (epMiddle)
   rewrites Amount (`Max(1, Factor * Amount - Offset)`, only for Amount > 1 and without `dtIgnoreArmor`), then

@@ -207,14 +207,14 @@ func test_quadtree_team_counts() -> void:
 	a.Remove()
 	check_eq(root.FTeamCount, [0, 0, 0, 0, 0, 0], "uncounted")
 	check(not leaf.HasItems and not leaf.Parent().HasItems, "leaf and its parent empty")
-	# quirk: RemoveItemRecursive updates a node after its ancestors, so nodes above the parent keep HasItems
-	check(root.HasItems and leaf.Parent().Parent().HasItems, "the root still claims items")
-	# quirk: a center outside the root is counted at the root but stored nowhere, and removing it does nothing
+	check(not root.HasItems and not leaf.Parent().Parent().HasItems, "every ancestor empty too")
+	# a center outside the root stays at the root: counted, stored, removable
 	var outside := _item(tree, Vector2(200, 0), 0.5, 1, "outside")
-	check(outside.FOwner == null, "not stored")
+	check(outside.FOwner == root, "stored at the root")
+	check_eq(root.FTeamCount, [0, 1, 0, 0, 0, 0], "counted")
 	outside.Remove()
-	check_eq(root.FTeamCount, [0, 1, 0, 0, 0, 0], "still counted")
-	check_eq(tree.GetEntityIntersections(Vector2(200, 0), 5, 2, C.tcEnemies), [], "never found")
+	check_eq(root.FTeamCount, [0, 0, 0, 0, 0, 0], "uncounted")
+	check(not root.HasItems, "gone")
 	tree.Free()
 
 

@@ -43,7 +43,7 @@ void TTimer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("SetInterval", "NewInterval"), &TTimer::SetInterval);
 	ClassDB::bind_method(D_METHOD("SetIntervalAndStart", "NewInterval"), &TTimer::SetIntervalAndStart);
 	ClassDB::bind_method(D_METHOD("getPaused"), &TTimer::getPaused);
-	ClassDB::bind_method(D_METHOD("setPaused", "IsExpired"), &TTimer::setPaused);
+	ClassDB::bind_method(D_METHOD("setPaused", "Value"), &TTimer::setPaused);
 	ClassDB::bind_method(D_METHOD("SetZeitDiffProzent", "Wert"), &TTimer::SetZeitDiffProzent);
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "Interval"), "SetInterval", "GetInterval");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "Paused"), "setPaused", "getPaused");
@@ -143,9 +143,11 @@ void TTimer::StartAndPause() {
 	Pause();
 }
 
+// Fixed bug of the original (docs/original-bugs.md): its code kept Min(0, Trunc(p) - 1) + Frac(p) intervals (3.6 =>
+// 0.6, 0.5 => -0.5) instead of what it documents, "reducing it by at max one interval. Expired 3.6 => 2.6".
 void TTimer::StartWithRest() {
-	const int64_t whole = std::min<int64_t>(0, int64_t(ZeitDiffProzent()) - 1);
-	FLastTime = GetTimeStamp() - delphi::Round((whole + delphi::Frac(ZeitDiffProzent())) * FInterval);
+	const double rest = std::max(0.0, ZeitDiffProzent() - 1.0);
+	FLastTime = GetTimeStamp() - delphi::Round(rest * FInterval);
 	FPaused = false;
 }
 
@@ -205,12 +207,12 @@ void TTimer::SetIntervalAndStart(int64_t p_new_interval) {
 	Start();
 }
 
-void TTimer::setPaused(bool p_is_expired) {
-	if (FPaused != p_is_expired) {
-		if (p_is_expired) {
-			Weiter();
-		} else {
+void TTimer::setPaused(bool p_value) {
+	if (FPaused != p_value) {
+		if (p_value) {
 			Pause();
+		} else {
+			Weiter();
 		}
 	}
 }

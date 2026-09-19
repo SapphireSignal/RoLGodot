@@ -6,8 +6,8 @@ extends TWelaEffectComponent
 ## league / level and skin. A build target places the unit of eiWelaNeededGridSize on the grid and blocks its
 ## fields (not checked here: TWelaTargetConstraintGridComponent does that). For each unit eiWelaUnitProduced [ID]
 ## is triggered in the group the fire was called to (if any), then without group.
-## Quirk kept: the build fields are blocked in the unit's PreProcessing, before SpawnUnit gives it its ID, so they
-## hold entity ID 0 (TServerEntityManagerComponent.SpawnSpawner blocks with the real ID).
+## Fixed bug of the original: it blocked the build fields in the unit's PreProcessing, before SpawnUnit gives it its ID,
+## so they held entity ID 0; here they are blocked in the setup, with the real ID (docs/original-bugs.md).
 ## Values are read in the group the fire was called to. Delphi's Random is Godot's RNG. The asserts of the original
 ## (empty pattern, build field outside every zone) are release-build silent: that unit / field is skipped.
 
@@ -80,8 +80,9 @@ func Fire(Targets: Array) -> void:
 				# save target buildgrid, must be in setup, as the spawner can spawn directly after create
 				if Target.IsBuildTarget():
 					SpawnedEntity.Eventbus.Write(C.eiBuildgridOwner, [Target.GetBuildZone(Game).ID])
+					_BlockBuildFields(SpawnedEntity, Game, Target, NeededGridSize)
 			var Preprocess := func(PreprocessedEntity: TEntity) -> void:
-				_Preprocess(PreprocessedEntity, Game, Target, NeededGridSize, SkinID, CalledToGroup)
+				_Preprocess(PreprocessedEntity, SkinID, CalledToGroup)
 			var SpawnedEntity = Game.ServerEntityManager.SpawnUnit(Position, Front, Pattern, CardLeague(), CardLevel(),
 				TeamID, RParam.AsInteger(Eventbus().Read(C.eiOwnerCommander, [])), Owner, Setup, Preprocess)
 			if SpawnedEntity == null:
@@ -92,8 +93,8 @@ func Fire(Targets: Array) -> void:
 			Eventbus().Trigger(C.eiWelaUnitProduced, [SpawnedEntity.ID])
 
 
-## The PreProcessing of the spawned unit: card values, skin, blocked build fields.
-func _Preprocess(PreprocessedEntity: TEntity, Game, Target: RTarget, NeededGridSize: Vector2i, SkinID: String, CalledToGroup: Array) -> void:
+## The PreProcessing of the spawned unit: card values, skin.
+func _Preprocess(PreprocessedEntity: TEntity, SkinID: String, CalledToGroup: Array) -> void:
 	if FPassCardValues:
 		PreprocessedEntity.Blackboard.SetIndexedValue(C.eiResourceBalance, [], C.reCardTimesPlayed, Owner.Balance(C.reCardTimesPlayed, CalledToGroup))
 		PreprocessedEntity.Blackboard.SetIndexedValue(C.eiResourceBalance, [], C.reLevel, Owner.Balance(C.reLevel, CalledToGroup))
@@ -101,23 +102,24 @@ func _Preprocess(PreprocessedEntity: TEntity, Game, Target: RTarget, NeededGridS
 	PreprocessedEntity.SkinID = SkinID
 	PreprocessedEntity.Blackboard.SetValue(C.eiSkinIdentifier, [], SkinID)
 
-	if Target.IsBuildTarget():
-		# block gridfields
-		var BlockedFieldGrids: Array = []
-		for k in NeededGridSize.x * NeededGridSize.y:
-			BlockedFieldGrids.append([0, Vector2i.ZERO])
-		var j := 0
-		for x in NeededGridSize.x:
-			for y in NeededGridSize.y:
-				var TargetPos: Vector2 = Target.GetBuildZone(Game).GetCenterOfField(Target.BuildGridCoordinate + Vector2i(x, y))
-				var BuildZone: TBuildZone = Game.Map.BuildZones.GetBuildZoneByPosition(TargetPos)
-				if BuildZone == null:
-					continue
-				BlockedFieldGrids[j] = [BuildZone.ID, BuildZone.PositionToCoord(TargetPos)]
-				GlobalEventbus().Write(C.eiSetGridFieldBlocking, [BlockedFieldGrids[j][0], BlockedFieldGrids[j][1], PreprocessedEntity.ID])
-				j += 1
-		# save blocked gridfields, for refunding
-		PreprocessedEntity.Eventbus.Write(C.eiBuildgridBlockedFields, [BlockedFieldGrids])
+
+## Blocks the build fields of a build target with the spawned unit's ID and saves them in it (for refunding).
+func _BlockBuildFields(SpawnedEntity: TEntity, Game, Target: RTarget, NeededGridSize: Vector2i) -> void:
+	var BlockedFieldGrids: Array = []
+	for k in NeededGridSize.x * NeededGridSize.y:
+		BlockedFieldGrids.append([0, Vector2i.ZERO])
+	var j := 0
+	for x in NeededGridSize.x:
+		for y in NeededGridSize.y:
+			var TargetPos: Vector2 = Target.GetBuildZone(Game).GetCenterOfField(Target.BuildGridCoordinate + Vector2i(x, y))
+			var BuildZone: TBuildZone = Game.Map.BuildZones.GetBuildZoneByPosition(TargetPos)
+			if BuildZone == null:
+				continue
+			BlockedFieldGrids[j] = [BuildZone.ID, BuildZone.PositionToCoord(TargetPos)]
+			GlobalEventbus().Write(C.eiSetGridFieldBlocking, [BlockedFieldGrids[j][0], BlockedFieldGrids[j][1], SpawnedEntity.ID])
+			j += 1
+	# save blocked gridfields, for refunding
+	SpawnedEntity.Eventbus.Write(C.eiBuildgridBlockedFields, [BlockedFieldGrids])
 
 
 ## Saves the resources reCardTimesPlayed and reLevel in the entity.

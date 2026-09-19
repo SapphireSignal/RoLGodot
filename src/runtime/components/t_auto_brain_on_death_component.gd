@@ -3,9 +3,9 @@ extends TAutoBrainComponent
 ## Port of TAutoBrainOnDeathComponent (GameServer/BaseConflict.EntityComponents.Server.Brains.pas:628,
 ## implementation :2248), server only. At eiDie [KillerID, KillerCommanderID] (epLast) remembers the killer and runs
 ## CheckAndFire (default target: the dying owner).
-## Quirk kept: FireAtKiller overrides the original's parameterless Fire, but CheckAndFire calls the other overload
-## (FireTargets here), so FireAtKiller never changes the target of a death (used once, the HighlyExplosiveBuff
-## mutator: it fires at the dying unit).
+## Fixed bug of the original: its FireAtKiller override sat on the parameterless Fire, but CheckAndFire calls the other
+## overload, so a death never fired at the killer (the HighlyExplosiveBuff mutator). Here the override is FireTargets,
+## the overload CheckAndFire calls (docs/original-bugs.md).
 
 var FFireAtKiller := false
 var FKillerID := 0
@@ -16,17 +16,17 @@ func _DeclareEvents(e: Array) -> void:
 	e.append(XEvent("OnDie", C.eiDie, C.epLast, C.etTrigger))
 
 
-func Fire() -> void:
+func FireTargets(DefaultTargets: Array) -> void:
 	if FFireAtKiller:
 		var Target := ATarget.Make(FKillerID)
 		if not _TargetsPossible(ATarget.ToRParam(Target), FFireGroup):
 			return
 		Eventbus().Trigger(C.eiFire, [ATarget.ToRParam(Target)], FFireGroup)
 	else:
-		super()
+		super(DefaultTargets)
 
 
-## Fires at the killer of this unit (see the quirk above).
+## Fires at the killer of this unit.
 func FireAtKiller() -> TAutoBrainOnDeathComponent:
 	FFireAtKiller = true
 	return self
