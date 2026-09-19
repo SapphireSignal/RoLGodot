@@ -58,8 +58,7 @@ def patch(rel, old, new, count=1):
 
 
 def copy_code():
-    if os.path.isdir(SRC):
-        shutil.rmtree(SRC)
+    # overwrites in place (a running IDE holds the folders open, so no delete); keeps the .dcu files for fast builds
     for base, dirs, files in os.walk(REF):
         dirs[:] = [d for d in dirs if d not in ('.git', 'Deploy')]
         for f in files:
@@ -83,7 +82,7 @@ def copy_code():
 def apply_patches():
     # madExcept (commercial, not installed): a stub with the calls the code makes
     shutil.copy2(os.path.join(HERE, 'madExcept.pas'), os.path.join(SRC, 'Engine', 'madExcept.pas'))
-    dpr = os.path.join('GameServer', 'RiseOfLegionsGameServer.dpr')
+    dpr =os.path.join('GameServer', 'RiseOfLegionsGameServer.dpr')
     for unit in ('madExcept', 'madLinkDisAsm', 'madListHardware', 'madListProcesses', 'madListModules'):
         patch(dpr, '  %s,\r\n' % unit, '')
     # the server project defaults to Win64, whose compiler crashes the IDE here; the client is Win32 only anyway
@@ -115,7 +114,7 @@ def apply_patches():
     # Delphi 13's own header has the fixes
     patch('RiseOfLegions.dpr', "  Winapi.D3D11 in 'Engine\\FixedDX11Header\\Winapi.D3D11.pas',\r\n", '')
     patch('RiseOfLegions.dproj', '        <DCCReference Include="Engine\\FixedDX11Header\\Winapi.D3D11.pas"/>\r\n', '')
-    os.rename(os.path.join(SRC, 'Engine', 'FixedDX11Header', 'Winapi.D3D11.pas'),
+    os.replace(os.path.join(SRC, 'Engine', 'FixedDX11Header', 'Winapi.D3D11.pas'),
               os.path.join(SRC, 'Engine', 'FixedDX11Header', 'Winapi.D3D11.pas.engine-fixed'))
     # a detailed map file, to resolve logged crash addresses (resolve_map.py)
     patch('RiseOfLegions.dproj', "    <PropertyGroup Condition=\"'$(Base)'!=''\">\r\n",
@@ -155,6 +154,34 @@ def apply_patches():
     # a failing TClientGame.Create ran the destructor, whose ClearAction on the missing component hid the real error
     patch('BaseConflict.Game.Client.pas', '  FClientInputComponent.ClearAction;\r\n',
           '  if assigned(FClientInputComponent) then FClientInputComponent.ClearAction;\r\n')
+    # diagnostics: the client drops the GUI's style errors (no Erroroutput), dXML expression errors (elDebug) and
+    # console messages (a console window); HLog.LogOnce writes each distinct one to Error.log
+    log = os.path.join('Engine', 'Engine.Log.pas')
+    patch(log, '      class procedure Log(LogMessage : string); overload; static;\r\n',
+          '      class procedure Log(LogMessage : string); overload; static;\r\n'
+          '      class procedure LogOnce(const LogMessage : string); static;\r\n')
+    patch(log, 'uses\r\n  Engine.Helferlein.Windows;\r\n\r\n',
+          'uses\r\n  Engine.Helferlein.Windows;\r\n\r\nvar\r\n  LoggedOnce : TStringList;\r\n\r\n'
+          'class procedure HLog.LogOnce(const LogMessage : string);\r\nvar\r\n  Index : integer;\r\nbegin\r\n'
+          '  Semaphore.Acquire;\r\n  if not assigned(LoggedOnce) then\r\n  begin\r\n'
+          '    LoggedOnce := TStringList.Create;\r\n    LoggedOnce.Sorted := True;\r\n  end;\r\n'
+          '  if LoggedOnce.Find(LogMessage, Index) or (LoggedOnce.Count >= 5000) then\r\n  begin\r\n    Semaphore.Release;\r\n    exit;\r\n  end;\r\n'
+          '  LoggedOnce.Add(LogMessage);\r\n  Semaphore.Release;\r\n  HLog.Log(LogMessage);\r\nend;\r\n\r\n')
+    patch(log, 'class procedure HLog.Console(LogMessage : string; NewLine : boolean);\r\nbegin\r\n',
+          'class procedure HLog.Console(LogMessage : string; NewLine : boolean);\r\nbegin\r\n'
+          '  HLog.LogOnce(\'[CONSOLE] \' + LogMessage);\r\n')
+    patch(os.path.join('Engine', 'Engine.dXML.pas'),
+          "      HLog.Write(elDebug, 'TdXMLNode.TDynamicTextField.TDynamicPart.GetString: Cannot evaluate expression",
+          "      HLog.LogOnce('[dXML] ' + Format('TdXMLNode.TDynamicTextField.TDynamicPart.GetString: Cannot evaluate expression")
+    patch(os.path.join('Engine', 'Engine.dXML.pas'),
+          'Error: %s\', [FRawExpression, e.Message]);\r\n', 'Error: %s\', [FRawExpression, e.Message]));\r\n')
+    patch('BaseConflictMainUnit.pas', '  Engine.GUI.GUI := GUI;\r\n',
+          '  Engine.GUI.GUI := GUI;\r\n  GUI.Erroroutput := procedure(errormsg : string)\r\n    begin\r\n'
+          '      HLog.LogOnce(\'[GUI] \' + errormsg);\r\n    end;\r\n')
+    # the loader ignores a stylesheet's parse errors on first load (only reloads report them): log them
+    patch(os.path.join('Engine', 'Engine.GUI.pas'), '    LoadStylesFromText(Filecontent);\r\n',
+          '    errors := LoadStylesFromText(Filecontent);\r\n'
+          '    if errors <> \'\' then HLog.LogOnce(\'[STYLE] \' + Filepath + \': \' + errors);\r\n')
 
 
 def link(name):
@@ -163,11 +190,38 @@ def link(name):
         subprocess.run(['cmd', '/c', 'mklink', '/J', dst, os.path.join(REF, name)], check=True, capture_output=True)
 
 
+def mirror_crlf(names):
+    """The snapshot's text files are stored with LF (git normalised them); the devs' checkouts (autocrlf) and the
+    shipped game had CRLF, and the original's parsers split on CRLF (stylesheets, shaders, terrain). Mirrors `names`
+    into run/ as a CRLF checkout would be: text files (git's own classification) written with CRLF, every other file
+    hard-linked to the snapshot (same volume, no copy)."""
+    out = subprocess.run(['git', '-C', REF, 'ls-files', '--eol', '--'] + list(names),
+                         check=True, capture_output=True, text=True, encoding='utf-8').stdout
+    for line in out.splitlines():
+        meta, rel = line.split('\t', 1)
+        src, dst = os.path.join(REF, rel), os.path.join(RUN, rel)
+        if os.path.exists(dst) and os.path.getmtime(dst) >= os.path.getmtime(src):
+            continue
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        if os.path.exists(dst):
+            os.remove(dst)
+        if meta.startswith('i/lf'):
+            data = open(src, 'rb').read().replace(b'\r\n', b'\n').replace(b'\n', b'\r\n')
+            open(dst, 'wb').write(data)
+        else:
+            os.link(src, dst)
+
+
 def lay_out_run():
     os.makedirs(os.path.join(RUN, 'GameServer'), exist_ok=True)
-    # read-only data: links into the snapshot
-    for name in ('Graphics', 'Maps', 'Scripts', 'Lang', 'PrecompiledDX11ShadersCached'):
-        link(name)
+    # read-only data as the shipped game had it (CRLF text), links into the snapshot otherwise
+    data = ('Graphics', 'Maps', 'Scripts', 'Lang')
+    for name in data:
+        dst = os.path.join(RUN, name)
+        if os.path.isjunction(dst):   # earlier layouts linked the whole folder
+            os.rmdir(dst)
+    mirror_crlf(data)
+    link('PrecompiledDX11ShadersCached')
     # the engine writes newly compiled shaders here: a copy
     if not os.path.isdir(os.path.join(RUN, 'PrecompiledDX11Shaders')):
         shutil.copytree(os.path.join(REF, 'PrecompiledDX11Shaders'), os.path.join(RUN, 'PrecompiledDX11Shaders'))

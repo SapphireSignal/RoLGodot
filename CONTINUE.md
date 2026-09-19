@@ -235,15 +235,24 @@ build, closes when its EULA reminder is clicked by message), runs server + clien
 draws the Single map (capture in `build/original/captures/`, not committed). Rules learned with the owner: tell them
 before Delphi opens on their screen, keep every step under about a minute and report after each (they close windows
 that look idle), never capture more than the window being checked (their other screens show private apps).
+Done 2026-09-19: the HUD. Its collapse was the snapshot's LF line ends (the original splits its data on CRLF; stylesheets,
+shaders and terrain too): `run/` is now a CRLF mirror (section "The data needs CRLF line ends" in
+`docs/original-build.md`). The original's GUI / dXML / stylesheet errors are logged. `run_original.ps1 -Keys P` switches
+the sandbox to capture mode: the player HUD (capture `build/original/captures/hud_capture_mode.png`). The build grid
+glows cyan in the original like in the port (the grey tiles were the broken data). The owner's tutorial images
+(`Graphics/GUI/Shared/Tutorial/tut*.png`) are the snapshot's only pictures of the real HUD.
 Next, in order:
-1. The original's HUD collapses into the top-left corner (no exception logged). Find the Delphi 13 difference in the
-   GUI engine (`Engine/Engine.GUI.pas`, `Engine.dXML.pas`): NaN compares are the first suspect (Delphi 10.1's x87
-   code made `NaN <= x` true, `docs/original-build.md`), then float parsing / RTTI. Log from the build copy, rebuild.
-2. The owner saw the build grid tiles grey in the original, while the port's grid shows coloured glow: compare
-   `TBuildGridManagerComponent`'s colours in the original against the port once the HUD works (the owner may be
-   judging the port's look as the target; check the source).
+1. Open question to the owner (asked 2026-09-19): may screenshots / videos of Rise of Legions (not Crystal Clash) serve
+   as extra visual reference beside the snapshot? Until they say yes, only the snapshot and the reference build.
+2. **The lobby / menus in the original, first** (the owner's main reason for running the original, 2026-09-19): a
+   local stand-in master server answering the client's API calls (`BaseConflict.Api*.pas`, the login / meta game
+   states in `BaseConflict.Classes.Gamestates*.pas`) with a sample account, so the client starts in its real login
+   and main menu and every menu screen (dashboard, collection, deckbuilder, shop, quests, profile, matchmaking,
+   settings) can be captured. Read how the client finds the server (`SettingsConnection.ini`) and its protocol first.
 3. Capture the same views as the map viewer (overview, nexus, lanes; 1 lane, 2 lanes, PvE), then side-by-side
-   checks of every open visual (gap list), and later timings, paths, frame rates.
+   checks of every open visual (gap list), and later timings, paths, frame rates. Camera placement: the sandbox dev
+   panel (camera position, save / load camera) or input (`-Keys`; clicks would need the same cursor handling). The
+   original now renders effects from CRLF shader data: recheck that its look did not change from the first captures.
 
 **Then, in this order (the owner's playtest, 2026-09-19, found the port slow and missing basics; they want everything
 the same as the real game or better, and the gaps found by Claude, not by them):**

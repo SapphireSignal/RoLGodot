@@ -205,3 +205,6 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   server's sandbox game and draws the Single map. Found: the shipped x87 build treats NaN compares as true for
   `=`/`<`/`<=` (gotcha in `docs/original-architecture.md`). Open: its HUD does not lay out. Next: fix that, then
   reference captures and side-by-side checks (CONTINUE.md).
+- 2026-09-19: The original's HUD works: the snapshot's text data is LF, the original splits on CRLF (stylesheets,
+  shaders, terrain), so `run/` is a CRLF mirror; its GUI errors are logged; `run_original.ps1 -Keys P` shows the
+  player HUD (capture mode). Next: reference captures of the map viewer's views, side by side (CONTINUE.md).
