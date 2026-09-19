@@ -6,6 +6,10 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 ## Project rules
 - Source of truth: `reference/rise-of-legions` at commit `96d5b8e4` (see `docs/source-of-truth.md`).
   Never use Crystal Clash content, the live game, or anything outside that snapshot for decisions.
+- The owner wants no bugs carried over (2026-09-19): an internal bug of the original with no intended gameplay effect
+  (e.g. the clock's first negative ZDiff) is fixed, not reproduced, and noted in the system's doc. Whether the
+  "Quirk kept" behaviours already ported (listed in `docs/entity-core.md`, `docs/map.md`) get fixed too is open:
+  some change how units play; ask the owner before changing gameplay.
   Layout: `BaseConflict.*.pas` at its root, engine units in `Engine/` (`Engine/Engine.Mesh.pas`), engine shaders
   in `Engine/Shader/`, effect shaders in `Graphics/Effects/Shader/`, scripts in `Scripts/`.
 - Stay inside `D:\Games\RoLGodot`. Never touch the owner's other repos.

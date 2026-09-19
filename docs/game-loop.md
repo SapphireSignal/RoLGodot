@@ -142,7 +142,7 @@ the static names the code uses (`TEventbus.CurrentEvent_*`, `TEntity._ScriptEven
 C++ `TTimeManager`: `TickTack`, `ZDiff`), as the original's threadvar. The bus fetches the context once per event.
 Game / Map / EntityDataCache already live on each side's global bus.
 
-Not reproduced (a quirk of the original, revisit if the first server frame ever matters): `TTimeManager.Create`
+A bug of the original, fixed on purpose (the owner wants no bugs carried over): `TTimeManager.Create`
 (`Engine.Helferlein.Windows.pas:2216`) starts `LetzteZeit` from the raw performance counter while `TickTack` reads
 `GetTimeTick`, which subtracts `ProgramStart`, so the first TickTack after `TGameThread` creates its clock
 (`BaseConflict.Game.Server.pas:967`, first frame `:1037`) gives a large negative ZDiff (minus the program's start time
