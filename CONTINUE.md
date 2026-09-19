@@ -5,6 +5,8 @@ Hand-off note for the next session. Read `CLAUDE.md` first, then this.
 ## The owner's brief (session 1, 2026-09-18)
 - Port **Rise of Legions** to **Godot** as a strict 1:1 replica of its **last update before it became
   Crystal Clash**. Every detail the same: units, cards, numbers, effects, sounds, UI, little touches.
+- But **never the original's bugs** (2026-09-19): port what the code was meant to do, list each fix in
+  `docs/original-bugs.md`. Don't ask the owner whether to keep a bug.
 - The original devs gave the owner permission to use and do anything with the game and its source.
 - Build it in parts like a professional team, with care. Claude is the returning lead dev.
 - Lean repo, lean Windows build. `play.bat` to launch. Professional GitHub repo (don't claim to be a team).
