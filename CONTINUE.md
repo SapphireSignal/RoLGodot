@@ -247,12 +247,20 @@ logs in to `tools/original_build/master_standin.py` (sample account) and reaches
 through it (section "The lobby" in `docs/original-build.md`). Captured: dashboard, PLAY, deck list, deck editor, card
 vendor, leaderboards, shop, profile menu.
 Next, in order:
-1. Open question to the owner (asked 2026-09-19): may the 10 full-size Steam screenshots be downloaded into
-   `build/visual-references/` (git-ignored) for detailed comparisons? The browser pane only shows them shrunk.
-2. The lobby's missing content (list under "Open" in `docs/original-build.md`): shop offers, the card vendor's unlock
-   requirements (legion trees), leaderboards, quests, loot, friends; then every remaining screen (settings, collection
-   details, card detail / ascend, quests, notifications, starter deck choice, first-time tutorial) captured; then the
-   diamond glyph in ability names; then a match started from the lobby (the stand-in hands out the local game server).
+Done 2026-09-19 (later): the 10 Steam screenshots are in `build/visual-references/` (owner's OK; older than the
+snapshot). Lobby content filled from what the client itself reveals: card vendor legion trees (card names), shop (skins,
+icons, bundles, premium, crystal packs), leaderboards, quests; answers are checked against the client's types at start.
+0. **The owner wants literally every screen, window, dialog and state of the original captured** (2026-09-19: "every
+   single little thing ... the settings button ... every single screen/window"). The checklist is
+   `docs/reference-captures.md` (all 139 GUI files, 18 captured so far): work it to the end, mark each capture, and
+   add states a file has (hover, disabled, empty / full lists, each settings tab, each dialog). Start with the
+   settings menu (the gear top right, `SettingsMenu.dui` + `SettingsMenu/`).
+1. The lobby's rest (list under "Open" in `docs/original-build.md`): card unlock requirements (locks / unlock quests),
+   messages, loot, friends; every remaining screen captured (settings, card detail / ascend, notifications, starter
+   deck choice, first-time tutorial, friend list, team invites); the diamond glyph and the cut "DOUBLE VALUE PAC"
+   (Delphi 13 text path?); then a match started from the lobby (the stand-in hands out the local game server).
+2. Newer Rise of Legions pictures (the Crystal Dawn update's announcement, late-2020 videos) to match the snapshot's
+   version better than the store screenshots.
 3. Capture the same views as the map viewer (overview, nexus, lanes; 1 lane, 2 lanes, PvE), then side-by-side
    checks of every open visual (gap list), and later timings, paths, frame rates. Camera placement: the sandbox dev
    panel (camera position, save / load camera) or input (`-Keys`; clicks would need the same cursor handling). The

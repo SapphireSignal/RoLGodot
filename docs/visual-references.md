@@ -5,6 +5,9 @@ reference build (`docs/source-of-truth.md`, owner's decision 2026-09-19). The sn
 disagreement is listed below with what was found.
 
 ## Steam store screenshots (app 748940)
+Full-size copies: `build/visual-references/<id>.jpg` (git-ignored; downloaded 2026-09-19 with the owner's OK).
+They show an **older** version than the snapshot (navbar LEGIONS / FEEDBACK where the snapshot's client has CARD VENDOR
+/ LEADERBOARDS, card costs in coins and crystals): good for the general look, the snapshot wins on details.
 The store page as archived on 2020-11-07 (`web.archive.org/web/20201107223409/https://store.steampowered.com/app/748940`,
 title "Rise of Legions on Steam"), seven weeks before the snapshot. Images:
 `https://steamcdn-a.akamaihd.net/steam/apps/748940/<id>.1920x1080.jpg` (some are 1280x720).

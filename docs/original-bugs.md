@@ -23,6 +23,7 @@ by the original, or a design choice) is not a bug and stays; see the end of this
 | `BaseConflict.Classes.Pathfinding.pas:353` (`DoPathfinding`, `IgnoreOtherEntities`) | inverted: expanded only permanently blocked tiles | every tile that is not permanently blocked |
 | `BaseConflict.Classes.Pathfinding.pas:319` (`DoPathfinding`) | the source tile kept its heuristic from an earlier search (it is extracted first, so no path changed) | computed per search |
 | `BaseConflict.Classes.Pathfinding.pas:187`, `:672` (`ComputeDebugPath`, `TPath.ReleasePath`) | a path that reserved nothing released time slots on freeing: other units' reservations | only a reserved path releases |
+| `BaseConflict.Api.Shop.pas:701` (`TShopItemOffer.RealMoneyString`) | cents printed without their leading zero: 405 cents showed "4.5" | two-digit cents ("4.05"), when the port gets its shop |
 | `Engine/Engine.Collision.pas:211` (`TLooseQuadTreeNode.AddItemRecursive`) | an item whose centre lay outside every child was counted but stored nowhere: never found, never uncounted | stays in that node |
 | `Engine/Engine.Collision.pas:253` (`RemoveItemRecursive`) | updated a node's emptiness after its ancestors: `HasItems` stale above the parent | each node before its parent |
 | `Engine/Engine.Helferlein.Windows.pas:2124` (`TTimer.StartWithRest`) | kept `Min(0, Trunc(p) - 1) + Frac(p)` intervals (3.6 => 0.6, 0.5 => -0.5) | as documented: "reducing it by at max one interval. Expired 3.6 => 2.6" |

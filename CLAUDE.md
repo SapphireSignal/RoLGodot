@@ -35,6 +35,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - `docs/original-build.md`: the reference build of the original (build, run, capture, crash addresses; the changes
   Delphi 13 needs; NaN compare semantics).
 - `docs/visual-references.md`: the Rise of Legions screenshots used as a visual cross-check, and what they disagree on.
+- `docs/reference-captures.md`: every GUI file of the original and its capture from the reference build (the owner
+  wants all of them).
 - `docs/port-plan.md`: phases 0-9. `docs/gap-list.md`: user-visible behaviours and their status.
 - `docs/original-bugs.md`: every bug of the original the port fixes instead of copying (and what was checked and is
   not a bug).
@@ -214,3 +216,6 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   (types parsed from its source, a sample account), `run_original.ps1 -Lobby -Steps` logs in and clicks through the
   main menu with captures. Rise of Legions screenshots allowed as visual cross-check (`docs/visual-references.md`).
   Next: the lobby's missing content and remaining screens (CONTINUE.md).
+- 2026-09-19: Lobby content from what the client reveals (card vendor trees by card name, shop by picture names,
+  crystal packs, quests); leaderboards; answers type-checked at start; no DEBUG console window. Steam screenshots in
+  `build/visual-references/`. Next: the lobby's remaining screens, then a match from the lobby (CONTINUE.md).

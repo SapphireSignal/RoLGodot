@@ -68,7 +68,7 @@ the snapshot (`mirror_crlf` in `prepare_original.py`). Not a bug of the original
 | `Engine.Math.Collision3D` `RAABB.Create` | the `Min <= Max` assert as "some component greater", raising with the caller | NaN semantics, below |
 | `BaseConflictMainUnit` | the exception handler logs each distinct exception | the original swallows every exception silently |
 | `BaseConflict.Game.Client` destructor | `ClearAction` only when the component exists | a failing `Create` hid its error behind an access violation |
-| `Engine.Log` `HLog.LogOnce`, `BaseConflictMainUnit` `GUI.Erroroutput`, `Engine.dXML`, `Engine.GUI` | each distinct GUI style error, dXML expression error (elDebug), console message and stylesheet load error goes to `Error.log` once (`[GUI]`, `[dXML]`, `[CONSOLE]`, `[STYLE]`) | the client dropped them all; missing `_Hover` / `_Down` / `_Disabled` textures are normal |
+| `Engine.Log` `HLog.LogOnce`, `BaseConflictMainUnit` `GUI.Erroroutput`, `Engine.dXML`, `Engine.GUI` | each distinct GUI style error, dXML expression error (elDebug), console message and stylesheet load error goes to `Error.log` once (`[GUI]`, `[dXML]`, `[CONSOLE]`, `[STYLE]`); `HLog.Console` opens no console window | the client dropped them all; the DEBUG console popped up over the game and took clicks and captures; missing `_Hover` / `_Down` / `_Disabled` textures are normal |
 | `BaseConflict.Api.Account` `TAccount.LoginWithSteam` | without `STEAM` (our Steamless configuration) a placeholder ticket, build id 0, branch `public` | the login always asked Steam for a ticket, also in the Steamless configuration; the lobby stand-in accepts it |
 
 ## The lobby: a stand-in master server
@@ -91,8 +91,16 @@ its websocket) and the local `WebApiServer`; without `-Lobby` it writes the snap
   The menus are a 1280x720 window. Navbar: PLAY 112,26 / DECKBUILDER 234,26 / CARD VENDOR 382,26 / LEADERBOARDS 539,26
   / SHOP 658,26 / profile 1094,26.
 - A DEBUG build opens a console for `[Critical]` messages: captures find the game by its form class (`THauptform`).
-- Captured so far (2026-09-19): dashboard, PLAY, deckbuilder (deck list, deck editor), card vendor, leaderboards, shop,
-  profile menu.
+- What the client itself tells about the server's content (used instead of inventing it): card names (the card
+  vendor's `PositionDict` keys, `Gamestates.pas`: `master_standin.card_name`), shop item names = picture names
+  (`MainMenu/Shop/<name>.png`: `bundle_medium/large/gold`, `premium_NNN_days`, `Diamonds_NNNN`, `gold_buy_direct_N`),
+  crystal pack amounts (2500 / 6300 / 13750 / 28750 / 60000, `ShopItem_itDiamonds.dui`), quest identifiers
+  (`Lang/quests.csv`), real-money offers need a `USD` price and `player_currency` (the real-money code). Prices, the
+  account's numbers and the leaderboard players stay made up.
+- `master_standin.py` checks every answer it builds against the client's declared type at start (prints
+  `ANSWER DOES NOT MATCH THE CLIENT TYPE`); a missing field makes the client show "Undefined error".
+- Captured so far (2026-09-19): dashboard, PLAY, deckbuilder (deck list, deck editor), card vendor (legion trees),
+  leaderboards, shop (skins, icons, bundles, premium, crystals), quest panel, profile menu.
 
 ## NaN comparisons differ between the original and everything else
 Delphi 10.1's Win32 compiler compares floats with x87 `FCOMP`/`SAHF` and branches as for unsigned integers: an
@@ -104,10 +112,10 @@ The port must keep the original's results where it matters (see `docs/original-a
 ## Open
 - Captures of the same views as the map viewer (camera placement: the sandbox dev panel's camera buttons, or input),
   then side by side comparisons (CONTINUE.md).
-- Lobby data still empty: shop offers (`get_shop_items`), card unlock requirements (`get_card_requirements`: the card
-  vendor's legion trees lay the cards out by them; without them every card sits on the first node), leaderboards,
-  quests, messages, loot, friends, the dashboard news text. The Steam screenshots (`docs/visual-references.md`) show
-  some of the real content (LEGIONS tree, card detail).
+- Lobby data still empty: card unlock requirements (`get_card_requirements`: the locks and unlock quests on the card
+  vendor's cards), messages, loot, friends, the dashboard news text.
+- "DOUBLE VALUE PAC" is cut off on the bundle cards: the Delphi 13 text path again (like the diamond glyph), or the
+  original; compare against a picture of the real shop.
 - Ability names show a diamond glyph instead of their spaces (`BaseConflict.Constants.Cards.pas:826` puts U+00A0 in
   them; Proza Libre has that glyph, the Steam screenshots show plain spaces): a Delphi 13 difference in the text path
   (FMX / DirectWrite, the patched `FMX.Canvas.D2D`), to find.

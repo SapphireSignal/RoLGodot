@@ -155,7 +155,8 @@ def apply_patches():
     patch('BaseConflict.Game.Client.pas', '  FClientInputComponent.ClearAction;\r\n',
           '  if assigned(FClientInputComponent) then FClientInputComponent.ClearAction;\r\n')
     # diagnostics: the client drops the GUI's style errors (no Erroroutput), dXML expression errors (elDebug) and
-    # console messages (a console window); HLog.LogOnce writes each distinct one to Error.log
+    # console messages (a DEBUG build's console window, which pops up over the game and takes clicks and captures);
+    # HLog.LogOnce writes each distinct one to Error.log instead
     log = os.path.join('Engine', 'Engine.Log.pas')
     patch(log, '      class procedure Log(LogMessage : string); overload; static;\r\n',
           '      class procedure Log(LogMessage : string); overload; static;\r\n'
@@ -169,7 +170,7 @@ def apply_patches():
           '  LoggedOnce.Add(LogMessage);\r\n  Semaphore.Release;\r\n  HLog.Log(LogMessage);\r\nend;\r\n\r\n')
     patch(log, 'class procedure HLog.Console(LogMessage : string; NewLine : boolean);\r\nbegin\r\n',
           'class procedure HLog.Console(LogMessage : string; NewLine : boolean);\r\nbegin\r\n'
-          '  HLog.LogOnce(\'[CONSOLE] \' + LogMessage);\r\n')
+          '  HLog.LogOnce(\'[CONSOLE] \' + LogMessage);\r\n  Exit; // no console window: it pops up over the game\r\n')
     patch(os.path.join('Engine', 'Engine.dXML.pas'),
           "      HLog.Write(elDebug, 'TdXMLNode.TDynamicTextField.TDynamicPart.GetString: Cannot evaluate expression",
           "      HLog.LogOnce('[dXML] ' + Format('TdXMLNode.TDynamicTextField.TDynamicPart.GetString: Cannot evaluate expression")
