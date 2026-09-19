@@ -18,12 +18,22 @@ Status: ⬜ missing · 🟨 partial · ✅ matches original (checked against the
 | Behaviour | Source | Status |
 | --- | --- | --- |
 | Map terrain (Classic, Single): heightmap, 16 chunk textures, normal / material maps, lighting | `Engine.Terrain.pas`, `Maps/*/*.ter` | 🟨 drawn at full detail (the original's geomipmapping LoD is not ported), no shadow mapping yet |
-| Map water: waves, refraction, reflection, depth color, caustics, sun specular | `Engine.Water.pas`, `Watershader.fx`, `*.wat` | 🟨 the G-buffer lookups come from Godot's depth / screen / normal textures; not compared against a capture of the original |
+| Map water: waves, refraction, reflection, depth color, caustics, sun specular | `Engine.Water.pas`, `Watershader.fx`, `*.wat` | 🟨 the G-buffer lookups come from Godot's depth / screen / normal textures (where nothing is drawn: position (0, 0, 0) like the cleared buffer); not compared against a capture of the original; the smoke test checks the sea covers the overview. The sea past the terrain's edge turns bright cyan (the extinction formula over the cleared buffer): outside the game camera's zoom range |
 | Map vegetation: palms and grass tufts from their stored seeds, wind sway | `Engine.Vegetation.pas`, `*.veg` | ✅ rolls replayed with Delphi's RNG (tested); palms cast no shadow yet |
 | Map decorations (`.bcc` and the scenarios' `AddDecoEntity`: nexus ground, bridges, rocks) | `BaseConflict.Map.Client.pas` | ✅ created from their scripts, placed, drawn (map viewer); the ambient sound emitters are silent until sound |
 | Nexus, towers, spawners and the other scenario entities drawn with their meshes, team textures and stand animations | `TMeshComponent`, `TAnimationComponent`, `Engine.Animation.pas` | 🟨 drawn from the engine's raw meshes like release builds, matcap crystals, tower spawn animation, glow (nexus crystal and runes); particles and point lights not yet |
 | Shadows (the original's own shadow mapping, first light) | `Engine.Core.pas` shadow map | ⬜ |
-| Game camera: scroll (keys, edges, drag), zoom 2.6..3.8, camera zone limits, rotation | `TClientCameraComponent` | 🟨 the map viewer uses its view geometry (offset, field of view, zoom range); the component itself is not ported |
+| Game camera: scroll (keys, edges, drag), zoom 2.6..3.8, camera zone limits, rotation | `TClientCameraComponent` | 🟨 the map viewer uses its view geometry (offset, field of view, zoom range) and its right-drag panning (the grabbed ground point stays under the cursor, checked by `--drag-check`); the component itself is not ported |
+| Build grid behind each nexus: glowing tiles, a tile goes dark when its spawner fires (flash, 1 s fade), all glow in again after the rotation; colors while placing a card | `TBuildGridManagerComponent` | 🟨 tiles, glow and rotation ported (test_build_grid, captures); the activation particles and the placement colors' callers (input) wait for particles / phase 5 |
+| Clear color `$23373C` (dark teal) where nothing is drawn | `BaseConflictMainUnit.pas:346` | ✅ map viewer |
+| Health bars and resource bars over units and buildings | `TResourceDisplay*Component` | ⬜ |
+| Units turn to face where they walk / what they attack; attached parts (weapons, riders) follow bones | `TOrienter*Component`, `TPositioner*Component` | ⬜ (stubs: the facing a client unit shows is not checked yet) |
+| Buff / state icons over units | `TStateDisplay*Component` | ⬜ |
+| Weapon trails, link beams and rays, projectile ribbons | `TVertexTrace*`, `TLink*VisualizerComponent`, `TVertexRay*`, `TVertexQuad*` | ⬜ |
+| Range indicators and spell target previews | `TRangeIndicator*`, `TSpelltargetVisualizer*`, `TTextureRangeIndicatorComponent` | ⬜ |
+| Point lights on units and effects | `TPointLightComponent` | ⬜ |
+| Camera shake | `TCameraShakerComponent` | ⬜ |
+| Commander manager (the local player's commanders on the client), GUI, input | `TCommanderManagerComponent`, `TClientGUIComponent`, `TClientInputComponent` | ⬜ phase 5 |
 | Units walk lanes, fight, die | `Scripts/Units`, server components, the server -> client link | 🟨 live in the map viewer: the server's units reach the client over the in-process network and walk, fight and die there (test_network); dying units and buildings freeze and decay with the death shader of their color for 500 ms (`TUnitDecayManagerComponent`, test_unit_decay) |
 | Card hand, play spawner / drop / spell | `BaseConflict.Classes.Gamestates*.pas` | 🟨 plays go client -> server (eiUseAbility) and work; the map viewer has stand-in card buttons; the hand, targeting and the HUD's can-use check are phase 5 |
 | Minimap | `BaseConflict.Classes.MiniMap.pas` | ⬜ |

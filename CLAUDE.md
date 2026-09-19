@@ -160,3 +160,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   the world shaders' fragments (dark outlines on units, buildings, palms, rocks); FXAA 3.11 preset 12 as a pass. The
   shader check now covers the map shaders. 382 tests green, 1408 shader variants compile, no errors. Next: see
   CONTINUE.md.
+- 2026-09-18: Fixes after the owner's playtest: water was gone (POSITION written on one path only) and blew out to
+  white past the terrain; the build grid (`TBuildGridManagerComponent`, glow rotation) was never ported; right-drag
+  now grabs the ground like `TClientCameraComponent` (checked by `--drag-check`); clear color `$23373C`. The launcher
+  smoke test now checks water / white pixels and grid tiles (proven to fail on broken water). The gap list names every
+  unported client visual. 385 tests green, no errors. Next: see CONTINUE.md.

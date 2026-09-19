@@ -71,13 +71,19 @@ void vertex() {
 	vec3 n = normalize(mix(center.gbr * 2.0 - 1.0, center2.gbr * 2.0 - 1.0, 0.5));
 	n.y *= height_norm;
 	game_normal = normalize(n);
-	// the effects stage is not in the G-buffer (toon.gdshaderinc): not drawn under the G-buffer camera
+	// the effects stage is not in the G-buffer (toon.gdshaderinc): not drawn under the G-buffer camera. A shader that
+	// writes POSITION anywhere must write it always (Godot then takes it for every camera).
+	POSITION = PROJECTION_MATRIX * (MODELVIEW_MATRIX * vec4(VERTEX, 1.0));
 	if ((CAMERA_VISIBLE_LAYERS & 262144u) == 0u) POSITION = vec4(2.0, 2.0, 2.0, 1.0);
 }
 
-// The G-buffer position at a screen coordinate, game space.
+// The G-buffer position at a screen coordinate, game space. Where nothing was drawn (the reverse-z depth buffer is
+// still cleared to 0) the original's position buffer holds its clear value: (0, 0, 0).
 vec3 scene_position(vec2 uv, mat4 inv_projection, mat4 inv_view) {
 	float depth = textureLod(depth_texture, uv, 0.0).r;
+	if (depth <= 0.0) {
+		return vec3(0.0);
+	}
 	vec4 view = inv_projection * vec4(uv * 2.0 - 1.0, depth, 1.0);
 	view.xyz /= view.w;
 	return to_game((inv_view * vec4(view.xyz, 1.0)).xyz);

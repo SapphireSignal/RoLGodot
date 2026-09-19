@@ -32,7 +32,7 @@ can run or check, tests green, and docs updated. Facts about the original: `orig
 | 6 | **Effects and sound**: particles (`.pfx`), shaders and post effects, FMOD extraction and event mapping | every card's effects and sounds present; audit per card |
 | 7 | **Menus and meta**: GUI converter (`.dui`/`.scss`), main menu, collection, deckbuilder, shop (offline), quests, profile, settings, localisation | every screen reachable, text in all 29 languages |
 | 8 | **Content breadth**: scenarios, mutators, tutorial, AI opponents, 2v2 / co-op modes | every scenario playable |
-| 9 | **Release polish**: gap-list zero, performance, Windows export | lean build passes the export check |
+| 9 | **Release polish**: gap-list zero, several full audit passes comparing every user-visible detail (camera placement and angle, input feel, colors, timings, sounds, texts) against the source, performance, Windows export | the audits find nothing; lean build passes the export check |
 
 Why this order: the scripts are the heart of the game and touch every system, so the transpiler (phase 1)
 flushes out every language feature and component the core must support. Phases 2-3 then have a complete,

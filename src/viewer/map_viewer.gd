@@ -53,6 +53,8 @@ var _target := Vector2.ZERO
 var _zoom := MAX_ZOOM
 var _rotation := 0.0
 var _dragging := false
+var _drag_position := Vector2.ZERO  # FDragPosition: the grabbed ground point, game space XZ
+var _last_drag_screen := Vector2.ZERO  # the last dragged-to mouse position (--drag-check)
 var _info: Label
 var _toggles := {}
 var _load_ms := 0.0
@@ -100,7 +102,8 @@ func _build_scene() -> void:
 	var env := WorldEnvironment.new()
 	env.environment = Environment.new()
 	env.environment.background_mode = Environment.BG_COLOR
-	env.environment.background_color = Color(0, 0, 0)
+	# GFXD.MainScene.Backgroundcolor := $23373C (BaseConflictMainUnit.pas:346), a gamma-space value like everything
+	env.environment.background_color = Color8(0x23, 0x37, 0x3C)
 	env.environment.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	add_child(env)
 	_camera = Camera3D.new()
@@ -284,6 +287,38 @@ func _update_camera() -> void:
 			_target.x, _target.y, _zoom, MIN_ZOOM, MAX_ZOOM, _rotation]
 
 
+## TClientCameraComponent.MouseWorldPosition: the ground plane (y = 0) under a screen point, game space XZ.
+func _mouse_world_position(screen: Vector2) -> Vector2:
+	var origin := TMesh.ToGodot(_camera.project_ray_origin(_camera_point(screen)))
+	var direction := TMesh.ToGodot(_camera.project_ray_normal(_camera_point(screen)))
+	if absf(direction.y) < 1e-6:
+		return _target
+	var hit := origin + direction * (-origin.y / direction.y)
+	return Vector2(hit.x, hit.z)
+
+
+## A mouse position (the root viewport's coordinates: the project stretches the UI to its base size) in the camera's
+## viewport (the post effects' world viewport has the window's pixel size).
+func _camera_point(screen: Vector2) -> Vector2:
+	return screen * _camera.get_viewport().get_visible_rect().size / get_viewport().get_visible_rect().size
+
+
+## TClientCameraComponent's panning (OnMouseMoveEvent while FMoving): the camera at its height plane on the line
+## through the grabbed ground point FDragPosition along the click ray, so that point stays under the cursor; the new
+## target is where the camera looks down on the ground.
+func _drag_to(screen: Vector2) -> void:
+	_last_drag_screen = screen
+	var direction := TMesh.ToGodot(_camera.project_ray_normal(_camera_point(screen)))
+	var offset := RMatrix.RotationPitchYawRoll(Vector3(0, _rotation, 0)) * (_zoom * CAMERAOFFSET.normalized() * 10)
+	if absf(direction.y) < 1e-6:
+		return
+	var grabbed := Vector3(_drag_position.x, 0, _drag_position.y)
+	var eye := grabbed + direction * ((offset.y - grabbed.y) / direction.y)
+	var target := eye - offset
+	_target = Vector2(target.x, target.z)
+	_update_camera()
+
+
 ## The screen axes on the ground (game space): TClientCameraComponent scrolls along CAMERAOFFSET.XZ and its
 ## orthogonal; up moves away from the camera.
 func _scroll(right: float, up: float) -> void:
@@ -373,11 +408,14 @@ func _process(delta: float) -> void:
 
 
 ## A drag ends wherever the button is released, also over the panel (which eats the event before
-## _unhandled_input), and when the window loses focus: otherwise the view kept panning with every mouse move.
+## _unhandled_input), and when the window loses focus: otherwise the view kept panning with every mouse move. Only the
+## start checks the GUI (OnKeybindingEvent: not GUI.IsMouseOverGUI); a running drag follows the mouse over the panel.
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_RIGHT \
 			and not event.pressed:
 		_dragging = false
+	elif event is InputEventMouseMotion and _dragging:
+		_drag_to((event as InputEventMouseMotion).position)
 
 
 func _notification(what: int) -> void:
@@ -391,15 +429,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		if mb.button_index == MOUSE_BUTTON_RIGHT:
 			if mb.pressed:
 				_dragging = true
+				_drag_position = _mouse_world_position(mb.position)
 		elif mb.button_index == MOUSE_BUTTON_WHEEL_UP and mb.pressed:
 			_zoom = maxf(1.0, _zoom - 0.2)
 			_update_camera()
 		elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN and mb.pressed:
 			_zoom = minf(40.0, _zoom + 0.2)
 			_update_camera()
-	elif event is InputEventMouseMotion and _dragging:
-		var mm := event as InputEventMouseMotion
-		_scroll(-mm.relative.x * 0.02, mm.relative.y * 0.02)
 	elif event is InputEventKey and event.pressed and (event as InputEventKey).keycode == KEY_R:
 		_set_view(_views()[0])
 
@@ -423,12 +459,38 @@ func _finish_smoke_test(result_path: String) -> void:
 	var water_ok := _map != null and _map.Water.SurfaceCount() > 0
 	var vegetation_ok := _map != null and _map.Vegetation.get_child_count() > 0
 	var entities_ok := _map != null and _map.DecorationEntities.size() > 0 and _entity_count > 0 and _drawn_meshes() > 0
-	var image_ok := get_viewport().get_texture().get_image() != null
-	var ok := terrain_ok and water_ok and vegetation_ok and entities_ok and image_ok
+	var grid_tiles := _client.BuildgridManager.TileCount() if _client != null and _client.BuildgridManager != null else 0
+	# what is on screen, in the overview: the sea must show (blue-dominant pixels), nothing blown out to white (the
+	# water over the map's edge once was)
+	for view: Array in _views():
+		if view[0] == "overview":
+			_set_view(view)
+	for i in 4:
+		await RenderingServer.frame_post_draw
+	var image := get_viewport().get_texture().get_image()
+	var image_ok := image != null
+	var water_pixels := 0.0
+	var white_pixels := 0.0
+	if image_ok:
+		var samples := 0
+		for y in range(0, image.get_height(), 8):
+			for x in range(0, image.get_width(), 8):
+				var c := image.get_pixel(x, y)
+				samples += 1
+				if c.b > c.r + 0.15 and c.g > c.r:
+					water_pixels += 1
+				if c.r > 0.97 and c.g > 0.97 and c.b > 0.97:
+					white_pixels += 1
+		water_pixels /= samples
+		white_pixels /= samples
+	water_ok = water_ok and water_pixels > 0.1
+	var screen_ok := white_pixels < 0.005
+	var ok := terrain_ok and water_ok and vegetation_ok and entities_ok and image_ok and grid_tiles > 0 and screen_ok
 	var file := FileAccess.open(result_path, FileAccess.WRITE)
-	file.store_string("%s map viewer: %s terrain %s, water %s, vegetation %s, %d decorations, %d entities, %d meshes\n" % [
-		"ok" if ok else "FAIL", _map.MapName if _map else "no map", terrain_ok, water_ok, vegetation_ok,
-		_map.DecorationEntities.size() if _map else 0, _entity_count, _drawn_meshes()])
+	file.store_string("%s map viewer: %s terrain %s, water %s (%.0f%% of the overview), white %.1f%%, vegetation %s, %d decorations, %d entities, %d meshes, %d build grid tiles\n" % [
+		"ok" if ok else "FAIL", _map.MapName if _map else "no map", terrain_ok, water_ok, water_pixels * 100,
+		white_pixels * 100, vegetation_ok, _map.DecorationEntities.size() if _map else 0, _entity_count, _drawn_meshes(),
+		grid_tiles])
 	file.close()
 	get_tree().quit()
 
@@ -458,6 +520,39 @@ func _run_capture(maps: PackedStringArray, out_dir: String) -> void:
 				for card: Array in CARDS:
 					if card[0] == label:
 						_play_card(card[1], card[2])
+		# --drag-check=on: a right drag through the input system; the grabbed ground point must stay under the cursor
+		if _user_arg("drag-check") == "on":
+			_set_view(views[0])
+			for f in 4:
+				await RenderingServer.frame_post_draw
+			var size := Vector2(get_viewport().get_visible_rect().size)
+			var start := size * Vector2(0.5, 0.5)
+			var grabbed := _mouse_world_position(start)
+			print("drag-check: window %s, root rect %s, camera viewport %s, target %s" % [get_window().size, size,
+				_camera.get_viewport().get_visible_rect().size, _target])
+			var press := InputEventMouseButton.new()
+			press.button_index = MOUSE_BUTTON_RIGHT
+			press.pressed = true
+			press.position = start
+			Input.parse_input_event(press)
+			await get_tree().process_frame
+			var worst := 0.0
+			for point: Vector2 in [size * Vector2(0.3, 0.3), size * Vector2(0.8, 0.2), size * Vector2(0.15, 0.85)]:
+				var motion := InputEventMouseMotion.new()
+				motion.position = point
+				motion.relative = point - start
+				Input.parse_input_event(motion)
+				await get_tree().process_frame
+				# the event arrives scaled to the root viewport: measure where the handler saw the cursor
+				grabbed = _drag_position
+				worst = maxf(worst, _mouse_world_position(_last_drag_screen).distance_to(grabbed))
+			print("drag-check: last cursor %s, target now %s" % [_last_drag_screen, _target])
+			var release := press.duplicate()
+			release.pressed = false
+			Input.parse_input_event(release)
+			await get_tree().process_frame
+			print("drag-check: %s grabbed (%.2f, %.2f), worst drift %.4f, dragging after release %s" % [
+				SCENARIOS[i][2], grabbed.x, grabbed.y, worst, _dragging])
 		# --wait=<ms>: let the game run that long before the captures (units spawn and walk)
 		var wait_until := Time.get_ticks_msec() + int(_user_arg("wait"))
 		while Time.get_ticks_msec() < wait_until:

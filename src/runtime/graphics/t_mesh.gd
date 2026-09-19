@@ -136,6 +136,7 @@ var CastsNoShadow := false
 var Position := Vector3.ZERO
 var Front := Vector3(0, 0, 1)
 var Up := Vector3(0, 1, 0)
+var Rotation := Vector3.ZERO
 var ScaleVector := Vector3.ONE
 
 var Geometry: TGeometry = null
@@ -608,8 +609,9 @@ static func _shader_for(cullmode: String, flags: PackedStringArray, skinning: bo
 	return shader
 
 
-## TMesh.ComputeTransformationMatrix: Translation(Position) * Base(Left, Up, Front) * Scaling, then the X mirror.
-## In Godot space the mirror and ToGodot conjugate the base: basis = G * Base * G * Scaling, G = diag(-1, 1, 1).
+## TMesh.ComputeTransformationMatrix: Translation(Position) * Base(Left, Up, Front) * RotationPitchYawRoll(Rotation)
+## * Scaling, then the X mirror. In Godot space the mirror and ToGodot conjugate the rest:
+## basis = G * Base * Rotation * G * Scaling, G = diag(-1, 1, 1).
 func ComputeTransformationMatrix() -> void:
 	var left := Up.cross(Front).normalized()
 	var up := Front.cross(left).normalized()
@@ -617,7 +619,14 @@ func ComputeTransformationMatrix() -> void:
 	if left != Vector3.ZERO and up != Vector3.ZERO and Front != Vector3.ZERO:
 		base = Basis(left, up, Front)
 	var g := Basis(Vector3(-1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1))
-	transform = Transform3D(g * base * g * Basis.from_scale(ScaleVector), ToGodot(Position))
+	transform = Transform3D(g * base * RMatrix.RotationPitchYawRoll(Rotation) * g * Basis.from_scale(ScaleVector),
+		ToGodot(Position))
+
+
+## TMesh.Rotation (pitch, yaw, roll), applied inside the base.
+func SetRotation(value: Vector3) -> void:
+	Rotation = value
+	ComputeTransformationMatrix()
 
 
 func SetPosition(value: Vector3) -> void:

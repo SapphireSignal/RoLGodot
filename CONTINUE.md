@@ -176,7 +176,19 @@ compare against; an idea worth checking: whether the original client (Delphi is 
 offline far enough to capture reference screenshots (it logs in to the closed master server).
 The live sandbox runs in the map viewer (network done): card buttons drop footmen / place spawners; units walk, fight
 and die (decay) on the client, drops show their spawn effect.
-**Next:** pick by visibility: particle effects (every hit, projectile and spell: the biggest look difference left,
+Build grid (`TBuildGridManagerComponent`, `TClientGame.BuildgridManager`, `tests/test_build_grid.gd`, helpers
+`RCubicBezier`, `TGUITransitionValueSingle`; `TMesh.Rotation` now exists). The map viewer: background `$23373C`,
+right-drag = the original's grab-the-ground panning (`--drag-check=on` proves the point stays under the cursor), the
+smoke test checks water pixels, white pixels and grid tiles in the overview (proven to fail with broken water).
+**How to verify rendering changes** (the owner must never be the one to find a regression): capture every view of
+both maps before (changed files from HEAD~, restored after) and after, diff, look at each capture; see the global
+rule "Claude checks the screen". The gap list now names every unported client visual (health bars, orienters,
+positioners, traces, range indicators, point lights, camera shake): work them down by visibility.
+Owner's wishes (2026-09-18): a strict replica down to camera placement / angle / drag feel; several full audit passes
+over everything once the port is complete (phase 9); requests ahead of their phase are fine (do them unless they
+need an unported system, then say which).
+**Next:** pick by visibility: health bars and unit facing (orienters / positioners: check first whether client units
+face their walk / attack direction), then particle effects (every hit, projectile and spell: the biggest look difference left,
 366 `.pfx`; Distortion follows them), shadow mapping (palms on the sand), or phase 5's camera component and card hand
 on top of the network.
 Owner: `docs/questions-for-devs.md` is the list for the original developers (master-server values); record their

@@ -223,6 +223,15 @@ and vegetation. Both maps (Classic, Single) have all three. Which scenario uses 
 tutorial and the solo PvE attack; **Classic** (two lanes) the "two lane" PvP variants, ranked 3v3 / 4v4, the duo
 PvE attack and the Classic sandbox.
 
+**Build grid** (`TBuildGridManagerComponent`, made after the scenario scripts set the build zones): per free field a
+`Gameplay\Buildgrid\Buildgrid1..4` tile (random, random 90 degree turn, 0.04 under the ground, scale 2 / 1.84 +
+0.08) with `GlowOvershoot.fx` at 0.032: with the glow effect on, the additive glow blur turns that into a clearly
+turquoise tile (the glow texture is flat cyan, alpha 0); with glow off the original tints 0.4 instead. A wave spawn
+(`eiWaveSpawn`, sent by the server) fades its tile out over 1 s along (0, -2.38, 0.58, 1), which first flashes it
+~1.7x; when every field of the zone has spawned they all glow in over 0.5 s. **Where nothing is drawn** the water
+reads position (0, 0, 0) (the original's cleared position buffer) and the scene shows the clear color `$23373C`; the
+sea past the terrain's edge then turns bright cyan, as the original's formula does, outside the game camera's range.
+
 **Decorations.** Given the client's global bus, `TClientMap.CreateFromFile` also creates the map's decorations, last,
 like the original: `<Map>.bcc` `SavedDecorations` (converted to `<map>.decorations.json` by
 `import_map_graphics.py`; Classic 54: bridges `Bridge11..333`, 16 `BridgePart1`, 24 `BridgePart2`, `Stones1`, 7

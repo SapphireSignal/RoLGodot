@@ -9,7 +9,7 @@ extends TGame
 ## with the token, NET_ASSIGNED_PLAYER back) against an in-process game server; ReadyWhenLoaded stands in for the
 ## core game state's client-ready event once the game is ready.
 ## Not ported yet: input, camera, GUI, sound, commander manager (OnTokenMapping's eiNewCommander), the trace
-## manager, minimap, the build grid manager and TClientEntityManagerComponent (the end screen).
+## manager, minimap and TClientEntityManagerComponent (the end screen).
 
 enum { gsPreparing, gsRunning, gsReconnecting, gsAborted, gsCrashed, gsFinishing, gsFinished }  # EnumGameStatus
 
@@ -19,6 +19,7 @@ var FTokenMapping: Array = []
 var FGameState: int = gsPreparing
 var FSentReady := false
 var DecayManager: TUnitDecayManagerComponent = null
+var BuildgridManager: TBuildGridManagerComponent = null
 
 var ClientMap: TClientMap:
 	get:
@@ -49,6 +50,8 @@ func Create(GameInfo_ = null, Socket: TLoopbackSocket = null, AuthentificationTo
 			FinishedReceiveGameData)
 	DecayManager = TUnitDecayManagerComponent.new().Create(GameEntity)
 	Initialize()
+	# build zones are set by scripts in initialize
+	BuildgridManager = TBuildGridManagerComponent.new().Create(GameEntity)
 	return self
 
 
