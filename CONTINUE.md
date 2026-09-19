@@ -162,21 +162,23 @@ animation) and blow apart / darken for 500 ms.
 Post effects (section "Post effects" in `docs/assets.md`, `tests/test_post_effects.gd`): `TPostEffectManager` runs
 `PostEffects.fxs` (`tools/convert_post_effects.py` -> `src/content/post_effects.json`) on a SubViewport chain; the
 glow stage is a second camera without cull layer 20 (shaders test `CAMERA_VISIBLE_LAYERS`), meshes draw their glow
-pass there (`TMesh.GlowMaterial`, `_glow_flags`). Ported: Glow, UnsharpMasking, ColorCorrection. Map viewer capture
-switches: `--post-effects=off|none`, `--dump-glow=on`, `--death-burst=N`, `--view=x,z,zoom`.
-Open in phase 4: the Toon post effect (the original's dark borders, `PosteffectBlackBorder.fx` + `PosteffectToon.fx`,
-border mode: needs G-buffer normal + linear depth + material alpha: a third camera with its own layer bit drawing
-them the way the glow camera works), FXAA (`Engine/Shader/FXAA.fx`, mode dither, quality 2), Distortion and Outline
-(need particles / hover), shadow mapping (terrain and vegetation receive it, palms cast it), the other mesh effects
+pass there (`TMesh.GlowMaterial`, `_glow_flags`). Ported: Toon, Glow, FXAA, UnsharpMasking, ColorCorrection. Toon
+(section "G-buffer camera and Toon"): a third camera without cull layer 19 draws the packed G-buffer into an HDR
+viewport (`toon.gdshaderinc`: every world shader writes it under `ROL_GBUFFER_CAMERA` and applies `rol_toon` to its
+own fragments; a new world shader must do both), `black_border.gdshader` blurs the border buffer. Map viewer capture
+switches: `--post-effects=off|none`, `--effects-off=Toon,FXAA`, `--dump-glow=on`, `--dump-toon=on`,
+`--death-burst=N`, `--view=x,z,zoom`. `tests/check_shaders.gd` now compiles the map shaders too (Godot rejects
+`return` in `fragment()`).
+Open in phase 4: Distortion and Outline (need particles / hover), shadow mapping (terrain and vegetation receive it, palms cast it), the other mesh effects
 (Ghost, Warp, Wobble, Ice, Stone, Void, Spherify, Invisible), particle effects and point lights on units, fur,
 geomipmapping, the camera component (the viewer only borrows its geometry). No capture of the original exists to
 compare against; an idea worth checking: whether the original client (Delphi is installed) can be built and run
 offline far enough to capture reference screenshots (it logs in to the closed master server).
 The live sandbox runs in the map viewer (network done): card buttons drop footmen / place spawners; units walk, fight
 and die (decay) on the client, drops show their spawn effect.
-**Next:** pick by visibility: the Toon post effect (dark outlines on everything: the biggest look difference left)
-with FXAA, or particle effects (every hit, projectile and spell), or phase 5's camera component and card hand on top
-of the network.
+**Next:** pick by visibility: particle effects (every hit, projectile and spell: the biggest look difference left,
+366 `.pfx`; Distortion follows them), shadow mapping (palms on the sand), or phase 5's camera component and card hand
+on top of the network.
 Owner: `docs/questions-for-devs.md` is the list for the original developers (master-server values); record their
 answers there.
 The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.

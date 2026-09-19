@@ -39,7 +39,8 @@ Status: ⬜ missing · 🟨 partial · ✅ matches original (checked against the
 | Mesh effects: matcap, metal, spawn animations (per color, with their glow), tint, glow, hide-and-glow, soul gain | `TMeshEffect*`, effect shaders | ✅ ported, compile-checked, tested; seen on the nexus crystals and drops (captures) |
 | Mesh effects: ghost, warp, wobble, ice, stone, void, spherify, invisible | `TMeshEffect*` | ⬜ |
 | Post effects: glow stage + glow, unsharp masking, color correction | `PostEffects.fxs`, `Engine.PostEffects.pas` | 🟨 ported on a viewport pipeline (map viewer); pass-through checked pixel-exact; no capture of the original to compare the look against |
-| Post effects: Toon (dark borders), FXAA, distortion, outline | `PostEffects.fxs` | ⬜ (Toon needs the G-buffer normals / depth / material) |
+| Post effects: Toon (dark borders on units, buildings, decorations, palms), FXAA | `PostEffects.fxs`, `PosteffectBlackBorder.fx`, `PosteffectToon.fx`, `FXAA.fx` | 🟨 ported (G-buffer camera, border passes, preset 12); borders and smoothed edges seen in map viewer captures; no capture of the original to compare against |
+| Post effects: distortion, outline (hover highlight) | `PostEffects.fxs` | ⬜ (distortion needs particles, outline the outline stage) |
 | Music and sound effects | `Sound/Banks` | ⬜ |
 | 29 languages | `Lang/*.csv` | ⬜ |
 

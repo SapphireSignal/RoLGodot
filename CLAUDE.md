@@ -36,7 +36,7 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - `docs/assets.md`: the graphics import (`tools/import_graphics.py`, generated `assets/graphics/`), TMesh on the raw
   `.msh` (skinning, morphs, animation drivers), the mesh shader (gamma-space port of the original's lighting),
   TLightManager, the maps (terrain, water, vegetation, decorations), the mesh effects (shader block composition,
-  own passes, the effect stack, the death decay), the post effects (viewport pipeline, glow stage), the viewers.
+  own passes, the effect stack, the death decay), the post effects (viewport pipeline, glow stage, G-buffer camera and Toon, FXAA), the viewers.
 - `docs/questions-for-devs.md`: what only the closed master server knew (meta values), asked of the original devs.
 
 ## Status
@@ -155,3 +155,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   pixel-exact) with the glow stage (a second camera, meshes' glow passes), Glow, UnsharpMasking, ColorCorrection; mesh
   effects Glow, HideAndGlow, SoulGain (effects-stage own pass); the importer takes the scripts' effect textures.
   380 tests green, 1403 shader variants compile, no errors. Next: see CONTINUE.md.
+- 2026-09-18: Toon and FXAA: a G-buffer camera (HDR viewport, packed normal / depth / shading reduction written by
+  every world shader, `toon.gdshaderinc`), the border blur (`PosteffectBlackBorder.fx`) and the Toon border applied in
+  the world shaders' fragments (dark outlines on units, buildings, palms, rocks); FXAA 3.11 preset 12 as a pass. The
+  shader check now covers the map shaders. 382 tests green, 1408 shader variants compile, no errors. Next: see
+  CONTINUE.md.

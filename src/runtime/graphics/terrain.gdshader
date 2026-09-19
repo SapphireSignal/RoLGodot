@@ -16,6 +16,7 @@ global uniform vec4 rol_light_color_0;
 global uniform vec4 rol_light_color_1;
 global uniform vec4 rol_light_color_2;
 global uniform vec4 rol_light_color_3;
+#include "res://src/runtime/graphics/toon.gdshaderinc"
 
 uniform sampler2D diffuse_texture : filter_linear_mipmap, repeat_disable;
 uniform sampler2D normal_texture : filter_linear_mipmap, repeat_disable;
@@ -63,7 +64,8 @@ void fragment() {
 	// DRAW_MATERIAL with MATERIAL + MATERIALTEXTURE
 	vec4 mb = vec4(specular_intensity * material.r, max(material.g, specular_power / 255.0), specular_tint * material.b,
 		max(material.a, shading_reduction));
-	if (color.a < 0.001) discard;
+	// the deferred pass skips the pixel; the G-buffer holds it all the same
+	if (color.a < 0.001 && !ROL_GBUFFER_CAMERA) discard;
 	vec3 light_intensity = vec3(0.0);
 	vec3 specular = vec3(0.0);
 	vec3 to_camera = normalize(CAMERA_POSITION_WORLD - world_position);
@@ -74,7 +76,10 @@ void fragment() {
 		light_intensity += clamp(dot(normal, dir), 0.0, 1.0) * light_color.rgb * light_color.a;
 		specular += mix(light_color.rgb, color.rgb, mb.b) * pow(clamp(dot(normal, halfway), 0.0, 1.0), mb.g * 255.0 + 1.0) * mb.r;
 	}
-	ALBEDO = rol_to_linear(color.rgb * mix(light_intensity + rol_ambient, vec3(1.0), mb.a) + specular * light_intensity);
+	ALBEDO = rol_to_linear(rol_toon(color.rgb * mix(light_intensity + rol_ambient, vec3(1.0), mb.a)
+		+ specular * light_intensity, color.a, FRAGCOORD.xy));
 	// the glow camera (TPostEffectManager, the camera without layer 20): black, only the depth the glow is tested against
 	if ((CAMERA_VISIBLE_LAYERS & 524288u) == 0u) ALBEDO = vec3(0.0);
+	// the G-buffer camera (toon.gdshaderinc): NormalBuffer = (normal, distance to the camera), MaterialBuffer.a
+	if (ROL_GBUFFER_CAMERA) ALBEDO = rol_gbuffer_encode(normal, length(CAMERA_POSITION_WORLD - world_position), mb.a);
 }

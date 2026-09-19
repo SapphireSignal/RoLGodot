@@ -16,6 +16,7 @@ global uniform vec4 rol_light_color_0;
 global uniform vec4 rol_light_color_1;
 global uniform vec4 rol_light_color_2;
 global uniform vec4 rol_light_color_3;
+#include "res://src/runtime/graphics/toon.gdshaderinc"
 
 uniform sampler2D diffuse_texture : filter_linear_mipmap, repeat_enable;  // tsColor: auto, wrap
 uniform float time = 0.0;                         // TimeManager.GetFloatingTimestamp / 1000
@@ -58,7 +59,9 @@ void fragment() {
 		vec4 light_color = rol_light_color(i);
 		light_intensity += clamp(dot(normal, rol_light_dir(i)), 0.0, 1.0) * light_color.rgb * light_color.a;
 	}
-	ALBEDO = rol_to_linear(color.rgb * (light_intensity + rol_ambient));
+	ALBEDO = rol_to_linear(rol_toon(color.rgb * (light_intensity + rol_ambient), color.a, FRAGCOORD.xy));
 	// the glow camera (TPostEffectManager, the camera without layer 20): black, only the depth the glow is tested against
 	if ((CAMERA_VISIBLE_LAYERS & 524288u) == 0u) ALBEDO = vec3(0.0);
+	// the G-buffer camera (toon.gdshaderinc): no material, MaterialBuffer = 0
+	if (ROL_GBUFFER_CAMERA) ALBEDO = rol_gbuffer_encode(normal, length(VERTEX), 0.0);
 }

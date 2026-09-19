@@ -66,6 +66,12 @@ func _initialize() -> void:
 			count += 1
 			if RenderingServer.get_shader_parameter_list(shader.get_rid()).is_empty():
 				failed.append(file)
+	# the map shaders
+	for file in ["terrain.gdshader", "vegetation.gdshader", "water.gdshader"]:
+		var shader: Shader = load("res://src/runtime/graphics/" + file)
+		count += 1
+		if RenderingServer.get_shader_parameter_list(shader.get_rid()).is_empty():
+			failed.append(file)
 	print("check_shaders: %d variants, %d failed" % [count, failed.size()])
 	for f in failed.slice(0, 20):
 		print("  failed: ", f)

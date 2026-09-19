@@ -71,6 +71,8 @@ void vertex() {
 	vec3 n = normalize(mix(center.gbr * 2.0 - 1.0, center2.gbr * 2.0 - 1.0, 0.5));
 	n.y *= height_norm;
 	game_normal = normalize(n);
+	// the effects stage is not in the G-buffer (toon.gdshaderinc): not drawn under the G-buffer camera
+	if ((CAMERA_VISIBLE_LAYERS & 262144u) == 0u) POSITION = vec4(2.0, 2.0, 2.0, 1.0);
 }
 
 // The G-buffer position at a screen coordinate, game space.

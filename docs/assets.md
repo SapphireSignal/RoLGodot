@@ -182,10 +182,32 @@ Anamorphic 4.56 = y spread x 1.44, intensity 0.32, additive: `GAUSS_4_ADDITIVE`,
 the last pass added onto the scene. UnsharpMasking: the scene blurred (normal kernel, spread 0.12, 1 iteration) and
 `scene + (scene - blurred) * 0.36`. ColorCorrection: `pow(saturate((c - 0) / 0.956), 1.008)`. Blur passes: per
 iteration i a vertical pass (`pixelwidth = (i + 1 + SpreadX) / width`) then a horizontal one, linear clamped sampling.
-Not yet: Toon (border mode: dark outlines where the G-buffer's normal / depth jump, needs normal, depth and material
-buffers: a third camera with its own layer bit could draw them), FXAA (`FXAA.fx`, 3.11, mode dither, quality 2),
-Distortion (nothing draws in rsDistortion yet: particles), Outline (the outline stage: hover highlights). The mesh
-viewer draws without post effects.
+FXAA (`fxaa.gdshader`): FXAA 3.11's PC path as compiled there (HLSL 4: no gather, green as luma, discard = keep the
+scene), preset 12 (`fmDither`, Quality 2: steps 1, 1.5, 2, 4, 12; `FXAA_PRESETS` holds all), the stack's
+SubPixelQuality 0.436 and both edge thresholds 0 (no early exit; a flat cross divides by zero: DX11's saturate gives
+0 for NaN, 1 for inf, written out). Not yet: Distortion (nothing draws in rsDistortion yet: particles), Outline (the
+outline stage: hover highlights). The mesh viewer draws without post effects.
+
+**G-buffer camera and Toon.** The stack's Toon is `ttBorder`: dark borders where the G-buffer's surface jumps, no
+cel lighting. `GBufferViewport` (HDR, so 16 bit float like the original's normal buffer; values pass raw, checked)
+has a third camera without cull layer 19 (`GBUFFER_LAYER_BIT`, `ROL_GBUFFER_CAMERA`, `toon.gdshaderinc`). Under it
+what the original draws into its G-buffer in rsWorld (opaque mesh variants incl. world own passes, terrain,
+vegetation) writes `rol_gbuffer_encode`: r = distance to the camera, g / b = octahedral normal in 0..1, g + 2 when the
+8 bit shading reduction is at least `BorderShadingReductionThreshold` (all the border pass uses), b + 2 marks drawn
+pixels; the rest (water, alpha meshes, effects-stage and glow passes) is not drawn. `black_border.gdshader` ports
+`PosteffectBlackBorder.fx`: per iteration an x then a y pass (offsets `BorderSpread` / size: 0.384 px, point
+sampled), the first on the white-cleared buffer; samples count where the depth is within `Range` (0.56) and the
+normals face the same half space (`NormalBias` 0); a sample with a high shading reduction keeps the input (lerp by
+the count, extrapolating). In captures flat ground stays border-free (neighbours within range), while palms, units,
+buildings, rocks and dune silhouettes get 1-2 px lines. The last pass is a child of `WorldViewport` (drawn first) and becomes the global
+`rol_toon_border`. The original draws `PosteffectToon.fx` over the scene after the deferred pass, before rsEffects;
+the port applies it in the world shaders' own fragments (`rol_toon`: `lerp(border_color, color, pow(border,
+gradient))`, skipped where `Color.a - 0.1 + (1 - factor) < 0` as the clip keeps the scene), which is the same since
+the visible opaque fragment is what the scene holds; water's screen texture (copied after the opaque pass) thus sees
+the borders like the original's Scene. Globals: `rol_toon_enabled` (off without the manager, e.g. the mesh viewer),
+`rol_toon_border`, `_color`, `_gradient`, `_threshold` (`project.godot`). Map viewer: `--effects-off=Toon,FXAA`,
+`--dump-toon=on` (the border buffer). Where nothing opaque is drawn (off the map) the original would still draw
+border color at silhouettes over the background; the port does not.
 
 ## Lighting
 `TLightManager` (`src/runtime/map/t_light_manager.gd`) ports `BaseConflict.Map.Client.pas`: ambient and

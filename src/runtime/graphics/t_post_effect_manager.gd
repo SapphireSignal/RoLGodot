@@ -17,10 +17,15 @@ extends Node
 ## The glow stage (rsGlow) is a second camera on the same world (GlowViewport) whose cull mask lacks GLOW_LAYER_BIT
 ## (every other camera has it by default): the shaders draw black under it, glowing meshes their glow pass
 ## (TMesh.ApplyMaterial).
+## The G-buffer (what rsWorld draws with the GBUFFER flag: normal, distance to the camera, shading reduction) is a third
+## camera (GBufferViewport, HDR: 16 bit float like the original's normal buffer) whose cull mask lacks
+## GBUFFER_LAYER_BIT: the world shaders write their packed G-buffer under it (toon.gdshaderinc), the rest is not drawn.
+## The Toon effect (rsWorldPostEffects) blurs its border buffer from it; the world shaders then apply the result to
+## their own fragments (the scene before the effects stage), through the rol_toon_* global shader parameters.
 ##
-## Ported: Glow, UnsharpMasking, ColorCorrection. Not yet: Toon (rsWorldPostEffects, needs the G-buffer normals /
-## depth / material), FXAA, Distortion (no contributors are drawn yet: particles), Outline (the outline stage),
-## SSAO (off by default). Bloom and the Draw* debug views are disabled in the stack.
+## Ported: Toon (ttBorder, the stack's type), Glow, FXAA, UnsharpMasking, ColorCorrection. Not yet: Distortion (no
+## contributors are drawn yet: particles), Outline (the outline stage), SSAO (off by default). Bloom and the Draw*
+## debug views are disabled in the stack.
 
 const C = preload("res://src/runtime/dws/dws_const.gd")
 const SOURCE := "res://src/content/post_effects.json"
@@ -28,11 +33,25 @@ const SHADER_ROOT := "res://src/runtime/graphics/post_effects/"
 ## Layer 20, in every camera's cull mask but the glow camera's: shaders test CAMERA_VISIBLE_LAYERS for it (524288u).
 ## Nothing is drawn on it.
 const GLOW_LAYER_BIT := 1 << 19
+## Layer 19, in every camera's cull mask but the G-buffer camera's (262144u in the shaders). Nothing is drawn on it.
+const GBUFFER_LAYER_BIT := 1 << 18
 ## Shaderglobals.fx GAUSS_0..4 and GAUSS_0..4_ADDITIVE (KERNELSIZE + 2 weights each)
 const GAUSS := [[0.44198, 0.27901], [0.250301, 0.221461, 0.153388], [0.214607, 0.189879, 0.131514, 0.071303],
 	[0.20236, 0.179044, 0.124009, 0.067234, 0.028532], [0.198596, 0.175713, 0.121703, 0.065984, 0.028002, 0.0093]]
 const GAUSS_ADDITIVE := [[1.0, 0.63127], [1.0, 0.88478, 0.61281], [1.0, 0.88478, 0.61281, 0.33224],
 	[1.0, 0.88478, 0.61281, 0.33224, 0.14099], [1.0, 0.88478, 0.61281, 0.33224, 0.14099, 0.04683]]
+## FXAA.fx's quality presets: FXAA_QUALITY__PRESET -> the search steps FXAA_QUALITY__P0.. (their count is
+## FXAA_QUALITY__PS)
+const FXAA_PRESETS := {
+	10: [1.5, 3.0, 12.0], 11: [1.0, 1.5, 3.0, 12.0], 12: [1.0, 1.5, 2.0, 4.0, 12.0],
+	13: [1.0, 1.5, 2.0, 2.0, 4.0, 12.0], 14: [1.0, 1.5, 2.0, 2.0, 2.0, 4.0, 12.0],
+	15: [1.0, 1.5, 2.0, 2.0, 2.0, 2.0, 4.0, 12.0],
+	20: [1.5, 2.0, 8.0], 21: [1.0, 1.5, 2.0, 8.0], 22: [1.0, 1.5, 2.0, 2.0, 8.0], 23: [1.0, 1.5, 2.0, 2.0, 2.0, 8.0],
+	24: [1.0, 1.5, 2.0, 2.0, 2.0, 3.0, 8.0], 25: [1.0, 1.5, 2.0, 2.0, 2.0, 2.0, 4.0, 8.0],
+	26: [1.0, 1.5, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 8.0], 27: [1.0, 1.5, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 8.0],
+	28: [1.0, 1.5, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 8.0],
+	29: [1.0, 1.5, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 4.0, 8.0],
+	39: [1.0, 1.0, 1.0, 1.0, 1.0, 1.5, 2.0, 2.0, 2.0, 2.0, 4.0, 8.0]}
 ## EnumRenderStage values of the post effects' stages
 const RS_WORLD_POST_EFFECTS := 6
 const RS_POST_EFFECTS := 9
@@ -41,7 +60,8 @@ const OPTIONS := {"SSAO": C.coGraphicsPostEffectSSAO, "Toon": C.coGraphicsPostEf
 	"Glow": C.coGraphicsPostEffectGlow, "FXAA": C.coGraphicsPostEffectFXAA,
 	"UnsharpMasking": C.coGraphicsPostEffectUnsharpMasking, "Distortion": C.coGraphicsPostEffectDistortion}
 ## Effect classes the port draws, and the classes' render stages (the TPostEffect constructors' FStage)
-const PORTED := ["TPostEffectGlow", "TPostEffectUnsharpMasking", "TPostEffectColorCorrection"]
+const PORTED := ["TPostEffectToon", "TPostEffectGlow", "TPostEffectFXAA", "TPostEffectUnsharpMasking",
+	"TPostEffectColorCorrection"]
 const STAGES := {"TPostEffectToon": RS_WORLD_POST_EFFECTS, "TPostEffectSSAO": RS_WORLD_POST_EFFECTS}
 
 
@@ -93,6 +113,12 @@ var Camera: Camera3D = null
 var WorldViewport: SubViewport = null
 var GlowViewport: SubViewport = null
 var GlowCamera: Camera3D = null
+var GBufferViewport: SubViewport = null
+var GBufferCamera: Camera3D = null
+## TPostEffectToon's BlurredScene2: the border buffer the world shaders read (null without Toon)
+var ToonBorder: Texture2D = null
+## The global shader parameters this manager set last (headless Godot does not keep them)
+var ShaderGlobals := {}
 var _chain_root: SubViewport = null
 var _display: TextureRect = null
 var _size := Vector2i.ZERO
@@ -117,13 +143,14 @@ func Create(Host: Node, Camera_: Camera3D) -> TPostEffectManager:
 	get_viewport().disable_3d = true
 	Rebuild()
 	get_viewport().size_changed.connect(Rebuild)
-	RenderingServer.frame_pre_draw.connect(_sync_glow_camera)
+	RenderingServer.frame_pre_draw.connect(_sync_cameras)
 	return self
 
 
 func _exit_tree() -> void:
-	if RenderingServer.frame_pre_draw.is_connected(_sync_glow_camera):
-		RenderingServer.frame_pre_draw.disconnect(_sync_glow_camera)
+	if RenderingServer.frame_pre_draw.is_connected(_sync_cameras):
+		RenderingServer.frame_pre_draw.disconnect(_sync_cameras)
+	_set_global("rol_toon_enabled", false)
 	if get_viewport() != null:
 		get_viewport().disable_3d = false
 
@@ -172,17 +199,27 @@ func Rebuild() -> void:
 	WorldViewport = _viewport("World")
 	WorldViewport.add_child(Camera)
 	Camera.current = true
-	Camera.cull_mask |= GLOW_LAYER_BIT
+	Camera.cull_mask |= GLOW_LAYER_BIT | GBUFFER_LAYER_BIT
 	GlowViewport = null
 	GlowCamera = null
+	GBufferViewport = null
+	GBufferCamera = null
+	ToonBorder = null
+	_set_global("rol_toon_enabled", false)
 	var Scene: Texture2D = WorldViewport.get_texture()
 	var Producers: Array = [WorldViewport]
 	for Effect: Array in ActiveEffects():
 		match Effect[1]:
+			"TPostEffectToon":
+				_toon(Effect[2])
 			"TPostEffectGlow":
 				var Result := _glow(Scene, Producers, Effect[2])
 				Scene = Result[0]
 				Producers = Result[1]
+			"TPostEffectFXAA":
+				var Pass := _pass("FXAA", FXAAMaterial(Effect[2], Scene), Producers)
+				Scene = Pass.get_texture()
+				Producers = [Pass]
 			"TPostEffectUnsharpMasking":
 				var Result := _unsharp_masking(Scene, Producers, Effect[2])
 				Scene = Result[0]
@@ -266,24 +303,113 @@ func _blur(Name_: String, Blur: TTextureBlur, Input: Texture2D, InputProducers: 
 	return [Texture_, Producers]
 
 
-## TPostEffectGlow.Render: the glow stage into its own target (cleared black, meshes z-tested against the scene),
-## blurred additively onto the scene.
-func _glow(Scene: Texture2D, Producers: Array, Fields: Dictionary) -> Array:
-	GlowViewport = _viewport("Glow")
-	GlowCamera = Camera3D.new()
-	GlowCamera.name = "GlowCamera"
-	GlowCamera.cull_mask = Camera.cull_mask & ~GLOW_LAYER_BIT
-	GlowViewport.add_child(GlowCamera)
-	GlowCamera.current = true
+## The G-buffer camera's viewport (built once per Rebuild, on first use): the world stage's packed G-buffer.
+func _gbuffer() -> Texture2D:
+	if GBufferViewport == null:
+		GBufferViewport = _viewport("GBuffer")
+		GBufferViewport.use_hdr_2d = true
+		GBufferCamera = _synced_camera("GBufferCamera", Camera.cull_mask & ~GBUFFER_LAYER_BIT)
+		GBufferViewport.add_child(GBufferCamera)
+		GBufferCamera.current = true
+		_sync_cameras()
+	return GBufferViewport.get_texture()
+
+
+## A camera of an extra stage: black background (the cleared targets), the linear tonemap (values pass unchanged).
+func _synced_camera(Name_: String, CullMask: int) -> Camera3D:
+	var Camera_ := Camera3D.new()
+	Camera_.name = Name_
+	Camera_.cull_mask = CullMask
 	var Environment_ := Environment.new()
 	Environment_.background_mode = Environment.BG_COLOR
 	Environment_.background_color = Color(0, 0, 0)
 	Environment_.tonemap_mode = Environment.TONE_MAPPER_LINEAR
-	GlowCamera.environment = Environment_
-	_sync_glow_camera()
+	Camera_.environment = Environment_
+	return Camera_
+
+
+## TPostEffectToon.Render (ttBorder): BlurredScene2 cleared white, then per border iteration the border shader along x
+## (pixelwidth = BorderSpread / width) into BlurredScene and along y back into BlurredScene2, against the G-buffer. The
+## last pass is drawn before the world (a child of WorldViewport), whose shaders apply it (rol_toon_*).
+func _toon(Fields: Dictionary) -> void:
+	if str(Fields.get("ToonType", "ttBoth")) != "ttBorder":
+		push_warning("TPostEffectManager: Toon type %s is not ported (the stack uses ttBorder)" % Fields.ToonType)
+		return
+	if int(Fields.BorderIterations) <= 0:
+		# BlurredScene2 stays cleared white: no border
+		return
+	var GBuffer := _gbuffer()
+	var Spread := float(Fields.BorderSpread)
+	var Texture_: Texture2D = null
+	var Producers: Array = [GBufferViewport]
+	for i in int(Fields.BorderIterations):
+		for Direction in 2:
+			var Material := _material("black_border.gdshader")
+			Material.set_shader_parameter("clear_input", Texture_ == null)
+			Material.set_shader_parameter("color_texture", Texture_)
+			Material.set_shader_parameter("gbuffer_texture", GBuffer)
+			Material.set_shader_parameter("pixelwidth", Spread / _size.x if Direction == 0 else 0.0)
+			Material.set_shader_parameter("pixelheight", Spread / _size.y if Direction == 1 else 0.0)
+			Material.set_shader_parameter("range", float(Fields.Range))
+			Material.set_shader_parameter("normalbias", float(Fields.NormalBias))
+			Material.set_shader_parameter("border_threshold", float(Fields.BorderShadingReductionThreshold))
+			var Pass := _pass("ToonBorder%d%s" % [i, "xy"[Direction]], Material, Producers)
+			Texture_ = Pass.get_texture()
+			Producers = [Pass]
+	WorldViewport.add_child(Producers[0])
+	ToonBorder = Texture_
+	var Color_: Array = Fields.BorderColor
+	_set_global("rol_toon_border", Texture_)
+	_set_global("rol_toon_border_color", Vector3(Color_[0], Color_[1], Color_[2]))
+	_set_global("rol_toon_border_gradient", float(Fields.BorderGradient))
+	_set_global("rol_toon_border_threshold", float(Fields.BorderShadingReductionThreshold))
+	_set_global("rol_toon_enabled", true)
+
+
+func _set_global(Name_: String, Value: Variant) -> void:
+	ShaderGlobals[Name_] = Value
+	RenderingServer.global_shader_parameter_set(Name_, Value)
+
+
+## TPostEffectGlow.Render: the glow stage into its own target (cleared black, meshes z-tested against the scene),
+## blurred additively onto the scene.
+func _glow(Scene: Texture2D, Producers: Array, Fields: Dictionary) -> Array:
+	GlowViewport = _viewport("Glow")
+	GlowCamera = _synced_camera("GlowCamera", Camera.cull_mask & ~GLOW_LAYER_BIT)
+	GlowViewport.add_child(GlowCamera)
+	GlowCamera.current = true
+	_sync_cameras()
 	var Blur := TTextureBlur.FromFields(Fields)
 	Blur.AdditiveBlur = true
 	return _blur("GlowBlur", Blur, GlowViewport.get_texture(), [GlowViewport], Scene, Producers, true)
+
+
+## TPostEffectFXAA.BuildShader's preset: Mode fmDither "1" + min(5, Quality), fmLessDither "2" + Quality, fmNoDither 39.
+static func FXAAPreset(Fields: Dictionary) -> int:
+	var Quality := int(Fields.get("Quality", 2))
+	match str(Fields.get("Mode", "fmDither")):
+		"fmLessDither":
+			return 20 + Quality
+		"fmNoDither":
+			return 39
+	return 10 + mini(5, Quality)
+
+
+## TPostEffectFXAA.Render: FXAA.fx over the scene (linear, clamped), pixel size 1 / resolution.
+func FXAAMaterial(Fields: Dictionary, Scene: Texture2D) -> ShaderMaterial:
+	var Steps: Array = FXAA_PRESETS[FXAAPreset(Fields)]
+	var P := PackedFloat32Array(Steps)
+	P.resize(12)
+	var Material := _material("fxaa.gdshader")
+	Material.set_shader_parameter("color_texture", Scene)
+	Material.set_shader_parameter("pixelwidth", 1.0 / _size.x)
+	Material.set_shader_parameter("pixelheight", 1.0 / _size.y)
+	Material.set_shader_parameter("subpixel_quality", float(Fields.get("SubPixelQuality", 0.75)))
+	Material.set_shader_parameter("edge_threshold", float(Fields.get("EdgeThreshold", 0.166)))
+	Material.set_shader_parameter("edge_threshold_min", float(Fields.get("EdgeThresholdMin", 0.0833)))
+	Material.set_shader_parameter("quality_ps", Steps.size())
+	Material.set_shader_parameter("quality_p", P)
+	return Material
 
 
 ## TPostEffectUnsharpMasking.Render: the scene blurred into BlurredScene, then scene + (scene - blurred) * Amount.
@@ -299,13 +425,15 @@ func _unsharp_masking(Scene: Texture2D, Producers: Array, Fields: Dictionary) ->
 	return [Pass.get_texture(), [Pass]]
 
 
-## The glow camera sees what the main camera sees, right before each frame is drawn.
-func _sync_glow_camera() -> void:
-	if GlowCamera == null or Camera == null or not is_instance_valid(Camera) or not Camera.is_inside_tree() \
-			or not GlowCamera.is_inside_tree():
+## The glow and G-buffer cameras see what the main camera sees, right before each frame is drawn.
+func _sync_cameras() -> void:
+	if Camera == null or not is_instance_valid(Camera) or not Camera.is_inside_tree():
 		return
-	GlowCamera.global_transform = Camera.global_transform
-	GlowCamera.fov = Camera.fov
-	GlowCamera.near = Camera.near
-	GlowCamera.far = Camera.far
-	GlowCamera.projection = Camera.projection
+	for Camera_: Camera3D in [GlowCamera, GBufferCamera]:
+		if Camera_ == null or not Camera_.is_inside_tree():
+			continue
+		Camera_.global_transform = Camera.global_transform
+		Camera_.fov = Camera.fov
+		Camera_.near = Camera.near
+		Camera_.far = Camera.far
+		Camera_.projection = Camera.projection

@@ -70,3 +70,23 @@ rol_light_color_3={
 "type": "color",
 "value": Color(1, 1, 1, 0)
 }
+rol_toon_enabled={
+"type": "bool",
+"value": false
+}
+rol_toon_border={
+"type": "sampler2D",
+"value": ""
+}
+rol_toon_border_color={
+"type": "vec3",
+"value": Vector3(0, 0, 0)
+}
+rol_toon_border_gradient={
+"type": "float",
+"value": 1.0
+}
+rol_toon_border_threshold={
+"type": "float",
+"value": 1.0
+}

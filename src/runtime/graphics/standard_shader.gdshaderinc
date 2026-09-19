@@ -43,6 +43,7 @@ global uniform vec4 rol_light_color_0;    // rgb color, a intensity
 global uniform vec4 rol_light_color_1;
 global uniform vec4 rol_light_color_2;
 global uniform vec4 rol_light_color_3;
+#include "res://src/runtime/graphics/toon.gdshaderinc"
 
 uniform sampler2D diffuse_texture : filter_linear_mipmap, repeat_enable;
 // argb = (Shading Reduction, Specularintensity, Specularpower, Specular Tinting): r intensity, g power, b tint, a SR
@@ -174,10 +175,14 @@ void vertex() {
 	#ifdef ROL_GLOW_STAGE
 	if (!ROL_GLOW_CAMERA) POSITION = ROL_NOT_DRAWN;
 	#elif defined(ROL_EFFECTS_STAGE)
-	// own passes of the effects stage are no scene depth: not in the glow stage
-	if (ROL_GLOW_CAMERA) POSITION = ROL_NOT_DRAWN;
+	// own passes of the effects stage are no scene depth: not in the glow stage, nor in the G-buffer
+	if (ROL_GLOW_CAMERA || ROL_GBUFFER_CAMERA) POSITION = ROL_NOT_DRAWN;
 	#else
 	if (ROL_GLOW_CAMERA && glow_replaces) POSITION = ROL_NOT_DRAWN;
+	#ifndef GBUFFER
+	// forward (alpha) meshes draw in rsEffects: not in the G-buffer
+	if (ROL_GBUFFER_CAMERA) POSITION = ROL_NOT_DRAWN;
+	#endif
 	#endif
 }
 
@@ -269,8 +274,9 @@ void fragment() {
 	vec3 result = pso_Color.rgb;
 	#ifdef GBUFFER
 	// DeferredDirectionalAmbientLight: clip(Color.a - 0.001) leaves the pixel unlit (background shows through);
-	// per light (the first 4 enabled) Lambert + Blinn specular, power g * 255 + 1
-	if (pso_Color.a < 0.001) discard;
+	// per light (the first 4 enabled) Lambert + Blinn specular, power g * 255 + 1. The G-buffer holds the pixel all the
+	// same.
+	if (pso_Color.a < 0.001 && !ROL_GBUFFER_CAMERA) discard;
 	vec3 light_normal = pso_NormalBuffer.xyz;
 	vec3 light_intensity = vec3(0.0);
 	vec3 specular = vec3(0.0);
@@ -283,8 +289,16 @@ void fragment() {
 		specular += mix(light_color.rgb, pso_Color.rgb, pso_MaterialBuffer.b) * pow(clamp(dot(light_normal, halfway), 0.0, 1.0), pso_MaterialBuffer.g * 255.0 + 1.0) * pso_MaterialBuffer.r;
 	}
 	result = pso_Color.rgb * mix(light_intensity + rol_ambient, vec3(1.0), pso_MaterialBuffer.a) + specular * light_intensity;
+	// the world post effects (Toon): the scene's alpha is the G-buffer color's
+	result = rol_toon(result, pso_Color.a, FRAGCOORD.xy);
 	#endif
-	#ifdef ROL_GLOW_STAGE
+	#if defined(GBUFFER) && !defined(ROL_GLOW_STAGE)
+	if (ROL_GBUFFER_CAMERA) {
+		ALBEDO = rol_gbuffer_encode(pso_NormalBuffer.xyz, pso_NormalBuffer.w, pso_MaterialBuffer.a);
+	} else {
+		ALBEDO = ROL_GLOW_CAMERA ? vec3(0.0) : rol_to_linear(result);
+	}
+	#elif defined(ROL_GLOW_STAGE)
 	#ifdef ROL_ALPHA
 	ALBEDO = rol_to_linear(result);
 	ALPHA = clamp(pso_Color.a, 0.0, 1.0);

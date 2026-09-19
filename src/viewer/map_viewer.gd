@@ -108,7 +108,11 @@ func _build_scene() -> void:
 	_camera.near = 1.0
 	_camera.far = 10000.0
 	# the game's post effect stack (glow, unsharp masking, color correction): the camera draws into its world viewport;
-	# --post-effects=off draws the plain scene, =none the pipeline without effects (comparison captures)
+	# --post-effects=off draws the plain scene, =none the pipeline without effects (comparison captures);
+	# --effects-off=Toon,FXAA switches those effects' options off
+	for uid in _user_arg("effects-off").split(",", false):
+		if TPostEffectManager.OPTIONS.has(uid):
+			TOptionManager.SetOption(TPostEffectManager.OPTIONS[uid], "False")
 	if _user_arg("post-effects") == "off":
 		add_child(_camera)
 	else:
@@ -487,4 +491,7 @@ func _run_capture(maps: PackedStringArray, out_dir: String) -> void:
 			# --dump-glow=on: the glow stage's buffer too
 			if _user_arg("dump-glow") == "on" and _post_effects != null and _post_effects.GlowViewport != null:
 				_post_effects.GlowViewport.get_texture().get_image().save_png(out_dir.path_join("glow_" + file))
+			# --dump-toon=on: the Toon border buffer
+			if _user_arg("dump-toon") == "on" and _post_effects != null and _post_effects.ToonBorder != null:
+				_post_effects.ToonBorder.get_image().save_png(out_dir.path_join("toon_" + file))
 	get_tree().quit()

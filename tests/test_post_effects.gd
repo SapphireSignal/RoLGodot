@@ -34,7 +34,8 @@ func _manager() -> TPostEffectManager:
 
 
 ## The stack as the client has it after the option events: the 13 effects of PostEffects.fxs in RenderOrder; SSAO is
-## off by its option's default; of the enabled ones the port draws Glow (2), UnsharpMasking (8), ColorCorrection (10).
+## off by its option's default; of the enabled ones the port draws Toon (1, rsWorldPostEffects), Glow (2), FXAA (7),
+## UnsharpMasking (8), ColorCorrection (10).
 func test_stack_and_options() -> String:
 	var manager := _manager()
 	check_eq(manager.FEffects.size(), 13, "13 effects")
@@ -48,11 +49,91 @@ func test_stack_and_options() -> String:
 	check(not enabled.has("Bloom") and not enabled.has("DrawColor"), "Bloom and the debug views are off in the file")
 	for uid in ["Toon", "Glow", "FXAA", "UnsharpMasking", "ColorCorrection", "Distortion", "Outline"]:
 		check(enabled.has(uid), "%s on" % uid)
-	check_eq(manager.ActiveEffects().map(func(e: Array) -> String: return e[0]), ["Glow", "UnsharpMasking", "ColorCorrection"],
-		"drawn by the port, in order")
+	check_eq(manager.ActiveEffects().map(func(e: Array) -> String: return e[0]),
+		["Toon", "Glow", "FXAA", "UnsharpMasking", "ColorCorrection"], "drawn by the port, in order")
 	TOptionManager.SetOption(C.coGraphicsPostEffectGlow, "False")
-	check_eq(manager.ActiveEffects().map(func(e: Array) -> String: return e[0]), ["UnsharpMasking", "ColorCorrection"],
-		"the glow option switches it off")
+	TOptionManager.SetOption(C.coGraphicsPostEffectFXAA, "False")
+	check_eq(manager.ActiveEffects().map(func(e: Array) -> String: return e[0]),
+		["Toon", "UnsharpMasking", "ColorCorrection"], "the glow and FXAA options switch them off")
+	manager.free()
+	return take_failure()
+
+
+## TPostEffectFXAA as the stack sets it: fmDither with Quality 2 compiles preset 12 (5 search steps 1, 1.5, 2, 4,
+## 12); the stack's SubPixelQuality 0.436 and zero edge thresholds replace the constructor's defaults. Other modes:
+## fmDither caps the quality digit at 5, fmLessDither takes it as it is, fmNoDither is 39.
+func test_fxaa_preset() -> String:
+	var manager := _manager()
+	manager._size = Vector2i(1600, 900)
+	var fields := {}
+	for effect: Array in manager.FEffects:
+		fields[effect[0]] = effect[2]
+	check_eq(TPostEffectManager.FXAAPreset(fields.FXAA), 12, "preset")
+	var material := manager.FXAAMaterial(fields.FXAA, null)
+	check_eq(material.get_shader_parameter("quality_ps"), 5, "5 steps")
+	var steps: PackedFloat32Array = material.get_shader_parameter("quality_p")
+	check_eq(Array(steps.slice(0, 5)), [1.0, 1.5, 2.0, 4.0, 12.0], "search steps")
+	check_near(material.get_shader_parameter("subpixel_quality"), 0.435999989509583, 1e-7, "sub pixel quality")
+	check_eq(material.get_shader_parameter("edge_threshold"), 0.0, "edge threshold")
+	check_eq(material.get_shader_parameter("edge_threshold_min"), 0.0, "edge threshold min")
+	check_near(material.get_shader_parameter("pixelwidth"), 1.0 / 1600.0, 1e-9, "pixel width")
+	check_eq(TPostEffectManager.FXAAPreset({"Mode": "fmDither", "Quality": 9}), 15, "dither caps at 15")
+	check_eq(TPostEffectManager.FXAAPreset({"Mode": "fmLessDither", "Quality": 9}), 29, "less dither")
+	check_eq(TPostEffectManager.FXAAPreset({"Mode": "fmNoDither", "Quality": 2}), 39, "no dither")
+	for preset: int in TPostEffectManager.FXAA_PRESETS:
+		check(TPostEffectManager.FXAA_PRESETS[preset].size() <= 12, "preset %d fits the step array" % preset)
+	manager.free()
+	return take_failure()
+
+
+## TPostEffectToon as the stack sets it (ttBorder, 1 iteration, spread 0.384, range 0.56, normal bias 0, threshold 0.7):
+## the G-buffer camera (HDR viewport, without the G-buffer layer bit), two border passes (x then y, the first on the
+## cleared white buffer) drawn before the world, and the rol_toon_* globals the world shaders apply. Built as Rebuild
+## does, on a manager outside the tree (the runner has none).
+func test_toon_border_passes() -> String:
+	var manager := _manager()
+	var camera := Camera3D.new()
+	manager.Camera = camera
+	manager._size = Vector2i(1600, 900)
+	camera.cull_mask |= TPostEffectManager.GLOW_LAYER_BIT | TPostEffectManager.GBUFFER_LAYER_BIT
+	manager.WorldViewport = manager._viewport("World")
+	var fields := {}
+	for effect: Array in manager.FEffects:
+		fields[effect[0]] = effect[2]
+	manager._toon(fields.Toon)
+	check(manager.GBufferViewport != null and manager.GBufferViewport.use_hdr_2d, "HDR G-buffer viewport")
+	var bit := TPostEffectManager.GBUFFER_LAYER_BIT
+	check(camera.cull_mask & bit != 0 and camera.cull_mask & TPostEffectManager.GLOW_LAYER_BIT != 0,
+		"the main camera has both stage bits")
+	check(manager.GBufferCamera.cull_mask & bit == 0, "the G-buffer camera lacks its bit")
+	check(manager.GBufferCamera.cull_mask & TPostEffectManager.GLOW_LAYER_BIT != 0, "but draws the world variants")
+	var size := Vector2(manager.WorldViewport.size)
+	var x_pass := manager.WorldViewport.find_child("ToonBorder0x", true, false) as SubViewport
+	var y_pass := manager.WorldViewport.get_node_or_null("ToonBorder0y") as SubViewport
+	check(x_pass != null and y_pass != null, "two passes, the last one a child of the world viewport")
+	if x_pass != null and y_pass != null:
+		var x_material: ShaderMaterial = x_pass.get_child(0).material
+		var y_material: ShaderMaterial = y_pass.get_child(0).material
+		check(x_material.get_shader_parameter("clear_input"), "the first pass reads the cleared buffer")
+		check(not y_material.get_shader_parameter("clear_input"), "the second the first's result")
+		check_eq(y_material.get_shader_parameter("color_texture"), x_pass.get_texture(), "chained")
+		check_near(x_material.get_shader_parameter("pixelwidth"), 0.38400000333786 / size.x, 1e-9, "x offset")
+		check_eq(x_material.get_shader_parameter("pixelheight"), 0.0, "x pass: no y offset")
+		check_near(y_material.get_shader_parameter("pixelheight"), 0.38400000333786 / size.y, 1e-9, "y offset")
+		check_near(x_material.get_shader_parameter("range"), 0.560000002384186, 1e-7, "range")
+		check_eq(x_material.get_shader_parameter("normalbias"), 0.0, "normal bias")
+		check_near(x_material.get_shader_parameter("border_threshold"), 0.699999988079071, 1e-7, "threshold")
+		check_eq(manager.ToonBorder, y_pass.get_texture(), "the border buffer is the last pass")
+	var globals := manager.ShaderGlobals
+	check_eq(globals.get("rol_toon_enabled"), true, "toon on")
+	check_eq(globals.get("rol_toon_border"), manager.ToonBorder, "border buffer")
+	var color: Vector3 = globals.get("rol_toon_border_color", Vector3.ZERO)
+	check(color.is_equal_approx(Vector3(0.096000000834465, 0.164000004529953, 0.172000005841255)), "border color")
+	check_near(globals.get("rol_toon_border_gradient", 0.0), 3.96799993515015, 1e-6, "gradient")
+	check_near(globals.get("rol_toon_border_threshold", 0.0), 0.699999988079071, 1e-7, "threshold for the G-buffer camera")
+	RenderingServer.global_shader_parameter_set("rol_toon_enabled", false)
+	manager.WorldViewport.free()
+	camera.free()
 	manager.free()
 	return take_failure()
 
