@@ -240,7 +240,11 @@ the same as the real game or better, and the gaps found by Claude, not by them):
    at 60 fps and a high thread priority did not help; the machine is an i9-14900KF with efficiency cores). Suspects:
    the network path to the joined client (serializing new entities and events), contention with the main thread.
    Measure inside the thread (per-part timings of a frame), fix, then move the hottest server families to C++
-   (targeting constraints, health, collision queries, think timers, pathfinding).
+   (targeting constraints, health, collision queries, think timers, pathfinding). If client and server cannot stop
+   slowing each other in one process, the fallback is the original's split: the server as its own local process.
+   Also measure a release export (export template + `tools/build_native.ps1 -Release`) against the debug run on the
+   same setups: every number so far is the editor engine with debug checks; the owner's targets (300+ fps with 150
+   units, 600+ empty) count for the release build.
 2. The audit of client defaults (gap list, "Audit to do next"): every `GetDefault` option of
    `BaseConflict.Settings.Client.pas` and everything the main unit / `TGameStateManager` set up, each difference fixed
    or entered in the gap list. The cursor and vsync were such misses.
