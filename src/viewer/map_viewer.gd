@@ -54,6 +54,7 @@ var _loading_overlay: ColorRect
 func _ready() -> void:
 	_build_scene()
 	_build_ui()
+	_no_keyboard_focus(self)
 	var maps := _user_arg("maps")
 	var capture := _user_arg("capture-out")
 	if capture != "":
@@ -67,6 +68,15 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	_unload()
+
+
+## Buttons, check boxes and sliders take no keyboard focus: a focused button is pressed again by Space / Enter (a
+## scenario reload) and arrow keys would move the focus instead of scrolling. Mouse clicks work as before.
+static func _no_keyboard_focus(node: Node) -> void:
+	if node is BaseButton or node is Slider:
+		(node as Control).focus_mode = Control.FOCUS_NONE
+	for child in node.get_children():
+		_no_keyboard_focus(child)
 
 
 func _user_arg(arg_name: String) -> String:

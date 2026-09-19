@@ -34,6 +34,13 @@ func _ready() -> void:
 	_paths.sort()
 	_build_scene()
 	_build_ui()
+	# Space is play / pause here: buttons, the check box and the slider take no keyboard focus (a focused one would
+	# take the Space press); the filter and the list keep it for typing and arrow keys
+	for control: Control in [_play_button, _reduction, _slider]:
+		control.focus_mode = Control.FOCUS_NONE
+	for child in _list.get_parent().get_children():
+		if child is BaseButton:
+			(child as Control).focus_mode = Control.FOCUS_NONE
 	_refresh_list()
 	var capture := _user_arg("capture")
 	if capture != "" and _user_arg("turntable") != "":
@@ -132,6 +139,9 @@ func _build_ui() -> void:
 	anim.add_child(_slider)
 	_frame_label = Label.new()
 	anim.add_child(_frame_label)
+	var keys := Label.new()
+	keys.text = "Left drag orbit, wheel zoom, Space play / pause"
+	box.add_child(keys)
 	_info = Label.new()
 	_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_info.custom_minimum_size = Vector2(360, 0)
@@ -200,11 +210,25 @@ func _process(delta: float) -> void:
 		_show_frame()
 
 
+## An orbit drag ends wherever the button is released (also over the panel, which eats the event before
+## _unhandled_input) and when the window loses focus.
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT \
+			and not event.pressed:
+		_dragging = false
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		_dragging = false
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
 		if mb.button_index == MOUSE_BUTTON_LEFT:
-			_dragging = mb.pressed
+			if mb.pressed:
+				_dragging = true
 		elif mb.button_index == MOUSE_BUTTON_WHEEL_UP and mb.pressed:
 			_distance = maxf(0.5, _distance * 0.9)
 		elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN and mb.pressed:
