@@ -4,6 +4,12 @@ The port copies **one** snapshot of the original game. Every check, comparison a
 snapshot and nothing else: not Crystal Clash, not the live Steam game, not videos or wikis.
 If this snapshot cannot answer a question, we write that down in the gap list instead of guessing.
 
+Exception (owner, 2026-09-19): screenshots and videos of **Rise of Legions** (never Crystal Clash) may serve as a
+visual cross-check of what the snapshot and the reference build (`docs/original-build.md`) show: layout, look, feel.
+The snapshot still wins where they disagree (a picture may show an older or newer version); a disagreement is written
+down in `docs/visual-references.md` with the picture's source and date, not silently followed. The list of pictures
+used is in that file.
+
 ## Pinned commits
 
 | Repo | Commit | Date | Notes |

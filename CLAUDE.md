@@ -5,7 +5,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 
 ## Project rules
 - Source of truth: `reference/rise-of-legions` at commit `96d5b8e4` (see `docs/source-of-truth.md`).
-  Never use Crystal Clash content, the live game, or anything outside that snapshot for decisions.
+  Never use Crystal Clash content, the live game, or anything outside that snapshot for decisions. Only exception:
+  Rise of Legions screenshots / videos as a visual cross-check (list and rules in `docs/visual-references.md`).
 - No bugs of the original are ported (global rule "Never port bugs"): port what the code was meant to do, even when it
   changes how units play, and list each fix in `docs/original-bugs.md` (original file:line, what it did, the fix).
   Layout: `BaseConflict.*.pas` at its root, engine units in `Engine/` (`Engine/Engine.Mesh.pas`), engine shaders
@@ -33,6 +34,7 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - `docs/original-architecture.md`: how the original is built, file formats, gotchas.
 - `docs/original-build.md`: the reference build of the original (build, run, capture, crash addresses; the changes
   Delphi 13 needs; NaN compare semantics).
+- `docs/visual-references.md`: the Rise of Legions screenshots used as a visual cross-check, and what they disagree on.
 - `docs/port-plan.md`: phases 0-9. `docs/gap-list.md`: user-visible behaviours and their status.
 - `docs/original-bugs.md`: every bug of the original the port fixes instead of copying (and what was checked and is
   not a bug).
@@ -208,3 +210,7 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 - 2026-09-19: The original's HUD works: the snapshot's text data is LF, the original splits on CRLF (stylesheets,
   shaders, terrain), so `run/` is a CRLF mirror; its GUI errors are logged; `run_original.ps1 -Keys P` shows the
   player HUD (capture mode). Next: reference captures of the map viewer's views, side by side (CONTINUE.md).
+- 2026-09-19: The original's lobby runs: `tools/original_build/master_standin.py` answers the client's 89 API calls
+  (types parsed from its source, a sample account), `run_original.ps1 -Lobby -Steps` logs in and clicks through the
+  main menu with captures. Rise of Legions screenshots allowed as visual cross-check (`docs/visual-references.md`).
+  Next: the lobby's missing content and remaining screens (CONTINUE.md).

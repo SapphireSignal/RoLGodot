@@ -241,14 +241,18 @@ shaders and terrain too): `run/` is now a CRLF mirror (section "The data needs C
 the sandbox to capture mode: the player HUD (capture `build/original/captures/hud_capture_mode.png`). The build grid
 glows cyan in the original like in the port (the grey tiles were the broken data). The owner's tutorial images
 (`Graphics/GUI/Shared/Tutorial/tut*.png`) are the snapshot's only pictures of the real HUD.
+Done 2026-09-19: Rise of Legions screenshots / videos are allowed as a visual cross-check (owner; rules and the list in
+`docs/visual-references.md`: the 10 Steam store screenshots of 2020-11-07). The lobby runs: `run_original.ps1 -Lobby`
+logs in to `tools/original_build/master_standin.py` (sample account) and reaches the real main menu; `-Steps` clicks
+through it (section "The lobby" in `docs/original-build.md`). Captured: dashboard, PLAY, deck list, deck editor, card
+vendor, leaderboards, shop, profile menu.
 Next, in order:
-1. Open question to the owner (asked 2026-09-19): may screenshots / videos of Rise of Legions (not Crystal Clash) serve
-   as extra visual reference beside the snapshot? Until they say yes, only the snapshot and the reference build.
-2. **The lobby / menus in the original, first** (the owner's main reason for running the original, 2026-09-19): a
-   local stand-in master server answering the client's API calls (`BaseConflict.Api*.pas`, the login / meta game
-   states in `BaseConflict.Classes.Gamestates*.pas`) with a sample account, so the client starts in its real login
-   and main menu and every menu screen (dashboard, collection, deckbuilder, shop, quests, profile, matchmaking,
-   settings) can be captured. Read how the client finds the server (`SettingsConnection.ini`) and its protocol first.
+1. Open question to the owner (asked 2026-09-19): may the 10 full-size Steam screenshots be downloaded into
+   `build/visual-references/` (git-ignored) for detailed comparisons? The browser pane only shows them shrunk.
+2. The lobby's missing content (list under "Open" in `docs/original-build.md`): shop offers, the card vendor's unlock
+   requirements (legion trees), leaderboards, quests, loot, friends; then every remaining screen (settings, collection
+   details, card detail / ascend, quests, notifications, starter deck choice, first-time tutorial) captured; then the
+   diamond glyph in ability names; then a match started from the lobby (the stand-in hands out the local game server).
 3. Capture the same views as the map viewer (overview, nexus, lanes; 1 lane, 2 lanes, PvE), then side-by-side
    checks of every open visual (gap list), and later timings, paths, frame rates. Camera placement: the sandbox dev
    panel (camera position, save / load camera) or input (`-Keys`; clicks would need the same cursor handling). The

@@ -178,6 +178,15 @@ def apply_patches():
     patch('BaseConflictMainUnit.pas', '  Engine.GUI.GUI := GUI;\r\n',
           '  Engine.GUI.GUI := GUI;\r\n  GUI.Erroroutput := procedure(errormsg : string)\r\n    begin\r\n'
           '      HLog.LogOnce(\'[GUI] \' + errormsg);\r\n    end;\r\n')
+    # the lobby (master_standin.py): the login always asks Steam for a ticket, also in the Steamless configuration
+    # this build uses; without STEAM a placeholder ticket and build id go to the stand-in, the rest is the original's
+    acc = 'BaseConflict.Api.Account.pas'
+    patch(acc, '      if not TryGetSteamTicket(EncodedSteamTicket) then\r\n          continue;\r\n',
+          '      {$IFDEF STEAM}\r\n      if not TryGetSteamTicket(EncodedSteamTicket) then\r\n          continue;\r\n'
+          '      {$ELSE}\r\n      EncodedSteamTicket := \'reference\';\r\n      {$ENDIF}\r\n')
+    patch(acc, '      GetLocalVersion(SteamAppBuildId, BranchName);\r\n',
+          '      {$IFDEF STEAM}\r\n      GetLocalVersion(SteamAppBuildId, BranchName);\r\n'
+          '      {$ELSE}\r\n      SteamAppBuildId := 0;\r\n      BranchName := \'public\';\r\n      {$ENDIF}\r\n')
     # the loader ignores a stylesheet's parse errors on first load (only reloads report them): log them
     patch(os.path.join('Engine', 'Engine.GUI.pas'), '    LoadStylesFromText(Filecontent);\r\n',
           '    errors := LoadStylesFromText(Filecontent);\r\n'
