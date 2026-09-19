@@ -24,15 +24,26 @@ graphics classes, the transpiled scripts) is C++.
 - Semantics are the original's: Delphi `single` arithmetic stays 32-bit float (no fast-math), sets stay sorted, event
   order, `TDictionary` walk order (`DelphiDictionary`), `TList.Sort` (`DelphiSort`), Delphi's RNG (`DelphiRandom`).
 - The original's `threadvar`s are C++ `thread_local`s (the game server runs on its own thread, like `TGameThread`).
-- Every class exposed to Godot keeps the API the rest of the game calls, so the tests stay the spec.
+- Every class exposed to Godot keeps the API the rest of the game calls, so the tests stay the spec. What a GDExtension
+  class cannot offer, and what replaces it: static variables (`TTimeManager.SetFakeTime` / `GetFakeTime`,
+  `DelphiRandom.SetRandSeed` / `GetRandSeed`), constructor arguments (`TRingBuffer.new().Create(50, false)`, the
+  original's style anyway), non-integer constants. Methods that return the object itself (`Create`) return `Ref<T>`
+  (`Ref<T>(this)`), never a raw pointer.
+- GDScript's number semantics are kept where the tests pin them: GDScript `float` is a double and `Vector2` holds floats,
+  so a port computes scalars in `double` and converts to `real_t` where GDScript did (`Vector2 * float`).
+- Classes the transpiled scripts see: the transpiler reads `GDCLASS(Name, Base)` in `native/src/` like a `class_name`,
+  so it writes no stub for them.
 
 ## Moving the game over
 
 Bottom-up, so C++ calls C++ (every GDScript <-> C++ call costs ~0.2 us at the boundary; the gain comes when whole paths
 are native):
 
-1. Leaf helpers: `DSet` (done), `RParam`, the Delphi RTL helpers, `TTimer` / `TTimeManager`, math, containers.
-2. The entity core: `TBlackboard`, `TEventbus`, `TEntity`, `TEntityComponent` (and the per-thread context).
+1. Leaf helpers (done): `DSet`, `RParam`, the Delphi RTL helpers, `TTimer` / `TTimeManager`, math, containers. Left
+   in GDScript on purpose, they move with their families: the loose quadtree (collision: the entity variant subclasses
+   it), `TCommandSequence` / `TLoopbackSocket` (network), `TGUITransitionValueSingle` (GUI).
+2. The entity core: `TBlackboard`, `TEventbus`, `TEntity`, `TEntityComponent` (and the per-thread context,
+   `TThreadContext`, with its `GameTimeManager`).
 3. The component families, hottest first by `--profile`: server brains / think timers, movement, collision and
    targeting, welas and warheads, then the client visuals (mesh, animation, logic-to-world).
 4. The game loop, network, map and graphics classes.
@@ -56,3 +67,20 @@ Measured with `tests/bench_eventbus.gd` (per call) and the map viewer's `--fps-c
 
 Done so far: `DSet`, `RParam` (2026-09-19). `RPARAMEMPTY` is plain `null` in GDScript (a GDExtension class exposes
 integer constants only).
+
+2026-09-19, the rest of the leaf helpers: `native/src/engine/` (`DelphiRandom`, `DelphiHash`, `DelphiSort` (also a
+template, `QuickSortT`, for C++ callers), `DelphiRtl`, `DelphiDictionary`, `delphi_math.h` (Round, Frac, SameValue,
+CompareValue), `TTimeManager`, `TTimer`, `TGameTimer`, `TPriorityQueue`, `TIntPriorityQueue`, `TRingBuffer`,
+`T2DGrid`) and `native/src/math/` (`RMatrix`, `RLine2D`, `RRay2D`, `RCubicBezier`, `TPolygon`, `TMultipolygon`).
+Captures of every map viewer view before and after: the same picture (differences at the run-to-run noise of water
+and vegetation animation). Map viewer `--fps-check`, window 1600 x 900, before -> after:
+
+| | fps dragging | median / p99 / worst ms | client step ms/frame |
+| --- | --- | --- | --- |
+| Single, empty | 227 -> 238 | 4.3 / 5.3 / 5.4 -> 4.1 / 5.5 / 6.0 | 2.40 -> 2.10 |
+| Classic, empty | 171 -> 180 | 5.7 / 7.0 / 7.3 -> 5.4 / 7.0 / 7.3 | 3.21 -> 2.84 |
+| PvE | 107 -> 108 | 9.2 / 11.2 / 11.6 -> 9.1 / 11.5 / 11.6 | 5.22 -> 4.80 |
+| Classic, 2 spawners + 2 drops (42 entities) | 79 -> 86 | 12.4 / 17.4 / 19.3 -> 11.5 / 15.2 / 16.2 | 9.35 -> 8.48 |
+
+Server thread per 32 ms frame: unchanged within noise (8.7 empty, 11.3-12 with 42 entities). The next gains need the
+event bus in C++ (step 2).

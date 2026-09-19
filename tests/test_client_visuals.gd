@@ -24,7 +24,7 @@ func after_each() -> void:
 	if _thread != null:
 		_thread.Free()
 	_thread = null
-	TTimeManager.FakeTime = null
+	TTimeManager.SetFakeTime(null)
 	TOptionManager.ResetOptions()
 	TMesh.ClearGeometryCache()
 	super()
@@ -156,7 +156,7 @@ func test_entity_serialize_deserialize() -> String:
 func test_sandbox_entities_reach_the_client() -> String:
 	if not _has_assets():
 		return ""
-	TTimeManager.FakeTime = 1000.0
+	TTimeManager.SetFakeTime(1000.0)
 	_thread = TGameThread.new().Create(TGameManager.CreateTestserverGameInfo())
 	var info := TGameInformation.new().Create()
 	info.ScenarioUID = BC.TESTSERVER_SCENARIO_UID
@@ -197,7 +197,7 @@ func test_sandbox_entities_reach_the_client() -> String:
 func test_mesh_animation_drives_bones() -> String:
 	if not _has_assets():
 		return ""
-	TTimeManager.FakeTime = 0.0
+	TTimeManager.SetFakeTime(0.0)
 	var bus := _bus()
 	var entity := TEntity.new().Create(bus)
 	_free.push_front(entity)
@@ -211,7 +211,7 @@ func test_mesh_animation_drives_bones() -> String:
 	var at_start := mesh._skin_matrix(0)
 	# the crystal floats over the base (nexus.msh ends at y 14.175) while it spins
 	check(mesh.GetPosedBoundingBox().position.y > 14.175, "floating")
-	TTimeManager.FakeTime = 1234.0
+	TTimeManager.SetFakeTime(1234.0)
 	mesh.Animate()
 	check(mesh._skin_matrix(0).is_equal_approx(at_start), "one update per frame (GFXD.FrameCount)")
 	GFXD.NextFrame()

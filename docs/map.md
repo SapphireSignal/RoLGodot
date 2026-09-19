@@ -11,7 +11,7 @@ does it. Read `docs/entity-core.md` first for the general port conventions.
 | `src/runtime/map/t_map.gd` | `TMap` (`:197`): team/player count, boundaries, named zones, build zones, lanes, pathfinding |
 | `src/runtime/map/t_build_zone.gd`, `t_build_zone_manager.gd` | `TBuildZone` (`:39`), `TBuildZoneManager` (`:115`) |
 | `src/runtime/map/t_lane.gd`, `t_lane_manager.gd` | `TLane` + `RWaypoint` (`:138`), `TLaneManager` (`:169`) |
-| `src/runtime/math/` | `RLine2D`, `RRay2D`, `TPolygon`, `TMultipolygon` (`Engine.Math.Collision2D.pas`), the members the game uses |
+| C++ `native/src/math/` | `RLine2D`, `RRay2D`, `TPolygon`, `TMultipolygon` (`Engine.Math.Collision2D.pas`), the members the game uses |
 | `src/runtime/engine/t_2d_grid.gd`, `t_ring_buffer.gd`, `t_priority_queue.gd`, `t_int_priority_queue.gd` | `T2DGrid<T>`, `TRingBuffer<T>`, `TPriorityQueue<T>` / `TIntPriorityQueue<T>` (`Engine.Helferlein.DataStructures.pas`) |
 | `src/runtime/classes/t_pathfinding*.gd`, `t_path*.gd` | `TPathfinding`, `TPathfindingTile`, `TPathfindingTileNeighbour`, `TPath`, `TPathWaypoint` |
 | `src/runtime/components/t_wela_target_constraint_{grid,build_team,zone}_component.gd` | the three map-bound target constraints (`Shared.Wela.pas:249-375`) |

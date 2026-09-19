@@ -341,7 +341,7 @@ func _scroll(right: float, up: float) -> void:
 ## animate while drawn.
 func _client_frame() -> void:
 	GFXD.NextFrame()
-	TTimeManager.TickTack()
+	TThreadContext.Current().GameTimeManager.TickTack()
 	_client.GlobalEventbus.Trigger(C.eiIdle, [])
 	_client.ReadyWhenLoaded()
 	_client.Idle()

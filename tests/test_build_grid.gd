@@ -12,7 +12,7 @@ func after_each() -> void:
 	_free.clear()
 	# the tiles load up to 4 geometries into TMesh's cache (not a leak; dropped so the leak count stays readable)
 	TMesh.ClearGeometryCache()
-	TTimeManager.FakeTime = null
+	TTimeManager.SetFakeTime(null)
 	super()
 
 
@@ -39,18 +39,18 @@ func test_cubic_bezier() -> String:
 ## The first SetValue jumps; a new target eases from the current value over Duration; setting the same target again
 ## does not restart it.
 func test_transition_value() -> String:
-	TTimeManager.FakeTime = 1000.0
+	TTimeManager.SetFakeTime(1000.0)
 	var value := TGUITransitionValueSingle.new()
 	value.SetValue(0.032)
 	check_near(value.CurrentValue(), 0.032, 1e-9, "first value jumps")
 	value.Duration = 1000
 	value.SetValue(0.0)
 	check_near(value.CurrentValue(), 0.032, 1e-9, "starts where it was")
-	TTimeManager.FakeTime = 1500.0
+	TTimeManager.SetFakeTime(1500.0)
 	check_near(value.CurrentValue(), 0.016, 1e-6, "linear half way")
 	value.SetValue(0.0)
 	check_near(value.CurrentValue(), 0.016, 1e-6, "same target: no restart")
-	TTimeManager.FakeTime = 2500.0
+	TTimeManager.SetFakeTime(2500.0)
 	check_near(value.CurrentValue(), 0.0, 1e-9, "arrived")
 	return take_failure()
 
@@ -61,7 +61,7 @@ func test_transition_value() -> String:
 func test_spawn_rotation() -> String:
 	if not _has_assets():
 		return ""
-	TTimeManager.FakeTime = 1000.0
+	TTimeManager.SetFakeTime(1000.0)
 	var zone := TBuildZone.new().Create(7).SetSize(3, 2).SetPosition(10, 20).SetFront(1, 0).Block(1, 1)
 	var visualizer := TBuildGridManagerComponent.TBuildGridVisualizer.new(zone)
 	_free.append(visualizer)
@@ -74,9 +74,9 @@ func test_spawn_rotation() -> String:
 	check_near(tile.FGlowTransition.CurrentValue(), 0.032, 1e-9, "glowing")
 	visualizer.Spawn(tile.Coordinate)
 	check(not tile.IsActive and visualizer.CurrentRotationCount == 4, "used")
-	TTimeManager.FakeTime = 1200.0
+	TTimeManager.SetFakeTime(1200.0)
 	check(tile.FGlowTransition.CurrentValue() > 0.05, "flashes first")
-	TTimeManager.FakeTime = 2000.0
+	TTimeManager.SetFakeTime(2000.0)
 	check_near(tile.FGlowTransition.CurrentValue(), 0.0, 1e-9, "dark after 1 s")
 	visualizer.Spawn(tile.Coordinate)
 	check_eq(visualizer.CurrentRotationCount, 4, "a used field does not count again")
@@ -84,6 +84,6 @@ func test_spawn_rotation() -> String:
 		visualizer.Spawn(other.Coordinate)
 	check_eq(visualizer.CurrentRotationCount, 5, "all used: the rotation resets")
 	check(tile.IsActive, "active again")
-	TTimeManager.FakeTime = 2500.0
+	TTimeManager.SetFakeTime(2500.0)
 	check_near(tile.FGlowTransition.CurrentValue(), 0.032, 1e-6, "glows in over 0.5 s")
 	return take_failure()

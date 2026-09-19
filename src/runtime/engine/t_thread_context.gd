@@ -5,8 +5,9 @@ extends RefCounted
 ## the per-game NOT_PAYED_RESOURCES (TWelaEffectPayCostComponent class threadvar); the port adds what it keeps in
 ## statics for the same reasons: the running script's bus stack, the last script error, the event-group version. Game / Map / GlobalEventbus / EntityDataCache already hang on each side's global bus.
 ##
-## The shared code keeps using its static names (TEventbus.CurrentEvent_CalledToGroup, TTimeManager.ZDiff, ...):
-## those are static properties that read and write Current(), the calling thread's context. The event bus's own hot
+## The shared code keeps using its static names (TEventbus.CurrentEvent_CalledToGroup, ...): those are static
+## properties that read and write Current(), the calling thread's context; the game clock is
+## Current().GameTimeManager, as the original's threadvar GameTimeManager. The event bus's own hot
 ## path uses the context its bus captured at creation (TEventbus.Ctx), which is the same object on that thread.
 ##
 ## Threads: the main thread's context is _main_ctx (Enter / Leave swap it, e.g. TGameThread running a server frame on
@@ -20,8 +21,8 @@ var CurrentEvent_EventIdentifier := 0
 var CurrentEvent_CalledToGroup: Array = []
 var CurrentParameters: Array = []
 var GroupsVersion := 0
-var ZDiff := 0.0
-var LastTickTime := 0.0
+## BaseConflict.Globals.pas GameTimeManager: ZDiff of the game's frames
+var GameTimeManager := TTimeManager.new()
 var ScriptEventbusStack: Array = []
 var LastScriptError := ""
 ## TWelaEffectPayCostComponent.DEFAULT_NOT_PAYED_RESOURCES = [reLevel, reTier]

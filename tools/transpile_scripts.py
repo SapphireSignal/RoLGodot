@@ -161,8 +161,16 @@ def const_script(sym: SymbolTable) -> tuple[str, list[str]]:
 
 # ---- stubs ------------------------------------------------------------------------------------------------------
 def declared_class_names() -> dict[str, str]:
-    """class_name -> file for every hand-written (non-stub) GDScript file in src/."""
+    """class_name -> file for every hand-written (non-stub) GDScript file in src/ and every C++ class in native/src/
+    (`GDCLASS(Name, Base)`; their methods count as unknown arity)."""
     found = {}
+    for folder, _, files in os.walk(os.path.join(ROOT, 'native', 'src')):
+        for name in files:
+            if name.endswith('.h'):
+                path = os.path.join(folder, name)
+                with open(path, encoding='utf-8') as f:
+                    for m in re.finditer(r'\bGDCLASS\((\w+),', f.read()):
+                        found[m.group(1)] = path
     for folder, _, files in os.walk(os.path.join(ROOT, 'src')):
         for name in files:
             if not name.endswith('.gd'):

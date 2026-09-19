@@ -30,7 +30,7 @@ class FakeGame:
 
 
 func _setup() -> void:
-	TTimeManager.FakeTime = NOW
+	TTimeManager.SetFakeTime(NOW)
 	_map = TMap.new().CreateFromFile(TMap.MapFile("Single"))
 
 
@@ -44,7 +44,7 @@ func after_each() -> void:
 	_unit = null
 	_bus = null
 	_map = null
-	TTimeManager.FakeTime = null
+	TTimeManager.SetFakeTime(null)
 	super()
 
 
@@ -89,7 +89,7 @@ func test_priority_queue() -> void:
 
 
 func test_ring_buffer() -> void:
-	var r := TRingBuffer.new(3, false)
+	var r := TRingBuffer.new().Create(3, false)
 	check_eq(r.Size, 3, "size")
 	check(r.IsIndexSet(0) and not r.IsIndexSet(3), "every cell starts as index 0")
 	check_eq(r.GetItem(0), false, "zero value")

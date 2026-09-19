@@ -34,15 +34,15 @@ class FlowProbe:
 		return Log.filter(func(x): return x[0] == name)
 
 	func OnGameCommencing() -> bool:
-		Log.append(["Commencing", TTimeManager.FakeTime])
+		Log.append(["Commencing", TTimeManager.GetFakeTime()])
 		return true
 
 	func OnGameStart() -> bool:
-		Log.append(["Start", TTimeManager.FakeTime])
+		Log.append(["Start", TTimeManager.GetFakeTime()])
 		return true
 
 	func OnGameTick() -> bool:
-		Log.append(["Tick", TTimeManager.FakeTime])
+		Log.append(["Tick", TTimeManager.GetFakeTime()])
 		return true
 
 	func OnGameEvent(Eventname) -> bool:
@@ -59,7 +59,7 @@ func after_each() -> void:
 		_bus.Free()
 	_game_entity = null
 	_bus = null
-	TTimeManager.FakeTime = null
+	TTimeManager.SetFakeTime(null)
 	TWelaEffectPayCostComponent.NOT_PAYED_RESOURCES = TWelaEffectPayCostComponent.DEFAULT_NOT_PAYED_RESOURCES.duplicate()
 	super()
 
@@ -104,7 +104,7 @@ func _game_entity_setup() -> FlowProbe:
 
 
 func test_game_director_fires_due_events_last_added_first() -> void:
-	TTimeManager.FakeTime = 0.0
+	TTimeManager.SetFakeTime(0.0)
 	var probe := _game_entity_setup()
 	var director := TGameDirectorComponent.new().Create(_game_entity)
 	director.AddEvent(2, "Tech2").AddEventIf(false, 1, "never").AddEvent(1, "early").AddEvent(2, "Second")
@@ -119,26 +119,26 @@ func test_game_director_fires_due_events_last_added_first() -> void:
 
 
 func test_game_tick_warms_up_then_ticks_every_second() -> void:
-	TTimeManager.FakeTime = 1000.0
+	TTimeManager.SetFakeTime(1000.0)
 	var probe := _game_entity_setup()
 	check_eq(_bus.Read(C.eiGameTickTimeToFirstTick, []), BC.GAME_WARMING_DURATION, "paused before commencing")
 	_bus.Trigger(C.eiIdle, [])
 	check_eq(probe.Named("Tick"), [], "no tick while loading")
 	_bus.Trigger(C.eiGameCommencing, [])
-	TTimeManager.FakeTime = 4000.0
+	TTimeManager.SetFakeTime(4000.0)
 	check_eq(_bus.Read(C.eiGameTickTimeToFirstTick, []), 7000, "warm-up left")
-	TTimeManager.FakeTime = 10999.0
+	TTimeManager.SetFakeTime(10999.0)
 	_bus.Trigger(C.eiIdle, [])
 	check_eq(probe.Named("Tick"), [], "not yet")
-	TTimeManager.FakeTime = 11000.0
+	TTimeManager.SetFakeTime(11000.0)
 	_bus.Trigger(C.eiIdle, [])
 	check_eq(probe.Log, [["Commencing", 1000.0], ["Start", 11000.0], ["Tick", 11000.0]], "first tick starts the game")
 	check_eq(_bus.Read(C.eiGameTickCounter, []), 1, "counter")
 	check_eq(_bus.Read(C.eiGameTickTimeToFirstTick, []), 0, "ticking")
 	_bus.Trigger(C.eiGameCommencing, [])
-	TTimeManager.FakeTime = 11999.0
+	TTimeManager.SetFakeTime(11999.0)
 	_bus.Trigger(C.eiIdle, [])
-	TTimeManager.FakeTime = 12000.0
+	TTimeManager.SetFakeTime(12000.0)
 	_bus.Trigger(C.eiIdle, [])
 	check_eq(probe.Named("Tick"), [["Tick", 11000.0], ["Tick", 12000.0]], "then one tick per second")
 	check_eq(probe.Named("Start").size(), 1, "one start")
@@ -148,19 +148,19 @@ func test_game_tick_warms_up_then_ticks_every_second() -> void:
 # --- the sandbox game ---
 
 func _sandbox() -> TServerGame:
-	TTimeManager.FakeTime = 1000.0
+	TTimeManager.SetFakeTime(1000.0)
 	_thread = TGameThread.new().Create(TGameManager.CreateTestserverGameInfo())
 	return _thread.InternalGame
 
 
 ## One frame of the game thread, TARGET_FRAMETIME after the last.
 func _frame() -> void:
-	TTimeManager.FakeTime += FRAME
+	TTimeManager.SetFakeTime(TTimeManager.GetFakeTime() + FRAME)
 	_thread.DoComputeGame()
 
 
 func _run_until(ms: float) -> void:
-	while TTimeManager.FakeTime + FRAME <= ms:
+	while TTimeManager.GetFakeTime() + FRAME <= ms:
 		_frame()
 
 
@@ -235,15 +235,15 @@ func test_sandbox_game_starts_when_the_players_play() -> void:
 	_run_until(2000.0)
 	check_eq(probe.Log, [], "waits for the players")
 	check_eq(game.InGameStatus, BC.gsLoading, "loading")
-	check_eq(TTimeManager.ZDiff, FRAME, "frame time")
+	check_eq(TThreadContext.Current().GameTimeManager.ZDiff, FRAME, "frame time")
 	_thread.SetAllPlayersPlaying()
 	_frame()
-	var commenced: float = TTimeManager.FakeTime
+	var commenced: float = TTimeManager.GetFakeTime()
 	check_eq(probe.Named("Commencing"), [["Commencing", commenced]], "the game commences")
 	check_eq(game.InGameStatus, BC.gsLoading, "still loading: the full warm-up is left")
-	TTimeManager.FakeTime += 1.0
+	TTimeManager.SetFakeTime(TTimeManager.GetFakeTime() + 1.0)
 	check_eq(game.InGameStatus, BC.gsWarming, "warming")
-	TTimeManager.FakeTime -= 1.0
+	TTimeManager.SetFakeTime(TTimeManager.GetFakeTime() - 1.0)
 	var player: TEntity = game.Commanders[0]
 	check_eq(_balance(player, C.reGold), 100300.0, "sandbox gold")
 	check_eq(_balance(player, C.reWood), 11600.0, "sandbox wood")
@@ -253,7 +253,7 @@ func test_sandbox_game_starts_when_the_players_play() -> void:
 	_run_until(commenced + BC.GAME_WARMING_DURATION - 1.0)
 	check_eq(probe.Named("Tick"), [], "warm-up")
 	_frame()
-	var first_tick: float = TTimeManager.FakeTime
+	var first_tick: float = TTimeManager.GetFakeTime()
 	check(first_tick >= commenced + BC.GAME_WARMING_DURATION, "after the warm-up")
 	check_eq(probe.Named("Start"), [["Start", first_tick]], "the game starts at the first tick")
 	check_eq(game.InGameStatus, BC.gsPlaying, "playing")
@@ -263,7 +263,7 @@ func test_sandbox_game_starts_when_the_players_play() -> void:
 	_run_until(first_tick + 3 * 1024.0 - 1.0)
 	check_eq(_bus_of(game).Read(C.eiGameTickCounter, []), 3, "not yet the 4th tick")
 	_frame()
-	check_eq(TTimeManager.FakeTime, first_tick + 3 * 1024.0, "4th tick frame")
+	check_eq(TTimeManager.GetFakeTime(), first_tick + 3 * 1024.0, "4th tick frame")
 	check_eq(_bus_of(game).Read(C.eiGameTickCounter, []), 4, "a tick per 1024 ms")
 	check_eq(_balance(player, C.reGold), 100340.0, "10 gold per tick")
 	check_eq(TEntity.LastScriptError, "", "no script error")

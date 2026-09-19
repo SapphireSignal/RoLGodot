@@ -56,7 +56,7 @@ var SpawnTargetBase: Transform2D:
 
 func Create(ID_: int = 0) -> TBuildZone:
 	ID = ID_
-	FGrid = T2DGrid.new(FIELD_FREE)
+	FGrid = T2DGrid.new().Create(FIELD_FREE)
 	Size = Vector2i(2, 2)
 	Front = Vector2(0, 1)
 	return self

@@ -17,7 +17,7 @@ class FakeGame:
 
 
 func after_each() -> void:
-	TTimeManager.FakeTime = null
+	TTimeManager.SetFakeTime(null)
 	for o in _free:
 		o.Free()
 	_free.clear()
@@ -180,20 +180,20 @@ func test_wela_range() -> void:
 
 
 func test_wela_range_scale_with_time() -> void:
-	TTimeManager.FakeTime = 0.0
+	TTimeManager.SetFakeTime(0.0)
 	var r := _range(2.0)
 	var e: TEntity = r[0]
 	_bb(e, C.eiCooldown, [2], 1000)
 	r[1].ScaleWithTime().ActivateOnStand().DeactivateOnMoveTo()
-	TTimeManager.FakeTime = 500.0
+	TTimeManager.SetFakeTime(500.0)
 	check_eq(_read_range(e), 4.0, "4 * 2 * 0.5")
-	TTimeManager.FakeTime = 5000.0
+	TTimeManager.SetFakeTime(5000.0)
 	check_eq(_read_range(e), 8.0, "progress clamped to 1")
 	e.Eventbus.Trigger(C.eiMoveTo, [null, 0.0])
-	TTimeManager.FakeTime = 6000.0
+	TTimeManager.SetFakeTime(6000.0)
 	check_eq(_read_range(e), 1.0, "paused at 0 after MoveTo, then at least 1")
 	e.Eventbus.Trigger(C.eiStand, [])
-	TTimeManager.FakeTime = 6250.0
+	TTimeManager.SetFakeTime(6250.0)
 	check_eq(_read_range(e), 2.0, "restarted on Stand: 4 * 2 * 0.25")
 
 

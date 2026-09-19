@@ -168,10 +168,10 @@ func test_apply_to_produced_units() -> void:
 ## the first global eiIdle after the delay.
 func test_apply_to_self() -> void:
 	_setup()
-	TTimeManager.FakeTime = 1000.0
+	TTimeManager.SetFakeTime(1000.0)
 	var golem := _golem(1)
 	if golem == null:
-		TTimeManager.FakeTime = null
+		TTimeManager.SetFakeTime(null)
 		return
 	var at_create: TWarheadApplyScriptComponent = TWarheadApplyScriptComponent.new().CreateGrouped(golem, [], "Modifiers\\SummoningSickness.dws").PassIntValue(2200).ApplyToSelfAtCreate()
 	var delayed: TWarheadApplyScriptComponent = TWarheadApplyScriptComponent.new().CreateGrouped(golem, [], "Modifiers\\BlessingHealth.dws").ApplyToSelfAfterDelay(500)
@@ -181,12 +181,12 @@ func test_apply_to_self() -> void:
 	check(at_create.Owner == null, "freed after applying")
 	_bus.Trigger(C.eiIdle)
 	check(not golem.HasUnitProperty(C.upBlessedHealth), "delay not over")
-	TTimeManager.FakeTime = 1500.0
+	TTimeManager.SetFakeTime(1500.0)
 	_bus.Trigger(C.eiIdle)
 	check(golem.HasUnitProperty(C.upBlessedHealth), "applied after the delay")
 	_manager.Idle()
 	check(delayed.Owner == null, "freed after applying")
-	TTimeManager.FakeTime = null
+	TTimeManager.SetFakeTime(null)
 
 
 ## Pass* parameters in call order after the entity; values as GetValue computes them.

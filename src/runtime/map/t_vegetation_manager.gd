@@ -63,7 +63,7 @@ static func MeshList(obj: Dictionary) -> PackedStringArray:
 ## TVegetationMesh.ComputeAndSave's rolls: {Mesh: game path, Basis: rotation * size (game space), Origin}.
 ## Returns {} when the mesh is missing (the original skips the object).
 static func RollVegetationMesh(obj: Dictionary) -> Dictionary:
-	DelphiRandom.RandSeed = int(obj.FRandSeed)
+	DelphiRandom.SetRandSeed(int(obj.FRandSeed))
 	var meshes := MeshList(obj)
 	var mesh_path := meshes[DelphiRandom.RandomRange(meshes.size())]
 	var data := GetMeshData(mesh_path)
@@ -99,7 +99,7 @@ static func ArbitaryOrthogonalVector(v: Vector3) -> Vector3:
 ## TGrassTuft.ComputeAndSave: the 12 vertices (game space) of one tuft: per shield lt, rt, lb, rb, each
 ## {Position, TextureCoordinate, Normal, Custom}; indices per shield 0 2 1, 1 2 3.
 static func GrassTuftVertices(obj: Dictionary) -> Array:
-	DelphiRandom.RandSeed = int(obj.FRandSeed)
+	DelphiRandom.SetRandSeed(int(obj.FRandSeed))
 	var rotation := DelphiRandom.Random() * 2 * PI
 	var ground := _vec3(obj.FGroundNormal)
 	var position := _vec3(obj.FPosition)

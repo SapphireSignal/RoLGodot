@@ -25,7 +25,7 @@ Tests: `tests/test_server_game.gd` (setup, ticks, end) and `tests/test_sandbox_m
    add build zones and director events; then the commanders from `Commander\CommanderTemplate` with their cards,
    token mapping, surrender, eiAfterCreate on the game entity.
 2. The owner calls `DoComputeGame` every frame (the original aims at 32 ms, `TARGET_FRAMETIME`). Tests step
-   `TTimeManager.FakeTime` by 32 ms per frame.
+   the fake clock (`TTimeManager.SetFakeTime`) by 32 ms per frame.
 3. All players playing (a client joined and sent NET_CLIENT_READY; headless runs without clients call
    `SetAllPlayersPlaying`) -> next frame `Start` -> eiGameCommencing: 10 s warm-up
    (`InGameStatus` loading -> warming -> playing), then eiGameTick; the first tick fires eiGameStart.
@@ -136,11 +136,17 @@ without handlers, 4.2 us per Trigger nobody gets (`tests/bench_eventbus.gd`): GD
 The original runs each server game on its own `TGameThread` (a `TThread`) with its globals as `threadvar`s
 (`CurrentEvent`, `Eventstack`, `GameTimeManager`, `Game`, `Map`, `GlobalEventbus`, `EntityDataCache`, `Overwatch`,
 `ServerGame`, `NOT_PAYED_RESOURCES`). The port: `TThreadContext` (`src/runtime/engine/`) holds the per-thread state;
-the static names the code uses (`TEventbus.CurrentEvent_*`, `TTimeManager.ZDiff` / `LastTickTime`, `TEntity
-._ScriptEventbusStack` / `LastScriptError`, `TWelaEffectPayCostComponent.NOT_PAYED_RESOURCES`, the lazy
-subscription-pattern and component-class caches, `RParam.ToSingle`'s buffer, `TEventbus.Prof`) are static properties
-over `TThreadContext.Current()`. The bus fetches the context once per event. Game / Map / EntityDataCache already live
-on each side's global bus.
+the static names the code uses (`TEventbus.CurrentEvent_*`, `TEntity._ScriptEventbusStack` / `LastScriptError`,
+`TWelaEffectPayCostComponent.NOT_PAYED_RESOURCES`, the lazy subscription-pattern and component-class caches,
+`TEventbus.Prof`) are static properties over `TThreadContext.Current()`; the game clock is its `GameTimeManager` (a
+C++ `TTimeManager`: `TickTack`, `ZDiff`), as the original's threadvar. The bus fetches the context once per event.
+Game / Map / EntityDataCache already live on each side's global bus.
+
+Not reproduced (a quirk of the original, revisit if the first server frame ever matters): `TTimeManager.Create`
+(`Engine.Helferlein.Windows.pas:2216`) starts `LetzteZeit` from the raw performance counter while `TickTack` reads
+`GetTimeTick`, which subtracts `ProgramStart`, so the first TickTack after `TGameThread` creates its clock
+(`BaseConflict.Game.Server.pas:967`, first frame `:1037`) gives a large negative ZDiff (minus the program's start time
+since boot). The port's clock measures the first ZDiff from its creation.
 
 `TGameThread` owns a context (`FContext`). Without a thread (tests, headless matches, joining) `DoComputeGame` and
 `ConnectClient` swap it in on the main thread (`Enter` / `Leave`). `StartThread` runs `_ComputeFrame` on a Godot

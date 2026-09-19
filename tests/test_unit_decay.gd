@@ -19,27 +19,27 @@ func after_each() -> void:
 	if _thread != null:
 		_thread.Free()
 	_thread = null
-	TTimeManager.FakeTime = null
+	TTimeManager.SetFakeTime(null)
 	super()
 
 
 func _frame() -> void:
-	TTimeManager.FakeTime += FRAME
+	TTimeManager.SetFakeTime(TTimeManager.GetFakeTime() + FRAME)
 	_thread.DoComputeGame()
-	TTimeManager.TickTack()
+	TThreadContext.Current().GameTimeManager.TickTack()
 	_client.GlobalEventbus.Trigger(C.eiIdle, [])
 	_client.ReadyWhenLoaded()
 	_client.Idle()
 
 
 func _run_for(ms: float) -> void:
-	var until: float = TTimeManager.FakeTime + ms
-	while TTimeManager.FakeTime + FRAME <= until:
+	var until: float = TTimeManager.GetFakeTime() + ms
+	while TTimeManager.GetFakeTime() + FRAME <= until:
 		_frame()
 
 
 func _joined_sandbox() -> void:
-	TTimeManager.FakeTime = 1000.0
+	TTimeManager.SetFakeTime(1000.0)
 	_thread = TGameThread.new().Create(TGameManager.CreateTestserverGameInfo())
 	var info := TGameInformation.new().Create()
 	info.ScenarioUID = BC.TESTSERVER_SCENARIO_UID
@@ -123,7 +123,7 @@ func test_dying_unit_decays_on_the_client() -> String:
 
 ## Black units darken with DeathShader_Black.fx instead.
 func test_black_units_use_the_black_death_shader() -> String:
-	TTimeManager.FakeTime = 1000.0
+	TTimeManager.SetFakeTime(1000.0)
 	var manager := TUnitDecayManagerComponent.new()
 	var mesh := TMesh.CreateFromFile("Units\\Black\\VoidSkeleton_Default\\VoidSkeleton.xml")
 	check(mesh != null, "a mesh")
@@ -133,10 +133,10 @@ func test_black_units_use_the_black_death_shader() -> String:
 	check_eq(mesh.CustomShader[0].ShaderName, "Graphics\\Effects\\Shader\\DeathShader_Black.fx", "black")
 	mesh.SetUpCustomShaders()
 	check_eq(mesh.MeshMaterial.get_shader_parameter("dsb_progress"), 0.0, "progress 0")
-	TTimeManager.FakeTime = 1250.0
+	TTimeManager.SetFakeTime(1250.0)
 	mesh.SetUpCustomShaders()
 	check_eq(mesh.MeshMaterial.get_shader_parameter("dsb_progress"), 0.5, "half way")
-	TTimeManager.FakeTime = 1600.0
+	TTimeManager.SetFakeTime(1600.0)
 	manager.OnIdle()
 	check_eq(manager.DecayingCount(), 0, "decayed")
 	check(_gone(mesh), "freed")

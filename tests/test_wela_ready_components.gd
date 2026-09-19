@@ -9,7 +9,7 @@ var _free: Array = []
 
 
 func after_each() -> void:
-	TTimeManager.FakeTime = null
+	TTimeManager.SetFakeTime(null)
 	for o in _free:
 		o.Free()
 	_free.clear()
@@ -65,53 +65,53 @@ func test_cost_paying_group_and_commander() -> void:
 
 
 func test_cooldown() -> void:
-	TTimeManager.FakeTime = 0.0
+	TTimeManager.SetFakeTime(0.0)
 	var e := _entity()
 	e.Blackboard.SetValue(C.eiCooldown, [1], 1000)
 	var cd: TWelaReadyCooldownComponent = TWelaReadyCooldownComponent.new().CreateGrouped(e, [1])
 	check_eq(_ready(e), false, "starts cooling down")
 	check_eq(e.Blackboard.GetValue(C.eiCooldownStartingTime, [1]), 0.0, "server writes its start")
-	TTimeManager.FakeTime = 999.0
+	TTimeManager.SetFakeTime(999.0)
 	check_eq(_ready(e), false, "999 ms")
 	check_eq(e.Eventbus.Read(C.eiCooldownRemainingTime, [], [1]), RParam.ToSingle((1 - RParam.ToSingle(0.999)) * 1000),
 			"~1 ms left (single precision, like the original)")
-	TTimeManager.FakeTime = 1000.0
+	TTimeManager.SetFakeTime(1000.0)
 	check_eq(_ready(e), true, "1000 ms")
-	TTimeManager.FakeTime = 1500.0
+	TTimeManager.SetFakeTime(1500.0)
 	e.Eventbus.Trigger(C.eiFire, [null], [1])
-	TTimeManager.FakeTime = 2250.0
+	TTimeManager.SetFakeTime(2250.0)
 	check_eq(_ready(e), false, "restarted by fire")
 	check_eq(e.Eventbus.Read(C.eiCooldownProgress, [], [1]), 0.75, "progress")
-	TTimeManager.FakeTime = 2500.0
+	TTimeManager.SetFakeTime(2500.0)
 	check_eq(_ready(e), true, "ready 1000 ms after the fire")
 	check_eq(_ready(e, [2]), null, "other groups: not asked")
 	e.Eventbus.Write(C.eiWelaActive, [false], [1])
-	TTimeManager.FakeTime = 9000.0
+	TTimeManager.SetFakeTime(9000.0)
 	check_eq(_ready(e), false, "inactive: paused")
 	check_eq(e.Eventbus.Read(C.eiCooldownRemainingTime, [], [1]), -1.0, "paused: -1")
 	cd.FireGroup([3])
 	e.Eventbus.Write(C.eiWelaActive, [true], [1])
-	TTimeManager.FakeTime = 10000.0
+	TTimeManager.SetFakeTime(10000.0)
 	e.Eventbus.Trigger(C.eiFire, [null], [1])
 	check_eq(_ready(e), true, "fire outside the FireGroup doesn't restart it")
 
 
 func test_cooldown_ready_at_start_once_and_reset() -> void:
-	TTimeManager.FakeTime = 0.0
+	TTimeManager.SetFakeTime(0.0)
 	var e := _entity()
 	e.Blackboard.SetValue(C.eiCooldown, [1], 1000)
 	e.Blackboard.SetValue(C.eiWelaActionpoint, [1], 200)
 	var cd: TWelaReadyCooldownComponent = TWelaReadyCooldownComponent.new().CreateGrouped(e, [1], true)
 	check_eq(_ready(e), true, "ReadyAtStart")
 	e.Eventbus.Trigger(C.eiWelaCooldownReset, [false], [1])
-	TTimeManager.FakeTime = 799.0
+	TTimeManager.SetFakeTime(799.0)
 	check_eq(_ready(e), false, "reset: cooldown - actionpoint = 800 ms")
 	e.Eventbus.Trigger(C.eiWelaCooldownReset, [true], [1])
 	check_eq(_ready(e), true, "reset with Finish: ready")
 	cd.Once()
 	e.Eventbus.Trigger(C.eiFire, [null], [1])
 	check_eq(_ready(e), false, "Once: not done until ready once")
-	TTimeManager.FakeTime = 2000.0
+	TTimeManager.SetFakeTime(2000.0)
 	check_eq(_ready(e), true, "ready")
 	e.Eventbus.Trigger(C.eiFire, [null], [1])
 	check_eq(_ready(e), true, "Once done: stays ready")
@@ -120,14 +120,14 @@ func test_cooldown_ready_at_start_once_and_reset() -> void:
 
 ## The client takes its timer's start from eiCooldownStartingTime (sent by the server).
 func test_cooldown_client() -> void:
-	TTimeManager.FakeTime = 0.0
+	TTimeManager.SetFakeTime(0.0)
 	var e := _entity(C.nsClient)
 	e.Blackboard.SetValue(C.eiCooldown, [1], 1000)
 	TWelaReadyCooldownComponent.new().CreateGrouped(e, [1])
 	e.Blackboard.SetValue(C.eiCooldownStartingTime, [1], 500.0)
-	TTimeManager.FakeTime = 1400.0
+	TTimeManager.SetFakeTime(1400.0)
 	check_eq(_ready(e), false, "server started it at 500")
-	TTimeManager.FakeTime = 1500.0
+	TTimeManager.SetFakeTime(1500.0)
 	check_eq(_ready(e), true, "1000 ms after the server's start")
 
 
@@ -238,7 +238,7 @@ func test_event_compare() -> void:
 ## Real script: the server SmallMeleeGolem's attack (group 1): TWelaReadyCooldownComponent ready at start,
 ## eiCooldown 1700 - eiWelaActionpoint 533 = 1167 ms after each fire.
 func test_real_golem_attack_cooldown() -> void:
-	TTimeManager.FakeTime = 0.0
+	TTimeManager.SetFakeTime(0.0)
 	var bus := TEventbus.new().Create(null)
 	_free.append(bus)
 	var e := TEntity.CreateFromScript("Units\\Colorless\\SmallMeleeGolem", bus)
@@ -248,7 +248,7 @@ func test_real_golem_attack_cooldown() -> void:
 	_free.push_front(e)
 	check_eq(_ready(e), true, "ready at start")
 	e.Eventbus.Trigger(C.eiFire, [null], [1])
-	TTimeManager.FakeTime = 1166.0
+	TTimeManager.SetFakeTime(1166.0)
 	check_eq(_ready(e), false, "1166 ms after the attack")
-	TTimeManager.FakeTime = 1167.0
+	TTimeManager.SetFakeTime(1167.0)
 	check_eq(_ready(e), true, "1167 ms after the attack")

@@ -74,7 +74,7 @@ func Create(GameInformation = null) -> TGameThread:
 	FServerGame = TServerGame.new().Create(GameInformation)
 	FNetworkComponent = TServerNetworkComponent.new().Create(FServerGame.GameEntity, GameInformation)
 	FGameID = GameInformation.GameID
-	TTimeManager.StartTickTack()
+	TThreadContext.Current().GameTimeManager.StartTickTack()
 	FServerGame.GlobalEventbus.EntityDataCache = TEntityDataCache.new().Create(FServerGame.GlobalEventbus)
 	PrepareGame()
 	TThreadContext.Leave(Outer)
@@ -179,7 +179,7 @@ func DoComputeGame() -> void:
 
 func _ComputeFrame() -> void:
 	# pre setup
-	TTimeManager.TickTack()
+	TThreadContext.Current().GameTimeManager.TickTack()
 	if not FServerGame.IsFinished:
 		# do the hot stuff, idle game
 		FServerGame.Idle()

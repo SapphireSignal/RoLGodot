@@ -13,7 +13,7 @@ extends TPositionComponent
 ##   path runs out or the next tile is blocked. The client straightens the path (OptimizePath) and walks it at a
 ##   speed scaled so it arrives at the same time.
 ## Port: the original's Map global is the owner's Game.Map (none: no path), GameTimeManager.ZDiff is
-## TTimeManager.ZDiff. Not ported: the network serialisation of FTarget ([XNetworkSerialize(eiMoveTo)]).
+## TThreadContext.Current().GameTimeManager.ZDiff. Not ported: the network serialisation of FTarget ([XNetworkSerialize(eiMoveTo)]).
 
 const SPATIALEPSILON = 0.1  # BaseConflict.Constants.pas:31
 const UNITSYNCINTERVAL = 3000  # BaseConflict.Constants.pas:46
@@ -107,7 +107,7 @@ func ComputeNewPath() -> void:
 
 func IdleDirect() -> void:
 	if FMoving:
-		var walkingdistance := RParam.ToSingle(TTimeManager.ZDiff * _Speed())
+		var walkingdistance := RParam.ToSingle(TThreadContext.Current().GameTimeManager.ZDiff * _Speed())
 		var Position: Vector2 = Owner.Position
 		var targetPos := FTarget.GetTargetPosition(_Game())
 		var between := targetPos - Position
@@ -134,9 +134,9 @@ func IdlePathfinding() -> void:
 	if FMoving:
 		var walkingdistance: float
 		if not IsServerSide() and FOverwriteMovementSpeed:
-			walkingdistance = RParam.ToSingle(TTimeManager.ZDiff * FOverwrittenSpeed)
+			walkingdistance = RParam.ToSingle(TThreadContext.Current().GameTimeManager.ZDiff * FOverwrittenSpeed)
 		else:
-			walkingdistance = RParam.ToSingle(TTimeManager.ZDiff * _Speed())
+			walkingdistance = RParam.ToSingle(TThreadContext.Current().GameTimeManager.ZDiff * _Speed())
 		# safety for lags
 		if walkingdistance > 50 or walkingdistance < 0:
 			walkingdistance = 0

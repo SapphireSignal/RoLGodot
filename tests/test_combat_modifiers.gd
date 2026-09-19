@@ -90,7 +90,7 @@ class FakeTargeting:
 
 
 func _setup() -> void:
-	TTimeManager.FakeTime = 1000.0
+	TTimeManager.SetFakeTime(1000.0)
 	_bus = TEventbus.new().Create(null)
 	_bus.ApplicationType = C.nsServer
 	_bus.Game = FakeGame.new()
@@ -102,7 +102,7 @@ func _setup() -> void:
 
 
 func after_each() -> void:
-	TTimeManager.FakeTime = null
+	TTimeManager.SetFakeTime(null)
 	if _game_entity != null:
 		_bus.Game.CollisionManager = null
 		_bus.Game.ServerEntityManager = null

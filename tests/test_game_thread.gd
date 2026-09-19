@@ -32,7 +32,7 @@ func _client_info() -> TGameInformation:
 
 
 func _client_frame() -> void:
-	TTimeManager.TickTack()
+	TThreadContext.Current().GameTimeManager.TickTack()
 	_client.GlobalEventbus.Trigger(C.eiIdle, [])
 	_client.ReadyWhenLoaded()
 	_client.Idle()
@@ -44,19 +44,19 @@ func test_thread_context() -> String:
 	var main := TThreadContext.Current()
 	var other := TThreadContext.new()
 	TEventbus.CurrentEvent_EventIdentifier = 7
-	TTimeManager.ZDiff = 16.0
+	TThreadContext.Current().GameTimeManager.ZDiff = 16.0
 	var outer := TThreadContext.Enter(other)
 	check(TThreadContext.Current() == other, "entered")
 	check_eq(TEventbus.CurrentEvent_EventIdentifier, 0, "the other context's event")
-	check_eq(TTimeManager.ZDiff, 0.0, "the other context's clock")
-	TTimeManager.ZDiff = 32.0
+	check_eq(TThreadContext.Current().GameTimeManager.ZDiff, 0.0, "the other context's clock")
+	TThreadContext.Current().GameTimeManager.ZDiff = 32.0
 	TThreadContext.Leave(outer)
 	check(TThreadContext.Current() == main, "left")
 	check_eq(TEventbus.CurrentEvent_EventIdentifier, 7, "main's event kept")
-	check_eq(TTimeManager.ZDiff, 16.0, "main's clock kept")
-	check_eq(other.ZDiff, 32.0, "the other's clock written there")
+	check_eq(TThreadContext.Current().GameTimeManager.ZDiff, 16.0, "main's clock kept")
+	check_eq(other.GameTimeManager.ZDiff, 32.0, "the other's clock written there")
 	TEventbus.CurrentEvent_EventIdentifier = 0
-	TTimeManager.ZDiff = 0.0
+	TThreadContext.Current().GameTimeManager.ZDiff = 0.0
 	return take_failure()
 
 

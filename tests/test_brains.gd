@@ -126,7 +126,7 @@ class BrainProbe:
 		return true
 
 	func OnDamageDone(Amount, _DamageType, Target) -> bool:
-		Log.append(["DamageDone", _group(), snappedf(Amount, 0.0001), Target.ID, TTimeManager.FakeTime])
+		Log.append(["DamageDone", _group(), snappedf(Amount, 0.0001), Target.ID, TTimeManager.GetFakeTime()])
 		return true
 
 	## Targets as readable values: entity IDs, Vector2 spots, "empty".
@@ -200,7 +200,7 @@ class FakeTargeting:
 
 
 func _setup() -> void:
-	TTimeManager.FakeTime = 1000.0
+	TTimeManager.SetFakeTime(1000.0)
 	_bus = TEventbus.new().Create(null)
 	_bus.ApplicationType = C.nsServer
 	_bus.Game = FakeGame.new()
@@ -212,7 +212,7 @@ func _setup() -> void:
 
 
 func after_each() -> void:
-	TTimeManager.FakeTime = null
+	TTimeManager.SetFakeTime(null)
 	if _game_entity != null:
 		_bus.Game.CollisionManager = null
 		_bus.Game.ServerEntityManager = null
@@ -247,7 +247,7 @@ func _probe(e: TEntity) -> BrainProbe:
 
 ## One server frame at time t: due delayed events, then the global eiIdle (TServerGame.Idle), then the manager.
 func _frame(t: float) -> void:
-	TTimeManager.FakeTime = t
+	TTimeManager.SetFakeTime(t)
 	TDelayedEventHandler.ProcessDueEvents(_bus.Game.DelayedEvents)
 	_bus.Trigger(C.eiIdle)
 	_manager.Idle()

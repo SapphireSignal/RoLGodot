@@ -178,3 +178,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   (godot-cpp pinned, SCons, MSVC; `tools/build_native.ps1`, runner and `play.bat` build first), `docs/native.md`
   (conventions, order, rules); `DSet` and `RParam` moved to C++, their GDScript deleted. 387 tests green. Next: the
   rest of the leaf helpers, then the entity core (see CONTINUE.md).
+- 2026-09-19: Every leaf helper is C++: `native/src/engine/` (Delphi RNG / hash / sort / RTL / dictionary, the clock
+  `TTimeManager` (per-thread `GameTimeManager` in `TThreadContext`), `TTimer`, `TGameTimer`, priority queues, ring
+  buffer, 2D grid) and `native/src/math/` (`RMatrix`, lines, rays, bezier, polygons); 18 GDScript files gone. Captures
+  unchanged, client step ~10% faster. 1411 files compile, 387 tests green, no errors. Next: the entity core
+  (see CONTINUE.md).

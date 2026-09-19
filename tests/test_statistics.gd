@@ -115,7 +115,7 @@ class IncomeSource:
 
 
 func _setup(side: int = C.nsServer) -> void:
-	TTimeManager.FakeTime = 0.0
+	TTimeManager.SetFakeTime(0.0)
 	_bus = TEventbus.new().Create(null)
 	_bus.ApplicationType = side
 	_bus.Game = FakeGame.new()
@@ -144,7 +144,7 @@ func after_each() -> void:
 		_bus.Game = null
 		_bus.Free()
 		_bus = null
-	TTimeManager.FakeTime = null
+	TTimeManager.SetFakeTime(null)
 
 
 # --- primary target, game end ---
@@ -416,7 +416,7 @@ func test_wela_statistics_duration_and_create() -> void:
 		.Name("Frenzy").TriggerOnDuration().TriggerOnCreate()
 	owner.Eventbus.Trigger(C.eiAfterCreate, [])
 	check_eq(_stats().GetCount(110, "wela_triggers_Frenzy"), 1, "counted at create")
-	TTimeManager.FakeTime = 3999.0
+	TTimeManager.SetFakeTime(3999.0)
 	owner.FreeGroups([group])
 	check(s.Owner == null, "the component is freed with its group")
 	check_eq(_stats().GetCount(110, "wela_duration_Frenzy"), 3, "3 whole seconds")

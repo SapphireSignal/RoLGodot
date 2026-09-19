@@ -34,20 +34,20 @@ class HitProbe:
 		return snappedf(RParam.AsSingle(Owner.Blackboard.GetIndexedValue(C.eiResourceBalance, [], C.reHealth)), 0.001)
 
 	func OnTakeDamageLast(Amount, _DamageType, InflictorID, Previous):
-		Log.append(["Hit", TTimeManager.FakeTime, snappedf(RParam.AsSingle(Amount), 0.001), RParam.AsInteger(InflictorID),
+		Log.append(["Hit", TTimeManager.GetFakeTime(), snappedf(RParam.AsSingle(Amount), 0.001), RParam.AsInteger(InflictorID),
 			_health()])
 		return Previous
 
 	func OnPreFire(_Targets) -> bool:
-		Log.append(["PreFire", TTimeManager.FakeTime, TEventbus.CurrentEvent_CalledToGroup.duplicate()])
+		Log.append(["PreFire", TTimeManager.GetFakeTime(), TEventbus.CurrentEvent_CalledToGroup.duplicate()])
 		return true
 
 	func OnFire(_Targets) -> bool:
-		Log.append(["Fire", TTimeManager.FakeTime, TEventbus.CurrentEvent_CalledToGroup.duplicate()])
+		Log.append(["Fire", TTimeManager.GetFakeTime(), TEventbus.CurrentEvent_CalledToGroup.duplicate()])
 		return true
 
 	func OnDie(_KillerID, _KillerCommanderID) -> bool:
-		Log.append(["Die", TTimeManager.FakeTime])
+		Log.append(["Die", TTimeManager.GetFakeTime()])
 		return true
 
 
@@ -56,12 +56,12 @@ func after_each() -> void:
 	if _thread != null:
 		_thread.Free()
 	_thread = null
-	TTimeManager.FakeTime = null
+	TTimeManager.SetFakeTime(null)
 	super()
 
 
 func _frame() -> void:
-	TTimeManager.FakeTime += FRAME
+	TTimeManager.SetFakeTime(TTimeManager.GetFakeTime() + FRAME)
 	_thread.DoComputeGame()
 	for entity: TEntity in _thread.InternalGame.EntityManager.FilterEntities([C.upUnit], []):
 		if not _probes.has(entity.ID):
@@ -69,8 +69,8 @@ func _frame() -> void:
 
 
 func _run_for(ms: float) -> void:
-	var until: float = TTimeManager.FakeTime + ms
-	while TTimeManager.FakeTime + FRAME <= until:
+	var until: float = TTimeManager.GetFakeTime() + ms
+	while TTimeManager.GetFakeTime() + FRAME <= until:
 		_frame()
 
 
@@ -90,7 +90,7 @@ func _play(commander: TEntity, pattern: String, position: Vector2) -> bool:
 
 
 func _started_sandbox() -> TServerGame:
-	TTimeManager.FakeTime = 1000.0
+	TTimeManager.SetFakeTime(1000.0)
 	_thread = TGameThread.new().Create(TGameManager.CreateTestserverGameInfo())
 	_thread.SetAllPlayersPlaying()
 	_frame()

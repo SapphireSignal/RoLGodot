@@ -19,7 +19,7 @@ func after_each() -> void:
 	if _thread != null:
 		_thread.Free()
 	_thread = null
-	TTimeManager.FakeTime = null
+	TTimeManager.SetFakeTime(null)
 	super()
 
 
@@ -33,22 +33,22 @@ func _sandbox_client_info() -> TGameInformation:
 
 ## One frame of both: the server's (DoComputeGame), then the client's (TickTack, eiIdle, ready check, Game.Idle).
 func _frame() -> void:
-	TTimeManager.FakeTime += FRAME
+	TTimeManager.SetFakeTime(TTimeManager.GetFakeTime() + FRAME)
 	_thread.DoComputeGame()
-	TTimeManager.TickTack()
+	TThreadContext.Current().GameTimeManager.TickTack()
 	_client.GlobalEventbus.Trigger(C.eiIdle, [])
 	_client.ReadyWhenLoaded()
 	_client.Idle()
 
 
 func _run_for(ms: float) -> void:
-	var until: float = TTimeManager.FakeTime + ms
-	while TTimeManager.FakeTime + FRAME <= until:
+	var until: float = TTimeManager.GetFakeTime() + ms
+	while TTimeManager.GetFakeTime() + FRAME <= until:
 		_frame()
 
 
 func _joined_sandbox() -> void:
-	TTimeManager.FakeTime = 1000.0
+	TTimeManager.SetFakeTime(1000.0)
 	_thread = TGameThread.new().Create(TGameManager.CreateTestserverGameInfo())
 	_client = TClientGame.JoinLocal(_thread, _sandbox_client_info(), TOKEN)
 
@@ -99,7 +99,7 @@ func test_raw_parameters() -> String:
 
 ## An unknown token is refused (NET_SECURITY_ERROR 409): no client game.
 func test_unknown_token_is_refused() -> String:
-	TTimeManager.FakeTime = 1000.0
+	TTimeManager.SetFakeTime(1000.0)
 	_thread = TGameThread.new().Create(TGameManager.CreateTestserverGameInfo())
 	var client := TClientGame.JoinLocal(_thread, _sandbox_client_info(), "not a token")
 	check(client == null, "refused")

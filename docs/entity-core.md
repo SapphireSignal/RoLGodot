@@ -129,10 +129,10 @@ One file per class, `class_name` = Delphi name (the transpiler then drops its st
 | `../classes/t_entity_data_cache.gd` | `TEntityDataCache` (`BaseConflict.Classes.Shared.pas:27`): one data entity per card file / league / level |
 | `t_wela_event_redirecter.gd`, `t_wela_ready_spawned_component.gd` | `TWelaEventRedirecter`, `TWelaReadySpawnedComponent` (`Shared.Wela.pas:832`, `:661`): wela values / readiness from the produced unit's data |
 | `t_entity_manager_component.gd` | `TEntityManagerComponent` (`:276`): `Game.EntityManager`, entity registry and deferred freeing |
-| `../engine/t_timer.gd`, `t_time_manager.gd` | `TTimer` (whole) and the `TTimeManager` clock (`Engine.Helferlein.Windows.pas:985`) |
+| C++ `native/src/engine/t_timer.*`, `t_time_manager.*` | `TTimer` (whole), `TGameTimer` and the `TTimeManager` clock (`Engine.Helferlein.Windows.pas:985`) |
 | `t_position_component.gd`, `t_movement_component.gd`, `t_pathfinding_component.gd` | `TPositionComponent` (`:98`), `TMovementComponent` (`:108`), `TPathfindingComponent` (`:497`): movement, see "Movement" |
 | `t_collision_manager_component.gd`, `t_server_collision_manager_component.gd`, `t_collision_component.gd`, `t_wela_ready_enemies_nearby_component.gd` | `TCollisionManagerComponent` (`:443`), `TServerCollisionManagerComponent` (`Server.pas:346`), `TCollisionComponent` (`:474`), `TWelaReadyEnemiesNearbyComponent` (`Shared.Wela.pas:685`): range queries, see "Collision" |
-| `t_wela_targeting*_component.gd`, `t_wela_efficiency*_component.gd`, `../engine/delphi_sort.gd` | `TWelaTargeting{,Radial,RadialAttention,Nexus,Self}Component` and `TWelaEfficiency{,MissingHealth,Created,MaxHealth,DamageType,UnitProperty}Component` (`GameServer/...Server.Welas.pas:40-116`, `:828-885`), Delphi's `TList.Sort`: see "Targeting" |
+| `t_wela_targeting*_component.gd`, `t_wela_efficiency*_component.gd`, C++ `DelphiSort` | `TWelaTargeting{,Radial,RadialAttention,Nexus,Self}Component` and `TWelaEfficiency{,MissingHealth,Created,MaxHealth,DamageType,UnitProperty}Component` (`GameServer/...Server.Welas.pas:40-116`, `:828-885`), Delphi's `TList.Sort`: see "Targeting" |
 | `t_wela_effect*_component.gd`, `t_wela_efficiency_effect_component.gd`, `t_wela_helper_{beacon,init_active_after_game_start,activate_timer}_component.gd` | `TWelaEffect{,Instant,OnlyByChance,Redirecter,PayCost,ActivationAbility,Suicide,TriggerSpellCast,RemoveAfterUse,IncreaseResource,GameEvent,Fire,ResetCooldown,RemoveBeacon}Component`, `TWelaEfficiencyEffectComponent`, `TWelaHelper*` (`...Server.Welas.pas:253-537`, `:781-826`): see "Effects" |
 | `t_warhead*_component.gd` | `TWarhead{,Spotty,SpottyHealth,SpottyDamage,SpottyHeal,SpottyKill,SpottyRemoveBuff,SpottyResource,SpottyWelaStop}Component` (`GameServer/...Server.Warheads.pas:29-215`): see "Warheads" |
 | `t_think_*_component.gd`, `t_brain*_component.gd`, `t_auto_brain*.gd`, `../classes/t_delayed_event_handler.gd`, `../types/r_commander_ability_target.gd` | every used class of `GameServer/...Server.Brains.pas` (8 think impulses / block, 21 brains, 20 auto-brains), `TDelayedEventHandler` (`...Classes.Server.pas:93`), `RCommanderAbilityTarget` (`BaseConflict.Types.Target.pas:115`): see "Brains" |
@@ -210,7 +210,8 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   empty (the original crashed).
 - **Movement** (`tests/test_movement_component.gd`, incl. the real server Footman walking on the Single map):
   `eiMoveTo [RTarget, Range]` starts moving (an equal target while moving returns False, stopping the event);
-  each global `eiIdle` moves by `TTimeManager.ZDiff` (ms, set by the game loop later) × `eiSpeed` (per ms) through
+  each global `eiIdle` moves by `GameTimeManager.ZDiff` (ms, `TThreadContext.Current().GameTimeManager`, set by the
+  game loop's TickTack) × `eiSpeed` (per ms) through
   `eiMove` (position + front). `udUsePathfinding` (read at eiAfterCreate) picks the mode. Direct: straight to
   within Range (+ SPATIALEPSILON), server re-syncs the position every 3000 ms. Pathfinding: the server computes a
   path (max 15, waypoint heuristic only towards a nexus entity) and sends `eiSyncPath [start, target, coords]`;
@@ -418,7 +419,9 @@ has an event probe and a fake `Game.EntityManager` for component tests.
 - `TNexusEarlyVulnerabilityComponent` (`:88`) is not ported: only declared and exposed, nothing creates it
   (listed in `docs/unused-features.md`, with the unused axis and exclude zones).
 - **Time**: `TTimer` reads `TTimeManager.GetFloatingTimestamp()` (ms). Tests freeze it with
-  `TTimeManager.FakeTime`. The global pause and `TickTack` come with the game loop (phase 3). `TTimer` keeps the
+  `TTimeManager.SetFakeTime(ms)` (`null` = the real clock, `GetFakeTime()` reads it). The frame counter is the
+  threadvar `GameTimeManager` (`TThreadContext.Current().GameTimeManager`: `TickTack`, `ZDiff`); the pause is not
+  ported yet. `TTimer` keeps the
   original's quirks: `StartWithRest` behaves like the code, not its comment, and the `Paused` setter is inverted.
 
 - **Damage pipeline** (`eiTakeDamage`, read `[Amount, DamageType, InflictorID]`): `TArmorComponent` (epMiddle)

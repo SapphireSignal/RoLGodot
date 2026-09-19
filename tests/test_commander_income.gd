@@ -17,7 +17,7 @@ func after_each() -> void:
 	for o in _free:
 		o.Free()
 	_free.clear()
-	TTimeManager.FakeTime = null
+	TTimeManager.SetFakeTime(null)
 	TEntity.LastScriptError = ""
 
 
@@ -104,21 +104,21 @@ func test_overflow_under_cap_unchanged() -> void:
 
 ## EchoesOfTheFuture: Factor 2 for Duration, then Duration * 2 / 2 without gold, then normal again.
 func test_loan() -> void:
-	TTimeManager.FakeTime = 0.0
+	TTimeManager.SetFakeTime(0.0)
 	var bus := _bus()
 	var e := _commander(bus, 7, 0.0, 1000.0)
 	_default_income(e, 10.0, 0.0, 0)
 	TCommanderIncomeLoanComponent.new().CreateGrouped(e, [9]).Factor(2.0).Duration(1000)
 	check_eq(_income(bus, 7).Gold, 20.0, "doubled")
-	TTimeManager.FakeTime = 999.0
+	TTimeManager.SetFakeTime(999.0)
 	check_eq(_income(bus, 7).Gold, 20.0, "still doubled")
-	TTimeManager.FakeTime = 1000.0
+	TTimeManager.SetFakeTime(1000.0)
 	check_eq(_income(bus, 7).Gold, 20.0, "expired read still doubles, then restarts for 1000 * 2 / 2")
-	TTimeManager.FakeTime = 1500.0
+	TTimeManager.SetFakeTime(1500.0)
 	check_eq(_income(bus, 7).Gold, 0.0, "paying back")
-	TTimeManager.FakeTime = 2000.0
+	TTimeManager.SetFakeTime(2000.0)
 	check_eq(_income(bus, 7).Gold, 10.0, "paid back: normal income")
-	TTimeManager.FakeTime = 5000.0
+	TTimeManager.SetFakeTime(5000.0)
 	check_eq(_income(bus, 7).Gold, 10.0, "stays normal")
 
 

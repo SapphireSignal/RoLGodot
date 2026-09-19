@@ -147,7 +147,7 @@ func _setup() -> void:
 
 
 func after_each() -> void:
-	TTimeManager.FakeTime = null
+	TTimeManager.SetFakeTime(null)
 	TWelaEffectPayCostComponent.NOT_PAYED_RESOURCES = TWelaEffectPayCostComponent.DEFAULT_NOT_PAYED_RESOURCES.duplicate()
 	if _game_entity != null:
 		_game_entity.Free()  # frees the manager and every deployed entity
@@ -227,14 +227,14 @@ func test_instant_efficiency() -> void:
 
 
 func test_efficiency_effect_ignores_previous_and_efficiency_components_add() -> void:
-	TTimeManager.FakeTime = 1000.0
+	TTimeManager.SetFakeTime(1000.0)
 	_setup()
 	var enemy := _unit(2, Vector2(3, 2))
 	_owner.Blackboard.SetValue(C.eiEfficiency, [1], 50.0)
 	TWelaEfficiencyEffectComponent.new().CreateGrouped(_owner, [1])
 	check_eq(_owner.Eventbus.Read(C.eiEfficiency, [enemy], [1]), -1.0, "the abstract effect: -1, the blackboard value is dropped")
 	TWelaEfficiencyCreatedComponent.new().CreateGrouped(_owner, [1])
-	TTimeManager.FakeTime = 1005.0
+	TTimeManager.SetFakeTime(1005.0)
 	check_eq(_owner.Eventbus.Read(C.eiEfficiency, [enemy], [1]), 4.0, "the efficiency components add after it (epMiddle)")
 
 
@@ -370,13 +370,13 @@ func test_helper_init_active_after_game_start() -> void:
 
 func test_helper_activate_timer() -> void:
 	_setup()
-	TTimeManager.FakeTime = 1000.0
+	TTimeManager.SetFakeTime(1000.0)
 	_owner.Blackboard.SetValue(C.eiWelaActive, [1], false)
 	var helper = TWelaHelperActivateTimerComponent.new().CreateGrouped(_owner, [1]).Delay(100)
-	TTimeManager.FakeTime = 1099.0
+	TTimeManager.SetFakeTime(1099.0)
 	_bus.Trigger(C.eiIdle, [])
 	check_eq(_owner.Blackboard.GetValue(C.eiWelaActive, [1]), false, "99 ms: not yet")
-	TTimeManager.FakeTime = 1100.0
+	TTimeManager.SetFakeTime(1100.0)
 	_bus.Trigger(C.eiIdle, [])
 	check_eq(_owner.Blackboard.GetValue(C.eiWelaActive, [1]), true, "100 ms: active")
 	check(helper.Owner == null, "freed itself")

@@ -7,8 +7,24 @@
 #include <godot_cpp/core/defs.hpp>
 #include <godot_cpp/godot.hpp>
 
+#include "engine/delphi_dictionary.h"
+#include "engine/delphi_hash.h"
+#include "engine/delphi_random.h"
+#include "engine/delphi_rtl.h"
+#include "engine/delphi_sort.h"
+#include "engine/t_2d_grid.h"
+#include "engine/t_priority_queue.h"
+#include "engine/t_ring_buffer.h"
+#include "engine/t_time_manager.h"
+#include "engine/t_timer.h"
 #include "entity/d_set.h"
 #include "entity/r_param.h"
+#include "math/r_cubic_bezier.h"
+#include "math/r_line_2d.h"
+#include "math/r_matrix.h"
+#include "math/r_ray_2d.h"
+#include "math/t_multipolygon.h"
+#include "math/t_polygon.h"
 
 using namespace godot;
 
@@ -18,6 +34,24 @@ void initialize_rol_native_module(ModuleInitializationLevel p_level) {
 	}
 	GDREGISTER_CLASS(DSet);
 	GDREGISTER_CLASS(RParam);
+	GDREGISTER_CLASS(DelphiRandom);
+	GDREGISTER_CLASS(DelphiHash);
+	GDREGISTER_CLASS(DelphiSort);
+	GDREGISTER_CLASS(DelphiRtl);
+	GDREGISTER_CLASS(DelphiDictionary);
+	GDREGISTER_CLASS(TTimeManager);
+	GDREGISTER_CLASS(TTimer);
+	GDREGISTER_CLASS(TGameTimer);
+	GDREGISTER_CLASS(TPriorityQueue);
+	GDREGISTER_CLASS(TIntPriorityQueue);
+	GDREGISTER_CLASS(TRingBuffer);
+	GDREGISTER_CLASS(T2DGrid);
+	GDREGISTER_CLASS(RMatrix);
+	GDREGISTER_CLASS(RRay2D);
+	GDREGISTER_CLASS(RLine2D);
+	GDREGISTER_CLASS(RCubicBezier);
+	GDREGISTER_CLASS(TPolygon);
+	GDREGISTER_CLASS(TMultipolygon);
 }
 
 void uninitialize_rol_native_module(ModuleInitializationLevel p_level) {

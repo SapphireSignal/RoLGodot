@@ -21,7 +21,7 @@ func after_each() -> void:
 	if _thread != null:
 		_thread.Free()
 	_thread = null
-	TTimeManager.FakeTime = null
+	TTimeManager.SetFakeTime(null)
 	TOptionManager.ResetOptions()
 	TMesh.ClearGeometryCache()
 	super()
@@ -73,14 +73,14 @@ func test_shader_block_composition() -> String:
 ## HMath.Interpolate over the timer's interval: keys (0, 0.3), (500, 0.0) over 500 ms. At 0 ms no key lies before the
 ## time (the original reads uninitialized values there): the port takes the first key.
 func test_timekeys_follow_the_timer() -> String:
-	TTimeManager.FakeTime = 1000.0
+	TTimeManager.SetFakeTime(1000.0)
 	var tint := TMeshEffectTint.new().Create(500, 0xFF102030)
 	tint.AddKey(0, 0.3).AddKey(500, 0.0)
 	check_near(tint.CurrentValue(), 0.3, 1e-6, "start")
-	TTimeManager.FakeTime = 1250.0
+	TTimeManager.SetFakeTime(1250.0)
 	check_near(tint.CurrentValue(), 0.15, 1e-6, "half way")
 	check(not tint.Expired(), "running")
-	TTimeManager.FakeTime = 1501.0
+	TTimeManager.SetFakeTime(1501.0)
 	check(tint.Expired(), "expired after the duration")
 	check_near(TMeshEffectWithTimekeys.Interpolate([[0, 1.0], [2147483647, 1.0]], 0.5, 1000), 1.0, 1e-6, "perma key")
 	check_eq(tint.FColor, Color(0x10 / 255.0, 0x20 / 255.0, 0x30 / 255.0, 1.0), "ARGB color")
@@ -93,7 +93,7 @@ func test_timekeys_follow_the_timer() -> String:
 func test_sandbox_crystals_and_tower_spawn() -> String:
 	if not _has_assets():
 		return ""
-	TTimeManager.FakeTime = 1000.0
+	TTimeManager.SetFakeTime(1000.0)
 	_thread = TGameThread.new().Create(TGameManager.CreateTestserverGameInfo())
 	var info := TGameInformation.new().Create()
 	info.ScenarioUID = BC.TESTSERVER_SCENARIO_UID
@@ -136,7 +136,7 @@ func test_sandbox_crystals_and_tower_spawn() -> String:
 	check_eq(_texture_file(mesh.MeshMaterial, "variable_texture_3"), "spawnmask.png", "white spawn mask")
 	var fading: Vector3 = mesh.MeshMaterial.get_shader_parameter("fading_color")
 	check(fading.is_equal_approx(Vector3(0x50 / 255.0, 0x59 / 255.0, 0x58 / 255.0)), "OverrideColor($FF505958)")
-	TTimeManager.FakeTime = 1000.0 + 2501.0
+	TTimeManager.SetFakeTime(1000.0 + 2501.0)
 	_client.GlobalEventbus.Trigger(C.eiIdle, [])
 	check_eq(_shader_names(mesh), ["MatcapShader.fx"], "the spawn effect expired")
 	check_eq(mesh.Cullmode, "cmCCW", "cull mode back")
@@ -148,7 +148,7 @@ func test_sandbox_crystals_and_tower_spawn() -> String:
 func test_blue_spawn_draws_own_passes() -> String:
 	if not _has_assets():
 		return ""
-	TTimeManager.FakeTime = 0.0
+	TTimeManager.SetFakeTime(0.0)
 	var bus := TEventbus.new().Create(null)
 	bus.ApplicationType = C.nsClient
 	_free.append(bus)
@@ -176,14 +176,14 @@ func test_blue_spawn_draws_own_passes() -> String:
 	mesh.SetUpCustomShaders()
 	check_near(mesh.OwnPassMaterials[19][2].get_shader_parameter("pass_progress"), 1.0, 1e-6, "last pass progress")
 	check_eq(mesh.ResolveShaderArray(), [], "no main custom shaders")
-	TTimeManager.FakeTime = 1501.0
+	TTimeManager.SetFakeTime(1501.0)
 	component.Idle()
 	check_eq(mesh.OwnPassMaterials.size(), 0, "blue expired")
 	check(mesh.MeshInstance.material_override == mesh.MeshMaterial, "own drawing back")
 	# as written, only an effect without own passes hands over to a waiting one of its class
 	check_eq(_shader_names(mesh), [], "the waiting white spawn stays unmounted")
 	check_eq(component.FEffectStack.size(), 1, "until it expires")
-	TTimeManager.FakeTime = 2501.0
+	TTimeManager.SetFakeTime(2501.0)
 	component.Idle()
 	check_eq(component.FEffectStack.size(), 0, "then it is gone")
 	return take_failure()
@@ -194,7 +194,7 @@ func test_blue_spawn_draws_own_passes() -> String:
 func test_effect_component_and_metal() -> String:
 	if not _has_assets():
 		return ""
-	TTimeManager.FakeTime = 0.0
+	TTimeManager.SetFakeTime(0.0)
 	var bus := TEventbus.new().Create(null)
 	bus.ApplicationType = C.nsClient
 	_free.append(bus)

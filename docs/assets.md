@@ -277,7 +277,7 @@ scene from the screen texture (back to gamma space) and the scene normal's y fro
 water shader dots the rows (unlike Standardshader's `mul(normal, matrix)`); ported as written. Beyond the terrain's
 edge the depth is the far plane and the water turns white; the game camera never looks there.
 
-**Vegetation** (`t_vegetation_manager.gd`, `vegetation.gdshader`, `src/runtime/engine/delphi_random.gd`). Classic:
+**Vegetation** (`t_vegetation_manager.gd`, `vegetation.gdshader`, C++ `DelphiRandom`). Classic:
 3428 palms (`TVegetationMesh`) + 1207 grass tufts (`TGrassTuft`); `TTree` is unused. Each object replays its rolls:
 `RandSeed := FRandSeed`, then Delphi's `Random` in the original's call order (palms: `Random(MeshCount)`, three
 rotation rolls x, y, z even with zero variance, one size roll; tufts: rotation, angle, two size rolls, trapezial,

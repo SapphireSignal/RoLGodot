@@ -69,8 +69,8 @@ class FakeGame:
 
 
 func before_each() -> void:
-	TTimeManager.FakeTime = NOW
-	TTimeManager.ZDiff = 0.0
+	TTimeManager.SetFakeTime(NOW)
+	TThreadContext.Current().GameTimeManager.ZDiff = 0.0
 
 
 func after_each() -> void:
@@ -85,8 +85,8 @@ func after_each() -> void:
 	if _map != null:
 		_map.Free()
 		_map = null
-	TTimeManager.FakeTime = null
-	TTimeManager.ZDiff = 0.0
+	TTimeManager.SetFakeTime(null)
+	TThreadContext.Current().GameTimeManager.ZDiff = 0.0
 	TEntity.LastScriptError = ""
 	super()
 
@@ -149,7 +149,7 @@ func test_direct_walk() -> void:
 	var bus := _bus(C.nsServer, false)
 	var probe := _unit(bus, Vector2.ZERO, 0.5, false)
 	var e: TEntity = probe.Owner
-	TTimeManager.ZDiff = 2.0
+	TThreadContext.Current().GameTimeManager.ZDiff = 2.0
 	_move_to(e, Vector2(10, 0), 2.0)
 	check_eq(e.Eventbus.Read(C.eiIsMoving, []), true, "moving")
 	check_eq(probe.Log, [["SyncPosition", Vector2.ZERO]], "server: syncs the start")
@@ -214,7 +214,7 @@ func test_sync_timer() -> void:
 	var probe := _unit(bus, Vector2(1, 2), 0.5, false)
 	_idle(bus)
 	check_eq(probe.Log, [], "not yet")
-	TTimeManager.FakeTime = NOW + 3000
+	TTimeManager.SetFakeTime(NOW + 3000)
 	_idle(bus, 2)
 	check_eq(probe.Log, [["SyncPosition", Vector2(1, 2)]], "once, then restarted")
 
@@ -248,7 +248,7 @@ func test_pathfinding_walk() -> void:
 	var bus := _bus()
 	var probe := _unit(bus, Vector2(0, -23), 0.5, true)
 	var e: TEntity = probe.Owner
-	TTimeManager.ZDiff = 1.0
+	TThreadContext.Current().GameTimeManager.ZDiff = 1.0
 	_move_to(e, Vector2(4, -23))
 	var sync := probe.All("SyncPath")
 	check_eq(sync.size(), 1, "one path")
@@ -284,7 +284,7 @@ func test_pathfinding_repaths_around_a_blocked_tile() -> void:
 	var bus := _bus()
 	var probe := _unit(bus, Vector2(0, -23), 0.5, true)
 	var e: TEntity = probe.Owner
-	TTimeManager.ZDiff = 1.0
+	TThreadContext.Current().GameTimeManager.ZDiff = 1.0
 	_move_to(e, Vector2(4, -23))
 	_idle(bus)
 	var before := e.Position
@@ -333,7 +333,7 @@ func test_footman_walks() -> void:
 	e.Position = Vector2(0, -23)
 	e.Eventbus.Trigger(C.eiAfterCreate, [])
 	check_eq(e.Eventbus.Read(C.eiPathfindingTile, []), _tile(187, 158), "on its tile")
-	TTimeManager.ZDiff = 100.0
+	TThreadContext.Current().GameTimeManager.ZDiff = 100.0
 	_move_to(e, Vector2(4, -23))
 	check_eq(e.Eventbus.Read(C.eiIsMoving, []), true, "walking")
 	var idles := 0

@@ -7,7 +7,7 @@ const N = 100000
 
 
 func _init() -> void:
-	TTimeManager.FakeTime = 1000.0
+	TTimeManager.SetFakeTime(1000.0)
 	var thread := TGameThread.new().Create(TGameManager.CreateTestserverGameInfo())
 	var commander: TEntity = thread.InternalGame.Commanders[3]
 	var bus: TEventbus = commander.Eventbus
@@ -35,7 +35,7 @@ func _init() -> void:
 	_bench("bus.Trigger(eiThink, [], [20])", func(): bus.Trigger(C.eiThink, [], [20]))
 	_bench("bus.Trigger(eiThink, [], [250]) (no match)", func(): bus.Trigger(C.eiThink, [], [250]))
 	thread.Free()
-	TTimeManager.FakeTime = null
+	TTimeManager.SetFakeTime(null)
 	TCardInfoManager._Instance = null
 	TScenarioInfoManager._Instance = null
 	TEntityComponent.FComponentSubscriptionPatterns = {}

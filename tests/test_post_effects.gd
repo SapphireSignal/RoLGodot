@@ -15,7 +15,7 @@ func after_each() -> void:
 		else:
 			obj.Free()
 	_free.clear()
-	TTimeManager.FakeTime = null
+	TTimeManager.SetFakeTime(null)
 	TOptionManager.ResetOptions()
 	super()
 
@@ -200,7 +200,7 @@ func test_glow_pass_materials() -> String:
 func test_spawn_effect_glows() -> String:
 	if not _has_assets():
 		return ""
-	TTimeManager.FakeTime = 0.0
+	TTimeManager.SetFakeTime(0.0)
 	var bus := TEventbus.new().Create(null)
 	bus.ApplicationType = C.nsClient
 	_free.append(bus)
@@ -220,7 +220,7 @@ func test_spawn_effect_glows() -> String:
 	mesh.SetUpCustomShaders()
 	check_eq(mesh.GlowMaterial.get_shader_parameter("glow"), 1.0, "glow stage: glow 1")
 	check_eq(mesh.MeshMaterial.get_shader_parameter("glow"), 0.0, "world stage: glow 0")
-	TTimeManager.FakeTime = 2501.0
+	TTimeManager.SetFakeTime(2501.0)
 	component.Idle()
 	check_eq(mesh.GlowTexture, "", "the glow texture goes with the effect")
 	check(mesh.GlowMaterial == null, "and the glow pass")
@@ -243,7 +243,7 @@ func _footman(color: int) -> TMeshComponent:
 func test_glow_effect() -> String:
 	if not _has_assets():
 		return ""
-	TTimeManager.FakeTime = 0.0
+	TTimeManager.SetFakeTime(0.0)
 	var component := _footman(C.ecGreen)
 	var mesh := component.FMesh
 	var glow: TMeshEffectGlow = TMeshEffectGlow.new().Create(1100).AddKey(0, 1.0).AddKey(250, 0.6).AddKey(1100, 0.0)
@@ -252,7 +252,7 @@ func test_glow_effect() -> String:
 	check(mesh.GlowMaterial != null, "a glow pass")
 	if mesh.GlowMaterial == null:
 		return take_failure()
-	TTimeManager.FakeTime = 125.0
+	TTimeManager.SetFakeTime(125.0)
 	mesh.SetUpCustomShaders()
 	check_near(mesh.MeshMaterial.get_shader_parameter("go_overshoot"), 0.8, 1e-5, "overshoot from the keys")
 	check_eq(mesh.MeshMaterial.get_shader_parameter("go_is_glow_stage"), 0.0, "world stage")
@@ -270,14 +270,14 @@ func test_glow_effect() -> String:
 func test_hide_and_glow_effect() -> String:
 	if not _has_assets():
 		return ""
-	TTimeManager.FakeTime = 0.0
+	TTimeManager.SetFakeTime(0.0)
 	var component := _footman(C.ecWhite)
 	var mesh := component.FMesh
 	var effect: TMeshEffectHideAndGlow = TMeshEffectHideAndGlow.new().Create(3500, "\\Graphics\\Units\\White\\PatronSaint_Default\\PatronSaintSpawnMask.tga")
 	effect.AddKey(0, 0.0).AddKey(2700, 0.0).AddKey(3300, 1.0).AddKey(3500, 0.0).AddNextTimeLine().AddKey(0, 0.0).AddKey(3500, 1.0)
 	check(effect.FEffectTexture != null, "the mask is imported")
 	effect.AssignToEntity(component.Owner)
-	TTimeManager.FakeTime = 3000.0
+	TTimeManager.SetFakeTime(3000.0)
 	mesh.SetUpCustomShaders()
 	check_near(mesh.MeshMaterial.get_shader_parameter("hag_overshoot"), 0.5, 1e-5, "first timeline")
 	check_near(mesh.MeshMaterial.get_shader_parameter("hag_visibility"), 3000.0 / 3500.0, 1e-5, "second timeline")
@@ -292,7 +292,7 @@ func test_hide_and_glow_effect() -> String:
 func test_soul_gain_effect() -> String:
 	if not _has_assets():
 		return ""
-	TTimeManager.FakeTime = 0.0
+	TTimeManager.SetFakeTime(0.0)
 	var component := _footman(C.ecWhite)
 	var mesh := component.FMesh
 	var effect: TMeshEffectSoulGain = TMeshEffectSoulGain.new().Create(400).Color(1090453400).Radius(0.5).AddKey(0, 0.0).AddKey(400, 1.0).Additive()
@@ -306,7 +306,7 @@ func test_soul_gain_effect() -> String:
 	check(pass_material.shader.code.contains("#define ROL_EFFECTS_STAGE"), "the effects stage variant")
 	check(mesh.MeshMaterial.next_pass == pass_material, "drawn after the mesh")
 	check(mesh.GlowOwnPassMaterials.is_empty(), "not in the glow stage")
-	TTimeManager.FakeTime = 100.0
+	TTimeManager.SetFakeTime(100.0)
 	mesh.SetUpCustomShaders()
 	check_near(pass_material.get_shader_parameter("soul_gain_progress"), 0.25, 1e-5, "progress")
 	check_near(pass_material.get_shader_parameter("soul_gain_radius"), 0.5, 1e-6, "radius")

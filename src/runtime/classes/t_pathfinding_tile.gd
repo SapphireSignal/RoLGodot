@@ -55,7 +55,7 @@ func Create(GridPosition_: Vector2i = Vector2i.ZERO, Left: float = 0, Top: float
 	FBottom = RParam.ToSingle(Bottom)
 	FCenter = Vector2((FRight + FLeft) / 2, (FTop + FBottom) / 2)
 	FPermanentlyBlocked = false
-	FBlockedTimeSlots = TRingBuffer.new(50, false)
+	FBlockedTimeSlots = TRingBuffer.new().Create(50, false)
 	FOwner = Owner
 	return self
 

@@ -44,7 +44,7 @@ components reach `Game` as `GlobalEventbus().Game`. `tests/component_fakes.gd`: 
 without errors (`tests/test_health_component.gd` builds the server SmallMeleeGolem).
 
 Step 5 done for every server / shared class (the rest by `docs/script-api.md`, entity-local first): `TCommanderIncome*` + `RIncome`,
-and `TTimer`/`TTimeManager` clock in `src/runtime/engine/` (tests freeze time with `TTimeManager.FakeTime`);
+and `TTimer`/`TTimeManager` clock (now C++; tests freeze time with `TTimeManager.SetFakeTime(ms)`);
 `TDynamicZone*Emitter`, `TGameEventEnumeratorComponent` (`TNexusEarlyVulnerabilityComponent` is unused: skipped).
 `TEntityManagerComponent` (the real `Game.EntityManager`; `TServerEntityManagerComponent` /
 `TClientEntityManagerComponent` extend it later, with the game).
@@ -60,13 +60,13 @@ The map and pathfinding are done: read `docs/map.md` (maps are converted by `too
 `src/content/maps/`, build zones come from the scenario scripts, lanes are hard-coded, A* ties break last in,
 first out). All 21 used target constraints are ported.
 Movement is done: `TPositionComponent`, `TMovementComponent`, `TPathfindingComponent` (section "Movement" in
-`docs/entity-core.md`, `tests/test_movement_component.gd`); the frame step is `TTimeManager.ZDiff` until the game
-loop.
+`docs/entity-core.md`, `tests/test_movement_component.gd`); the frame step is
+`TThreadContext.Current().GameTimeManager.ZDiff` (the original's threadvar GameTimeManager).
 Collision is done: the loose quadtree (engine + entity variant), `TCollisionManagerComponent`,
 `TServerCollisionManagerComponent` (+ `RTargetWithEfficiency`), `TCollisionComponent`,
 `TWelaReadyEnemiesNearbyComponent` (section "Collision" in `docs/entity-core.md`, `tests/test_collision.gd`).
 Targeting is done: `TWelaTargeting{,Radial,RadialAttention,Nexus,Self}Component` and `TWelaEfficiency*`
-(section "Targeting" in `docs/entity-core.md`, `tests/test_wela_targeting.gd`); `src/runtime/engine/delphi_sort.gd`
+(section "Targeting" in `docs/entity-core.md`, `tests/test_wela_targeting.gd`); `DelphiSort` (C++)
 is Delphi's `TList.Sort` (use it wherever the original sorts with ties). Global / Rectangle targeting are unused.
 Effects and spotty warheads are done: 18 effect/helper classes and 9 warheads (sections "Effects" and "Warheads"
 in `docs/entity-core.md`, `tests/test_wela_effects.gd`, `tests/test_warheads.gd`; the real server SmallMeleeGolem
@@ -204,12 +204,18 @@ the result to look like a project built in C++ from day one: delete every GDScri
 replacement lands, comments cite only the original's Delphi source, no transition traces; at the end the C++ moves to
 the conventional layout and the finished project gets a **fresh git history** (confirm with the owner right before
 rewriting the published repository). No `.gd` files at the end (shaders, scenes, project files and the Python tools
-stay). Done: toolchain, `DSet`, `RParam`. The per-thread context (`TThreadContext`) becomes C++ `thread_local`s with
-the entity core.
-**Next:** the rest of the leaf helpers (`DelphiRandom`, `DelphiHash`, `DelphiSort`, `DelphiRtl`, `DelphiDictionary`,
-`TTimer` / `TTimeManager`, `RMatrix`, containers), then the entity core; measure each step (`tests/bench_eventbus.gd`,
-`--fps-check`). Visible features (health bars, unit facing, particles, shadows, phase 5) wait until the core is C++,
-unless the owner asks for one.
+stay). Done: toolchain, `DSet`, `RParam`, and every leaf helper (`native/src/engine/`: the Delphi RNG / hash / sort /
+RTL / dictionary, `TTimeManager`, `TTimer`, `TGameTimer`, the priority queues, ring buffer, 2D grid; `native/src/math/`:
+`RMatrix`, `RLine2D`, `RRay2D`, `RCubicBezier`, `TPolygon`, `TMultipolygon`); the list, the API changes (statics ->
+Get/Set, constructor args -> `.new().Create(...)`) and the measurements are in `docs/native.md`. The per-thread context
+(`TThreadContext`, holding the game clock `GameTimeManager`) becomes C++ `thread_local`s with the entity core.
+Capture check tooling for C++ moves: a scratch script ran the map viewer's capture mode and `--fps-check` on the three
+setups plus Classic with 2 spawners + 2 drops, once on the change and once on HEAD (git stash -u, build, import), then
+restored and rebuilt; noise floor = two captures of the same build.
+**Next:** step 2, the entity core (`TBlackboard`, `TEventbus`, `TEntity`, `TEntityComponent`, `TThreadContext`); plan
+how GDScript components keep subscribing to a C++ bus (handlers as Callables until their family moves) and measure
+with `tests/bench_eventbus.gd` and `--fps-check`. Visible features (health bars, unit facing, particles, shadows,
+phase 5) wait until the core is C++, unless the owner asks for one.
 Owner: `docs/questions-for-devs.md` is the list for the original developers (master-server values); record their
 answers there.
 The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.

@@ -205,7 +205,7 @@ static func V(p: Vector2) -> Vector2:
 
 
 func _setup() -> void:
-	TTimeManager.FakeTime = 1000.0
+	TTimeManager.SetFakeTime(1000.0)
 	_bus = TEventbus.new().Create(null)
 	_bus.ApplicationType = C.nsServer
 	_bus.Game = FakeGame.new()
@@ -218,8 +218,8 @@ func _setup() -> void:
 
 
 func after_each() -> void:
-	TTimeManager.FakeTime = null
-	TTimeManager.ZDiff = 0.0
+	TTimeManager.SetFakeTime(null)
+	TThreadContext.Current().GameTimeManager.ZDiff = 0.0
 	if _game_entity != null:
 		_bus.Game.CollisionManager = null
 		_bus.Game.ServerEntityManager = null
@@ -253,7 +253,7 @@ func _unit(team: int, pos: Vector2, props: Array = [], health: float = 68.0) -> 
 
 ## One server frame at time t: due delayed events, then the global eiIdle (TServerGame.Idle), then the manager.
 func _frame(t: float) -> void:
-	TTimeManager.FakeTime = t
+	TTimeManager.SetFakeTime(t)
 	TDelayedEventHandler.ProcessDueEvents(_bus.Game.DelayedEvents)
 	_bus.Trigger(C.eiIdle)
 	_manager.Idle()
@@ -735,7 +735,7 @@ func test_real_golem_soul_reaches_gatherer() -> void:
 	check_eq([spawner.Position, spawner.TeamID()], [Vector2(0, 10), 2], "where the golem fell, its team")
 	var spawner_log: EntityLog = EntityLog.new().CreateGroupedAll(spawner)
 	var spawner_id: int = spawner.ID
-	TTimeManager.ZDiff = 10.0
+	TThreadContext.Current().GameTimeManager.ZDiff = 10.0
 	var t := 1000.0
 	var shot_at := -1.0
 	var mana := 0

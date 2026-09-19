@@ -42,26 +42,26 @@ func _near3(a: Vector3, b: Vector3, eps := 1e-4) -> bool:
 
 
 func test_delphi_random_matches_the_rtl_lcg() -> String:
-	DelphiRandom.RandSeed = 0
+	DelphiRandom.SetRandSeed(0)
 	# RandSeed 0 -> 1: the first Random is 1 / 2^32
 	check(_near(DelphiRandom.Random(), 2.3283064365386963e-10, 1e-15), "first Random after RandSeed 0")
 	check(_near(DelphiRandom.Random(), 0.031379939522594213, 1e-12), "second Random")
 	check_eq(DelphiRandom.RandomRange(100), 86, "Random(100)")
-	check_eq(DelphiRandom.RandSeed, -596792289, "RandSeed stays a signed Int32")
+	check_eq(DelphiRandom.GetRandSeed(), -596792289, "RandSeed stays a signed Int32")
 	return take_failure()
 
 
 func test_delphi_random_varied_values_roll_every_axis() -> String:
-	DelphiRandom.RandSeed = 12345
+	DelphiRandom.SetRandSeed(12345)
 	# zero variance still consumes a roll per axis: x, y (variance 1), z
 	var v := DelphiRandom.VariedVector3({"Mean": [0, 0, 0], "Variance": [0, 1, 0]})
 	check_eq(v.x, 0.0, "x has no variance")
 	check_eq(v.z, 0.0, "z has no variance")
-	DelphiRandom.RandSeed = 12345
+	DelphiRandom.SetRandSeed(12345)
 	DelphiRandom.Random()
 	var y_roll := DelphiRandom.Random()
 	check(_near(v.y, y_roll * 2 - 1), "y is the second roll")
-	check_eq(DelphiRandom.RandSeed != 12345, true, "three rolls were used")
+	check_eq(DelphiRandom.GetRandSeed() != 12345, true, "three rolls were used")
 	return take_failure()
 
 

@@ -78,7 +78,7 @@ func _setup() -> void:
 
 
 func after_each() -> void:
-	TTimeManager.FakeTime = null
+	TTimeManager.SetFakeTime(null)
 	if _game_entity != null:
 		_bus.Game.CollisionManager = null  # the units leave the tree without it while the game entity goes
 		_game_entity.Free()  # frees the managers and every deployed entity
@@ -316,13 +316,13 @@ func test_nexus_and_self() -> void:
 
 
 func test_efficiency_components() -> void:
-	TTimeManager.FakeTime = 1000.0
+	TTimeManager.SetFakeTime(1000.0)
 	_setup()
 	var target := _unit(2, Vector2(1, 0), [C.upFlying])
 	target.Blackboard.SetIndexedValue(C.eiResourceBalance, [], C.reHealth, 30.0)
 	_max_health(target, 100.0)
 	target.Blackboard.SetValue(C.eiDamageType, [C.GROUP_MAINWEAPON], [C.dtMelee])
-	TTimeManager.FakeTime = 1500.0
+	TTimeManager.SetFakeTime(1500.0)
 	var cases := [
 		[TWelaEfficiencyMissingHealthComponent.new(), 70.0, "missing health 100 - 30"],
 		[TWelaEfficiencyCreatedComponent.new(), 500.0, "age 1500 - 1000 ms"],

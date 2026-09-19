@@ -13,7 +13,7 @@ const FRAME = 32.0
 func _init() -> void:
 	var seconds := int(OS.get_environment("PROFILE_SECONDS")) if OS.get_environment("PROFILE_SECONDS") != "" else 60
 	var t0 := Time.get_ticks_usec()
-	TTimeManager.FakeTime = 1000.0
+	TTimeManager.SetFakeTime(1000.0)
 	TGameThread.new().Create(TGameManager.CreateTestserverGameInfo()).Free()
 	print("first setup (loads scripts and data): %.0f ms" % ((Time.get_ticks_usec() - t0) / 1000.0))
 	t0 = Time.get_ticks_usec()
@@ -34,12 +34,12 @@ func _init() -> void:
 	var prof_on := OS.get_environment("PROFILE_HANDLERS") != ""
 	if prof_on:
 		TEventbus.Prof = {}
-	var until: float = TTimeManager.FakeTime + seconds * 1000.0
-	while TTimeManager.FakeTime + FRAME <= until and not thread.Terminated:
+	var until: float = TTimeManager.GetFakeTime() + seconds * 1000.0
+	while TTimeManager.GetFakeTime() + FRAME <= until and not thread.Terminated:
 		var f0 := Time.get_ticks_usec()
-		TTimeManager.FakeTime += FRAME
+		TTimeManager.SetFakeTime(TTimeManager.GetFakeTime() + FRAME)
 		thread.DoComputeGame()
-		frames.append([Time.get_ticks_usec() - f0, TTimeManager.FakeTime])
+		frames.append([Time.get_ticks_usec() - f0, TTimeManager.GetFakeTime()])
 		units_max = maxi(units_max, game.EntityManager.FilterEntities([C.upUnit], []).size())
 	var t3 := Time.get_ticks_usec()
 	var total_ms := (t3 - t2) / 1000.0
@@ -61,7 +61,7 @@ func _init() -> void:
 		for r in rows.slice(0, 40):
 			print("  %-70s %8d %9.1f %9.1f" % [r[0], r[1], r[2] / 1000.0, r[3] / 1000.0])
 	thread.Free()
-	TTimeManager.FakeTime = null
+	TTimeManager.SetFakeTime(null)
 	TCardInfoManager._Instance = null
 	TScenarioInfoManager._Instance = null
 	TEntityComponent.FComponentSubscriptionPatterns = {}
@@ -69,9 +69,9 @@ func _init() -> void:
 
 
 func _run(thread: TGameThread, ms: float) -> void:
-	var until: float = TTimeManager.FakeTime + ms
-	while TTimeManager.FakeTime + FRAME <= until:
-		TTimeManager.FakeTime += FRAME
+	var until: float = TTimeManager.GetFakeTime() + ms
+	while TTimeManager.GetFakeTime() + FRAME <= until:
+		TTimeManager.SetFakeTime(TTimeManager.GetFakeTime() + FRAME)
 		thread.DoComputeGame()
 
 

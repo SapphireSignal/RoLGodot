@@ -144,7 +144,7 @@ class ReadySwitch:
 
 
 func _setup() -> void:
-	TTimeManager.FakeTime = 1000.0
+	TTimeManager.SetFakeTime(1000.0)
 	_bus = TEventbus.new().Create(null)
 	_bus.ApplicationType = C.nsServer
 	_bus.Game = FakeGame.new()
@@ -157,8 +157,8 @@ func _setup() -> void:
 
 
 func after_each() -> void:
-	TTimeManager.FakeTime = null
-	TTimeManager.ZDiff = 0.0
+	TTimeManager.SetFakeTime(null)
+	TThreadContext.Current().GameTimeManager.ZDiff = 0.0
 	if _game_entity != null:
 		_bus.Game.CollisionManager = null
 		_bus.Game.ServerEntityManager = null
@@ -203,7 +203,7 @@ func _link(source: TEntity, dest: TEntity) -> TEntity:
 
 ## One server frame at time t: due delayed events, then the global eiIdle (TServerGame.Idle), then the manager.
 func _frame(t: float) -> void:
-	TTimeManager.FakeTime = t
+	TTimeManager.SetFakeTime(t)
 	TDelayedEventHandler.ProcessDueEvents(_bus.Game.DelayedEvents)
 	_bus.Trigger(C.eiIdle)
 	_manager.Idle()
@@ -240,7 +240,7 @@ func test_delphi_dictionary() -> void:
 	d.Add(3, "a")
 	d.Add(7, "b")
 	d.Add(2, "c")
-	check_eq(d.FHashes.size(), 4, "4 slots")
+	check_eq(d.Capacity, 4, "4 slots")
 	check_eq(d.Keys(), [3, 7, 2], "slot order")
 	check_eq([d.ContainsKey(7), d.ContainsKey(5), d.GetItem(2)], [true, false, "c"], "lookups")
 	var visited: Array = []
@@ -254,9 +254,9 @@ func test_delphi_dictionary() -> void:
 	check_eq([d.Keys(), d.Count], [[7], 1], "7 is left")
 	d.Add(11, "d")
 	d.Add(4, "e")
-	check_eq(d.FHashes.size(), 4, "3 entries fit")
+	check_eq(d.Capacity, 4, "3 entries fit")
 	d.Add(8, "f")
-	check_eq(d.FHashes.size(), 8, "the 4th grows to 8")
+	check_eq(d.Capacity, 8, "the 4th grows to 8")
 	check_eq(d.Keys(), [7, 8, 11, 4], "rehashed into 8 slots: 7 → 0, 11 → 4, 4 → 5, then 8 → 1")
 
 
@@ -453,24 +453,24 @@ func test_pay_cost_myself() -> void:
 	check(RParam.AsBoolean(owner.Eventbus.Read(C.eiIsReady, [], [1])), "ready with mana")
 	owner.Eventbus.Trigger(C.eiLinkEstablish, [RTarget.Create(owner), a], [1])
 	check_eq(mana.call(), 2, "the first link pays at once")
-	TTimeManager.FakeTime = 2500.0
+	TTimeManager.SetFakeTime(2500.0)
 	owner.Eventbus.Trigger(C.eiThinkChain, [], [1])
 	check_eq([mana.call(), pay.FLastAppliedTimestamp], [1, 2000], "one whole second paid, the rest carries")
 	owner.Eventbus.Trigger(C.eiLinkEstablish, [RTarget.Create(owner), b], [1])
 	check_eq([mana.call(), pay.FLinkCount], [1, 2], "a second link costs nothing extra")
 	owner.Eventbus.Trigger(C.eiLinkBreak, [b], [1])
 	check_eq([mana.call(), pay.FLinkCount], [1, 1], "breaking one of two pays nothing")
-	TTimeManager.FakeTime = 3999.0
+	TTimeManager.SetFakeTime(3999.0)
 	owner.Eventbus.Trigger(C.eiThinkChain, [], [1])
 	check_eq(mana.call(), 0, "emptied")
 	check_eq(log.Named("Fire").map(func(x): return [x[0], x[1]]), [[[2], [owner.ID]]], "fires on empty")
 	check(not RParam.AsBoolean(owner.Eventbus.Read(C.eiIsReady, [], [1])), "not ready any more")
-	TTimeManager.FakeTime = 5000.0
+	TTimeManager.SetFakeTime(5000.0)
 	owner.Eventbus.Trigger(C.eiLinkBreak, [a], [1])
 	check_eq(pay.FLinkCount, 0, "no links")
 	check_eq(log.Named("Fire").size(), 1, "already empty: no second fire")
 	var after: int = mana.call()
-	TTimeManager.FakeTime = 9000.0
+	TTimeManager.SetFakeTime(9000.0)
 	owner.Eventbus.Trigger(C.eiThinkChain, [], [1])
 	check_eq(mana.call(), after, "no links: nothing paid")
 
