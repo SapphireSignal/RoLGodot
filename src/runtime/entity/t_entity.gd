@@ -383,8 +383,8 @@ func Deploy() -> void:
 	Eventbus.Trigger(C.eiDeploy, [])
 
 
-## TEntity.Serialize (:801): ID, script, skin, UID and the blackboard, then eiSerialize for the serializable
-## components (their RTTI field serialization is not ported yet: no component writes anything).
+## TEntity.Serialize (:801): ID, script, skin, UID and the blackboard, then eiSerialize: every serializable component
+## writes itself (TSerializableEntityComponent.Serialize).
 func Serialize(Stream: TEntityStream) -> void:
 	Stream.Write(FID)
 	Stream.Write(FScriptFile)
@@ -396,8 +396,9 @@ func Serialize(Stream: TEntityStream) -> void:
 
 ## TEntity.Deserialize (:733): the client builds the entity from its script with the server's blackboard already in
 ## place (so the creating components see the server's values), then loads the blackboard again over what the script
-## set. The stream stands after the ID (TClientNetworkComponent.DeserializeEntity reads it first). Serialized
-## components (the rest of the stream) are not ported yet.
+## set. The stream stands after the ID (TClientNetworkComponent.DeserializeEntity reads it first). The rest of the
+## stream are the serialized components: each is created on the new entity (its class's Create(Owner)), reads its
+## data back (TSerializableEntityComponent.Deserialize) and its XNetworkSerialize fields are written to the bus.
 static func Deserialize(EntityID: int, Stream: TEntityStream, GlobalEventbus) -> TEntity:
 	var ScriptFile_: String = Stream.Read()
 	var SkinID_: String = Stream.Read()
@@ -414,7 +415,35 @@ static func Deserialize(EntityID: int, Stream: TEntityStream, GlobalEventbus) ->
 	Result.Blackboard.LoadFromStream(Stream)
 	Result.FID = EntityID
 	Result.UID = UID_
+	# the serializable components the server sent
+	while Stream.Position < Stream.Size():
+		var QualifiedName: String = Stream.Read()
+		var ComponentClass: Script = _ComponentClass(QualifiedName)
+		if ComponentClass == null:
+			push_error("TEntity.DeSerialize: Can't find typeinfo for type \"%s\"" % QualifiedName)
+			return Result
+		var EntityComponent = ComponentClass.new().Create(Result)
+		EntityComponent.Deserialize(Stream)
+		var SerializeEvents: Dictionary = EntityComponent.NetworkSerializeEvents()
+		for Field: String in SerializeEvents:
+			Result.Eventbus.Write(SerializeEvents[Field], [EntityComponent.get(Field)])
 	return Result
+
+
+static var _component_classes := {}
+
+
+## The class of a serialized component by name (RttiContext.FindType).
+static func _ComponentClass(QualifiedName: String) -> Script:
+	if _component_classes.is_empty():
+		for Entry: Dictionary in ProjectSettings.get_global_class_list():
+			_component_classes[String(Entry["class"])] = Entry["path"]
+	var Path = _component_classes.get(QualifiedName)
+	if Path is String:
+		var Loaded = load(Path)
+		_component_classes[QualifiedName] = Loaded
+		return Loaded
+	return Path
 
 
 func DeferFree() -> void:

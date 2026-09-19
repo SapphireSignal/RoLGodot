@@ -388,6 +388,15 @@ func Write(Eventname: int, Values: Array = [], Group: Array = [], ComponentID: i
 	Trigger(Eventname, Values, Group, ComponentID, true)
 
 
+## An event received over the network (TNetworkComponent.NewData): Values are the sender's parameters as they came
+## off the wire (TNetworkComponent.OnNetworkSend: empty ones are null). Write or Trigger here.
+func InvokeWithRawData(Eventname: int, Group: Array, ComponentID: int, Values: Array, WriteEvent: bool) -> void:
+	if WriteEvent:
+		Write(Eventname, Values, Group, ComponentID)
+	else:
+		Trigger(Eventname, Values, Group, ComponentID)
+
+
 ## Script side TriggerGrouped(Eventname, Values, Group)
 func TriggerGrouped(Eventname: int, Values: Array, Group: Array) -> void:
 	Trigger(Eventname, Values, Group)

@@ -213,11 +213,15 @@ All 201 meshes load from their `.msh` and pose without errors.
 `src/viewer/map_viewer.tscn` (button on the main scene): a scenario's battlefield through the game camera's geometry
 (`TClientCameraComponent.ApplyCamera`: eye = target + zoom * 10 * CAMERAOFFSET.Normalize, vertical field of view
 0.6853981635 rad, near 1, far 10000, game zoom 2.6..3.8). Three scenarios: the 1 lane sandbox (Single, the default),
-the 2 lane sandbox (Classic) and the PvE sandbox (Single, golem base on its nexus ground). Each is set up as in a
-game: a server `TGameThread` runs the scenario scripts, a `TClientGame` loads the map with its decorations and runs the
-scenario's client part, then `ReceiveWorld` hands it the server's entities (nexus, towers, lane nodes...) the way a
-joining client gets them; every frame the viewer triggers the client's `eiIdle` (`GFXD.MainScene` is its entities
-node). Layer toggles (Terrain, Water, Vegetation, Entities), named views per map. Capture mode:
-`-- --capture-out=<abs dir> [--maps=Single,Classic] [--hide=...] [--view=x,z,zoom[,rotation]]` writes each named view
-per scenario. The test runner's second launcher smoke test opens it through `play.bat` and checks decorations,
-entities and drawn meshes.
+the 2 lane sandbox (Classic) and the PvE sandbox (Single, golem base on its nexus ground). Each runs live as a game:
+a server `TGameThread` runs the scenario scripts, a `TClientGame` joins it over the in-process network
+(`JoinLocal`, `docs/game-loop.md` "Network"), loads the map with its decorations, runs the scenario's client part and
+receives the server's entities and events. Server frames every 32 ms, a client frame per drawn frame
+(`GFXD.MainScene` is its entities node). Card buttons (blue / red footmen drop, blue / red footman spawner) play the
+sandbox deck's cards through the client's commanders (after the 10 s warm-up). Layer toggles (Terrain, Water,
+Vegetation, Entities), named views per map. Capture mode:
+`-- --capture-out=<abs dir> [--maps=Single,Classic] [--hide=...] [--view=x,z,zoom[,rotation]] [--play=<button
+labels>] [--wait=ms]` writes each named view per scenario (`--play` once the game has started, then `--wait` ms of
+game). The test runner's second launcher smoke test opens it through `play.bat` and checks decorations, entities and
+drawn meshes. `play.bat` runs a quick headless `--import` first (about 2 s): without it a new `class_name` since the
+last import left the class cache stale and the viewers failed to compile (a black window).

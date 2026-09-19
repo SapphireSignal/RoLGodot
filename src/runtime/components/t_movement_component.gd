@@ -45,6 +45,15 @@ func _DeclareEvents(e: Array) -> void:
 	e.append(XEvent("OnLose", C.eiLose, C.epMiddle, C.etTrigger, C.esGlobal))
 
 
+## The protected fields the server sends (TSerializableEntityComponent); FTarget is [XNetworkSerialize(eiMoveTo)].
+func NetworkFields() -> Array:
+	return ["FTarget", "FPath", "FMoving", "FUsePathfinding", "FRange"]
+
+
+func NetworkSerializeEvents() -> Dictionary:
+	return {"FTarget": C.eiMoveTo}
+
+
 func Create(Owner = null) -> TEntityComponent:
 	super(Owner)
 	if IsServerSide():

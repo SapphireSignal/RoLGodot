@@ -2,7 +2,8 @@ class_name TTimeManager
 extends RefCounted
 ## Port of the TTimeManager clock (Engine/Engine.Helferlein.Windows.pas:2214): milliseconds since program start.
 ## Every TTimeManager of the original reads the same clock; the server game's GameTimeManager only adds its own
-## ZDiff (TickTack). The port runs one game at a time, so this is static. The pause (SetPause) is not ported yet.
+## ZDiff (TickTack). The port keeps the clock static; a server game swaps its own frame state in (SaveClock /
+## RestoreClock). The pause (SetPause) is not ported yet.
 ## Tests freeze the clock with FakeTime (milliseconds, a float), null = the real clock.
 
 const L = preload("res://src/runtime/dws/dws_lib.gd")
@@ -25,6 +26,17 @@ static func TickTack() -> void:
 	var Now := GetFloatingTimestamp()
 	ZDiff = RParam.ToSingle(Now - LastTickTime)
 	LastTickTime = Now
+
+
+## Port: the frame state of one time manager ([LastTickTime, ZDiff]). A server game in the same process as a client
+## keeps its own (the original's per-thread GameTimeManager); TGameThread swaps it in for its frame.
+static func SaveClock() -> Array:
+	return [LastTickTime, ZDiff]
+
+
+static func RestoreClock(Clock: Array) -> void:
+	LastTickTime = Clock[0]
+	ZDiff = Clock[1]
 
 
 ## GetFloatingTimestamp: milliseconds as a double.

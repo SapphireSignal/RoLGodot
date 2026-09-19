@@ -114,7 +114,7 @@ One file per class, `class_name` = Delphi name (the transpiler then drops its st
 | `../types/r_resource_cost.gd` | `RResourceCost` + `AResourceCostHelper` (`BaseConflict.Types.Shared.pas:32`) |
 | `t_unit_property_component.gd` | `TUnitPropertyComponent` (`:36`): adds/removes unit properties, or gives them to the owning commander |
 | `t_armor_component.gd` | `TArmorComponent` (`:521`): armor factor/offset on the `var` Amount of `eiTakeDamage` |
-| `t_health_component.gd` | `THealthComponent` (`:173`): damage, heal, overheal, death chain; base `../entity/t_serializable_entity_component.gd` (thin until phase 3) |
+| `t_health_component.gd` | `THealthComponent` (`:173`): damage, heal, overheal, death chain; base `../entity/t_serializable_entity_component.gd` (network serialization) |
 | `t_commander_income*_component.gd` | `TCommanderIncome{,Default,Loan,Overflow}Component` (`:531-574`): the commander's `eiIncome` |
 | `../types/r_income.gd` | `RIncome` (`BaseConflict.Types.Shared.pas:47`), a record: copies in and out of RParams |
 | `t_dynamic_zone_*emitter_component.gd` | `TDynamicZone{,Radial,Axis}EmitterComponent` (`:581-614`): answer `eiInDynamicZone` |
@@ -465,13 +465,14 @@ has an event probe and a fake `Game.EntityManager` for component tests.
   `TBlackboard.SaveToStream` (count, then event / group slot / index slot / value in event order);
   `TEntity.Deserialize` creates the entity from its script with the server's blackboard loaded in the initializer,
   then loads it again over the script's values (blackboard events go through `Write`, position / front through the
-  setters). `TClientGame.AddServerEntity` = `TClientNetworkComponent.DeserializeEntity` (+ TLogicToWorldComponent,
-  eiAfterCreate, Deploy), `ReceiveWorld` = `TServerNetworkComponent.SendWorld` (deployed entities with a script).
-  The serializable components' own fields (`XNetworkSerialize`, only `TMovementComponent.FTarget`) are not sent yet.
+  setters). eiSerialize then lets every `TSerializableEntityComponent` write its class, UniqueID, group and its
+  `NetworkFields()` (the public and protected fields); `Deserialize` creates those components on the client copy and
+  writes their `NetworkSerializeEvents()` (`TMovementComponent.FTarget` -> eiMoveTo). Sent by
+  `TServerNetworkComponent`, received by `TClientNetworkComponent.DeserializeEntity` (+ TLogicToWorldComponent,
+  eiAfterCreate, Deploy): `docs/game-loop.md`, "Network". A new serializable class lists its public / protected
+  fields in `NetworkFields()` (declaration order).
 
 ## Not ported yet
 
-- `TSerializableEntityComponent` field serialization, `TEventbus.InvokeWithRawData`,
-  `TEntityManagerComponent.InvokeEventOnEntity`, `TEntity.OwningCommander`, the per-game pausable clock
-  (`GameTimeManager`; `TGameTimer` uses `TTimeManager` meanwhile), the rest of `TTimeManager` (pause): with the
-  network.
+- `TEntity.OwningCommander`, the per-game pausable clock (`GameTimeManager`; `TGameTimer` uses `TTimeManager`
+  meanwhile, the server swaps its own frame state in), the rest of `TTimeManager` (pause).

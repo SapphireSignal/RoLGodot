@@ -144,3 +144,9 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   Spawn,Tint}`, `TMeshEffectComponent`, the effect stack, own passes (blue spawn), smoothed normals, effect textures.
   The nexus / tower crystals show their matcap. New windowed shader check (560 variants). 366 tests green, no errors.
   Next: see CONTINUE.md.
+- 2026-09-18: Network (phase 3's open part): `TNetworkComponent`, `TServerNetworkComponent`, `TClientNetworkComponent`
+  over in-process `TLoopbackSocket`s (the original's protocol: hello/token, world, ready, NET_EVENT, new entities),
+  serialized components (`TSerializableEntityComponent`: movement, health, primary target, commander abilities reach
+  the client), `TClientGame.JoinLocal`, the game thread's player state machine and own clock. The map viewer runs the
+  sandbox live with card buttons: units spawn, walk, fight and die on the client. `play.bat` refreshes the class cache
+  (quick import) first. 371 tests green, no errors. Next: see CONTINUE.md.

@@ -5,7 +5,7 @@ extends TEntityComponent
 ## deferred, at the next Idle. Reached as Game.EntityManager.
 ## Port notes: FEntities is a Dictionary in insertion order (the original's TDictionary iterates in hash order;
 ## only GetEntityByUID's first match, FilterEntities and GetDeployedEntityList see the order). The nexus list is
-## an Array. InvokeEventOnEntity needs TEventbus.InvokeWithRawData and comes with the network sync (phase 3).
+## an Array.
 
 var FEntities := {}  # ID -> TEntity
 var FComponentGroupsToKill: Array = []  # of [EntityID, SetComponentGroup]
@@ -176,6 +176,20 @@ func GetEntityByUID(UID: String):
 			if Entity.UID == UID:
 				return Entity
 	return null
+
+
+## Remote invokes an event on target entities eventbus (0: the global bus, 1: the game entity). There needn't be an
+## entity: some events like TeamID are sent before the entity, because the write event set the entity up.
+func InvokeEventOnEntity(EntityID: int, Eventname: int, Group: Array, ComponentID: int, RawParameters: Array, Write: bool) -> void:
+	var TargetEventbus: TEventbus = null
+	if EntityID == 0:
+		TargetEventbus = GlobalEventbus()
+	elif EntityID == 1:
+		TargetEventbus = GlobalEventbus().Game.GameEntity.Eventbus
+	elif FEntities.has(EntityID):
+		TargetEventbus = FEntities[EntityID].Eventbus
+	if TargetEventbus != null:
+		TargetEventbus.InvokeWithRawData(Eventname, Group, ComponentID, RawParameters, Write)
 
 
 ## Frees the given componentgroup of the entity at the beginning of the next frame.

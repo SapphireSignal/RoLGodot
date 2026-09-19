@@ -27,6 +27,11 @@ func _DeclareEvents(e: Array) -> void:
 	e.append(XEvent("OnUnitProperies", C.eiUnitProperties, C.epMiddle, C.etRead))
 
 
+## The protected fields the server sends (TSerializableEntityComponent).
+func NetworkFields() -> Array:
+	return ["FIsAlive", "FInstaDeath", "FKillerCommanderID", "FKillerID"]
+
+
 func Create(Owner = null) -> TEntityComponent:
 	super(Owner)
 	FIsAlive = true

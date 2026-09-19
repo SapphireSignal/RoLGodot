@@ -2,14 +2,16 @@ extends Node3D
 ## Map viewer (phase 4 check): a scenario's battlefield seen through the game's camera (TClientCameraComponent.
 ## ApplyCamera: eye = target + zoom * 10 * CAMERAOFFSET.Normalize, vertical field of view coEngineCameraFoV, near 1,
 ## far 10000). A scenario is set up as in a real game: the server game (TGameThread) runs the scenario scripts, a
-## TClientGame loads the client map (terrain, water, vegetation, the map's decorations such as bridges) and runs the
-## scenario's client part (the PvE nexus ground), then receives the server's entities (nexus, towers, lane nodes...)
-## as a joining client would (TClientGame.ReceiveWorld). The game limits the zoom to coGameplayCameraMinZoom..MaxZoom
-## (2.6..3.8, starts at 3.8); the viewer lets it go further out for an overview.
+## TClientGame joins it over an in-process connection (TClientGame.JoinLocal), loads the client map (terrain, water,
+## vegetation, the map's decorations such as bridges), runs the scenario's client part (the PvE nexus ground) and
+## receives the server's entities (nexus, towers, lane nodes...) and then its events. The game then runs live: server
+## frames every 32 ms, a client frame per drawn frame (spawners spawn, units walk and fight). The game limits the zoom
+## to coGameplayCameraMinZoom..MaxZoom (2.6..3.8, starts at 3.8); the viewer lets it go further out for an overview.
 ## Controls: WASD / arrows scroll, right mouse drag pans, wheel zooms, Q / E rotate, R resets.
 ## Capture mode (checks without a person):
-##   -- --capture-out=<absolute folder> [--maps=Single,Classic] [--hide=Terrain,Water,Vegetation,Entities]
-## writes views of each scenario on those maps (game camera at a few places, an overview), then quits. Launcher smoke
+##   -- --capture-out=<absolute folder> [--maps=Single,Classic] [--hide=Terrain,Water,Vegetation,Entities] [--wait=ms]
+## writes views of each scenario on those maps (game camera at a few places, an overview; after the game ran --wait
+## ms), then quits. Launcher smoke
 ## test:  -- --smoke-test=<file>  after a few drawn frames writes "ok ..." or "FAIL ..." to <file> and quits.
 
 const C = preload("res://src/runtime/dws/dws_const.gd")
@@ -21,6 +23,11 @@ const SCENARIOS := [["1 lane (Single)", BC.SCENARIO_SANDBOX_UID, "Single"],
 	["2 lanes (Classic)", BC.SCENARIO_SANDBOX_CLASSIC_UID, "Classic"],
 	["PvE (Single)", BC.SCENARIO_PVE_DEFAULT_PREFIX + BC.SCENARIO_SANDBOX_UID, "Single"]]
 const LEAGUE := 1
+## The player token of TGameManager.CreateTestserverGameInfo (its secret key).
+const TOKEN := "1"
+## Card buttons: [label, commander (0 blue, 1 red: the token's first two), unit pattern of the sandbox deck card].
+const CARDS := [["Blue footmen", 0, "Units\\White\\FootmanDrop"], ["Blue spawner", 0, "Units\\White\\FootmanSpawner"],
+	["Red footmen", 1, "Units\\White\\FootmanDrop"], ["Red spawner", 1, "Units\\White\\FootmanSpawner"]]
 ## BaseConflict.Constants.Client.pas CAMERAOFFSET (game space).
 const CAMERAOFFSET := Vector3(-0.394721269607544, 0.812130928039551, -0.429695725440979)
 const FIELD_OF_VIEW := 0.6853981635  # coEngineCameraFoV, radians, vertical
@@ -47,6 +54,7 @@ var _dragging := false
 var _info: Label
 var _toggles := {}
 var _load_ms := 0.0
+var _server_time := 0
 var _loading := false
 var _loading_overlay: ColorRect
 
@@ -135,6 +143,16 @@ func _build_ui() -> void:
 		var index := i
 		button.pressed.connect(func() -> void: _set_view(_views()[index]))
 		view_row.add_child(button)
+	# cards played through the client's commanders (eiUseAbility goes to the server, as the card hand will send it)
+	var card_row := HBoxContainer.new()
+	box.add_child(card_row)
+	for card: Array in CARDS:
+		var button := Button.new()
+		button.text = card[0]
+		var team_index: int = card[1]
+		var pattern: String = card[2]
+		button.pressed.connect(func() -> void: _play_card(team_index, pattern))
+		card_row.add_child(button)
 	_info = Label.new()
 	box.add_child(_info)
 	# Loading a scenario blocks the main thread for seconds (server game + client game): a dimmed overlay says so and
@@ -205,11 +223,14 @@ func _load_scenario(index: int) -> void:
 	client_info.League = LEAGUE
 	client_info.IsSandboxOverride = true
 	client_info.Scenario = HScenario.ResolveScenario(uid, LEAGUE)
-	_client = TClientGame.new().Create(client_info)
+	_client = TClientGame.JoinLocal(_thread, client_info, TOKEN)
 	_map = _client.ClientMap
 	add_child(_map)
-	_entity_count = _client.ReceiveWorld(_thread.InternalGame).size()
-	_client.GlobalEventbus.Trigger(C.eiIdle, [])
+	# the server answers NET_CLIENT_ENTER_CORE with the world, the client's frame takes it and says it is ready
+	_thread.DoComputeGame()
+	_client_frame()
+	_server_time = Time.get_ticks_msec()
+	_entity_count = _client.EntityManager.DeployedEntityCount
 	_load_ms = Time.get_ticks_msec() - start
 	_apply_toggles()
 	_set_view(_views()[0])
@@ -258,11 +279,65 @@ func _scroll(right: float, up: float) -> void:
 	_update_camera()
 
 
-func _process(delta: float) -> void:
-	# the client's frame (BaseConflictMainUnit): eiIdle on the global bus, then the meshes animate while drawn
+## The client's frame (BaseConflictMainUnit): the frame time, eiIdle on the global bus (the network component takes
+## what the server sent), the core game state (client ready once the world is in), then Game.Idle; the meshes
+## animate while drawn.
+func _client_frame() -> void:
 	GFXD.NextFrame()
-	if _client != null:
-		_client.GlobalEventbus.Trigger(C.eiIdle, [])
+	TTimeManager.TickTack()
+	_client.GlobalEventbus.Trigger(C.eiIdle, [])
+	_client.ReadyWhenLoaded()
+	_client.Idle()
+
+
+## Plays a sandbox deck card of a commander through the client (eiUseAbility on the client's copy of the commander
+## is sent to the server, which decides): a drop on the lane in front of the commander's nexus, a spawner on the first
+## free field of its team's build zones. The client does not check the play first (eiCanUseAbility has no client
+## answer yet: the HUD's check comes with phase 5).
+func _play_card(team_index: int, pattern: String) -> void:
+	if _client == null or not _client.IsReady() or _client.FTokenMapping.size() <= team_index:
+		return
+	var commander: TEntity = _client.EntityManager.GetEntityByID(_client.FTokenMapping[team_index])
+	if commander == null:
+		return
+	var group := -1
+	for g in 64:
+		if commander.Blackboard.GetValue(C.eiWelaUnitPattern, [g]) == pattern:
+			group = g
+			break
+	if group < 0:
+		return
+	var candidates: Array = []
+	if pattern.ends_with("Spawner"):
+		for zone: TBuildZone in _client.Map.BuildZones.BuildZones.values():
+			if zone.TeamID != commander.TeamID():
+				continue
+			for y in zone.Size.y:
+				for x in zone.Size.x:
+					if zone.IsFree(Vector2i(x, y)):
+						candidates.append(RCommanderAbilityTarget.CreateBuildTarget(zone.ID, Vector2i(x, y)))
+	else:
+		var nexus = _client.EntityManager.NexusByTeamID(commander.TeamID())
+		if nexus == null:
+			return
+		var position: Vector2 = nexus.Position
+		candidates.append(RCommanderAbilityTarget.Create(Vector2(position.x - signf(position.x) * 30.0, position.y)))
+	if not candidates.is_empty():
+		var targets := RCommanderAbilityTarget.ArrayToRParam([candidates[0]])
+		commander.Eventbus.Trigger(C.eiUseAbility, [targets], [group])
+
+
+func _process(delta: float) -> void:
+	if _client != null and not _loading:
+		# the game server's frames, at its heartbeat (TARGET_FRAMETIME)
+		var now := Time.get_ticks_msec()
+		if now - _server_time >= TGameThread.TARGET_FRAMETIME and not _thread.Terminated:
+			_server_time = now
+			_thread.DoComputeGame()
+		_client_frame()
+		if _client.EntityManager.DeployedEntityCount != _entity_count:
+			_entity_count = _client.EntityManager.DeployedEntityCount
+			_update_camera()
 	var right := Input.get_axis("ui_left", "ui_right")
 	var up := Input.get_axis("ui_down", "ui_up")
 	if Input.is_key_pressed(KEY_A):
@@ -350,15 +425,29 @@ func _run_capture(maps: PackedStringArray, out_dir: String) -> void:
 	for layer_name in _user_arg("hide").split(",", false):
 		if _toggles.has(layer_name):
 			(_toggles[layer_name] as CheckBox).set_pressed_no_signal(false)
-	var views: Array = _views()
+	var extra_views: Array = []
 	var extra := _user_arg("view")  # --view=x,z,zoom[,rotation] adds a custom view
 	if extra != "":
 		var p := extra.split(",")
-		views = views + [["custom", float(p[0]), float(p[1]), float(p[2]), float(p[3]) if p.size() > 3 else 0.0]]
+		extra_views = [["custom", float(p[0]), float(p[1]), float(p[2]), float(p[3]) if p.size() > 3 else 0.0]]
 	for i in SCENARIOS.size():
 		if not maps.is_empty() and not maps.has(SCENARIOS[i][2]):
 			continue
 		_load_scenario(i)
+		var views: Array = _views() + extra_views  # the loaded map's views
+		# --play=<card label,...>: once the game has started (after the warm-up), play those cards
+		var play := _user_arg("play")
+		if play != "":
+			while not _thread.InternalGame.HasStarted():
+				await get_tree().process_frame
+			for label in play.split(","):
+				for card: Array in CARDS:
+					if card[0] == label:
+						_play_card(card[1], card[2])
+		# --wait=<ms>: let the game run that long before the captures (units spawn and walk)
+		var wait_until := Time.get_ticks_msec() + int(_user_arg("wait"))
+		while Time.get_ticks_msec() < wait_until:
+			await get_tree().process_frame
 		for view: Array in views:
 			_set_view(view)
 			if view.size() > 4:

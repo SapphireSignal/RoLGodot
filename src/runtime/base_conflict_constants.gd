@@ -74,6 +74,20 @@ enum { ccClearUnits, ccClearAllUnits, ccClearSpawners, ccClearLaneTowers, ccClea
 	ccToggleOverwatchSandbox, ccClearOverwatch, ccSaveCameraPosition, ccReturnToSavedCameraPosition,
 	ccTutorialGameEvent, ccForceGameTick }
 
+## Network commands (:159-177), the first value of every TCommandSequence between game server and client.
+const NET_ASSIGNED_PLAYER = 1
+const NET_HELLO_SERVER = 2
+const NET_NEW_ENTITY = 3
+const NET_RECONNECT = 4
+const NET_RECONNECT_RESULT = 5
+const NET_CLIENT_ENTER_CORE = 6
+const NET_SERVER_FINISHED_SEND_GAME_DATA = 7
+const NET_SERVER_GAME_ABORTED = 8
+const NET_CLIENT_RAGE_QUIT = 9
+const NET_CLIENT_READY = 10
+const NET_EVENT = 31
+const NET_SECURITY_ERROR = 99
+
 ## GAME_TICK_DURATION / GAME_WARMING_DURATION (:48-49): ms per game tick, ms from eiGameCommencing to the first tick.
 const GAME_TICK_DURATION = 1000
 const GAME_WARMING_DURATION = 10000

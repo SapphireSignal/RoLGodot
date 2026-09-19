@@ -162,10 +162,13 @@ func test_sandbox_entities_reach_the_client() -> String:
 	info.ScenarioUID = BC.TESTSERVER_SCENARIO_UID
 	info.League = BC.TESTSERVER_SENARIO_LEAGUE
 	info.Scenario = HScenario.ResolveScenario(info.ScenarioUID, info.League)
-	_client = TClientGame.new().Create(info)
+	_client = TClientGame.JoinLocal(_thread, info, "1")
 	check_eq(_client.ClientMap.MapName, "Single", "sandbox map")
+	_thread.DoComputeGame()  # the server answers NET_CLIENT_ENTER_CORE with the world
+	_client.GlobalEventbus.Trigger(C.eiIdle, [])  # the client takes it
+	check(_client.IsReady(), "world received")
 	var nexi: Array = []
-	for copy: TEntity in _client.ReceiveWorld(_thread.InternalGame):
+	for copy: TEntity in _client.EntityManager.GetDeployedEntityList():
 		if copy.ScriptFile.contains("Nexus"):
 			nexi.append(copy)
 	check_eq(TEntity.LastScriptError, "", "no script error")

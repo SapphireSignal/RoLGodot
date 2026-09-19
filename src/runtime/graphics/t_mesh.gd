@@ -685,7 +685,7 @@ func UploadBoneTransforms() -> void:
 			matrices.append(Projection(_skin_matrix(i) if i < Geometry.SkinBones.size() else Transform3D()))
 		for m in Materials():
 			m.set_shader_parameter("bone_transforms", matrices)
-	if AnimationDriverMorph.HasMorph():
+	if AnimationDriverMorph != null and AnimationDriverMorph.HasMorph():
 		for k in mini(Geometry.MorphtargetCount, Geometry.Surface.get_blend_shape_count()):
 			MeshInstance.set_blend_shape_value(k, AnimationDriverMorph.CurrentMorphweights[k] / 100.0)
 

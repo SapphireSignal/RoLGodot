@@ -17,8 +17,11 @@ var FCardLeague := 0
 var FCardLevel := 0
 
 
+## Port: without a card this is the inherited constructor (the client's deserialization, TEntity.Deserialize).
 func CreateGrouped(Owner = null, Group = [], Card: RCommanderCard = null) -> TEntityComponent:
 	super(Owner, Group)
+	if Card == null:
+		return self
 	FCardUID = Card.CardUID
 	assert(Card.League >= BC.MIN_LEAGUE and Card.League <= BC.MAX_LEAGUE,
 		"TCommanderAbilityComponent.CreateGrouped: Invalid card league %d passed to server!" % Card.League)
@@ -38,6 +41,11 @@ func CreateGroupedSlot(Owner, Group, Card: RCommanderCard, Slot: int) -> TEntity
 func _DeclareEvents(e: Array) -> void:
 	super(e)
 	e.append(XEvent("OnAfterCreate", C.eiAfterCreate, C.epLast, C.etTrigger))
+
+
+## The protected fields the server sends (TSerializableEntityComponent).
+func NetworkFields() -> Array:
+	return ["FSlot", "FCardUID", "FCardLeague", "FCardLevel"]
 
 
 func Init() -> void:

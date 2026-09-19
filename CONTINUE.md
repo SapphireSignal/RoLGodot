@@ -13,8 +13,8 @@ Hand-off note for the next session. Read `CLAUDE.md` first, then this.
 
 ## Where we are
 Phases 0-2 done, phase 3 done except bots and network (the headless sandbox match runs and is profiled); phase 4,
-the asset pipeline, is under way: meshes (from the raw `.msh`), map graphics, decorations and the client visuals of
-placed entities done, the render extras next (see "Phase 4" below and `docs/port-plan.md`). Verified facts about the original are in
+the asset pipeline, is under way: meshes (from the raw `.msh`), map graphics, decorations, the client visuals of
+placed entities and the server -> client network done (the map viewer runs the sandbox live), the render extras next (see "Phase 4" below and `docs/port-plan.md`). Verified facts about the original are in
 `docs/original-architecture.md`. If `reference/` is missing, run `tools\fetch_reference.ps1` (~800 MB download,
 ~3 GB checked out; run it in the background).
 
@@ -126,7 +126,11 @@ handler, single-group events walk only their group's subscribers, no event-stack
 send check); the sandbox match runs at 0.31 x real time. Tools: `tests/profile_sandbox.gd` (with
 `PROFILE_HANDLERS=1`: the costliest handlers), `tests/bench_eventbus.gd`; run them by hand like the test runner
 does Godot (headless, absolute `--log-file`, `--script res://tests/...`).
-Open in phase 3: bots (`TPvPBotComponent`), network, time manager pause.
+Network done: read `docs/game-loop.md`, "Network". Client and server talk over in-process `TLoopbackSocket`s with the
+original's protocol; `TClientGame.JoinLocal(thread, info, token)` joins (token `"1"` for the test server game), a
+client frame is `TTimeManager.TickTack()`, eiIdle, `ReadyWhenLoaded()`, `Idle()` (see `tests/test_network.gd`,
+`src/viewer/map_viewer.gd`). The server's serializable components reach the client (`NetworkFields()` per class).
+Open in phase 3: bots (`TPvPBotComponent`), time manager pause.
 
 ## Phase 4, the asset pipeline
 Read `docs/assets.md`. Setup after fetching `reference/`: `python tools/import_graphics.py`, then a Godot `--import`
@@ -158,9 +162,12 @@ Spherify, Invisible), particle effects and point lights on units, fur, outline, 
 (the viewer only borrows its geometry). No capture of the original exists to compare against; an idea
 worth checking: whether the original client (Delphi is installed) can be built and run offline far enough to capture
 reference screenshots (it logs in to the closed master server).
-**Next:** pick by visibility: the glow stage + bloom (the crystals' and every glow texture's look, then the glow
-effects); or the live sandbox in the viewer (server frames running, units synced to the client: needs the movement
-sync, `eiMoveTo` / positions over the stream), which would show the spawn and metal effects on real units.
+The live sandbox runs in the map viewer (network done): card buttons drop footmen / place spawners; units walk, fight
+and die on the client. Check in a capture (`--play=... --wait=...`) that drops show their spawn effect, units their
+walk / attack / death animations.
+**Next:** pick by visibility: the unit visuals of a live fight (death: decay manager, `eiDie` on the client; health
+bars are HUD, phase 5), or the glow stage + bloom (the crystals' and every glow texture's look, then the glow
+effects), or phase 5's camera component and card hand on top of the network.
 Owner: `docs/questions-for-devs.md` is the list for the original developers (master-server values); record their
 answers there.
 The owner wants longer turns locally: a whole family (or two) per turn, one checkpoint at the end.
