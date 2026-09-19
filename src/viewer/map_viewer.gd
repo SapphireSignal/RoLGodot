@@ -49,6 +49,7 @@ var _thread: TGameThread
 var _entities: Node3D
 var _entity_count := 0
 var _drop_count := 0  # footmen drops so far: each goes to the next lane
+var _spawner_count := 0  # spawners placed so far: each goes to the next build zone
 var _scenario_index := 0
 var _camera: Camera3D
 var _post_effects: TPostEffectManager
@@ -370,13 +371,19 @@ func _play_card(team_index: int, pattern: String) -> void:
 		return
 	var candidates: Array = []
 	if pattern.ends_with("Spawner"):
+		# the side's build zones in turn (on Classic one per lane: a spawner's units take the lane nearest to it), in
+		# each the first free tile
+		var zones: Array = []
 		for zone: TBuildZone in _client.Map.BuildZones.BuildZones.values():
-			if zone.TeamID != commander.TeamID():
-				continue
+			if zone.TeamID == commander.TeamID():
+				zones.append(zone)
+		for k in zones.size():
+			var zone: TBuildZone = zones[(_spawner_count + k) % zones.size()]
 			for y in zone.Size.y:
 				for x in zone.Size.x:
 					if zone.IsFree(Vector2i(x, y)):
 						candidates.append(RCommanderAbilityTarget.CreateBuildTarget(zone.ID, Vector2i(x, y)))
+		_spawner_count += 1
 	else:
 		# a drop 30 in front of the own nexus on a lane (every press the next lane), inside the map's drop zone: the
 		# game's client only sends targets there (the sandbox server checks no targets, TBrainWelaCommanderComponent

@@ -224,7 +224,15 @@ Capture check tooling for C++ moves: a scratch script ran the map viewer's captu
 footmen,Red footmen --wait=15000`, and `tests/bench_eventbus.gd`, once on the change and once on HEAD (git stash -u,
 build, import), then restored and rebuilt; noise floor = two captures of the same build (water and wind animation:
 up to 5% of pixels).
-**Next, in this order (the owner's playtest, 2026-09-19, found the port slow and missing basics; they want everything
+**First, before anything else (decided with the owner 2026-09-19): reference captures from the original itself.**
+Every feature is compared against the source, but nothing against how the original looks and plays, so visible gaps
+(cursor, vsync, invisible spawners, water shapes) reach the owner. Build the original client and game server from
+`reference/` with the installed Delphi (see CLAUDE.md, Tools), run a local
+sandbox game without the closed master server (the original has `TGameManager.CreateTestserverGameInfo` and test
+server paths), and capture the same views as the map viewer (and later timings, paths, frame rates). If it runs,
+every change from then on gets a side-by-side check against the original. Report to the owner what works.
+
+**Then, in this order (the owner's playtest, 2026-09-19, found the port slow and missing basics; they want everything
 the same as the real game or better, and the gaps found by Claude, not by them):**
 1. The server thread spikes: in the map viewer the heavy Classic game (`--play=Blue spawner` x4, `Red spawner` x4, both
    footmen x2, `--wait=25000 --fps-check=on`) takes 10-90 ms per server frame with spikes to 290 ms, while the same game
