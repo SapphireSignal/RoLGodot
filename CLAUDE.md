@@ -19,7 +19,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 
 ## Tools
 - Godot: `D:\Godot\Godot_v4.7.1-stable_win64.exe` (console build `..._console.exe` for headless runs)
-- Delphi: `C:\Program Files (x86)\Embarcadero\Studio\37.0\bin\`
+- Delphi 13 Community: `C:\Program Files (x86)\Embarcadero\Studio\37.0\bin\`. Builds only in the IDE, driven by
+  `tools/original_build/` (read `docs/original-build.md` first: what crashes or closes the IDE).
 - C++ game code (`native/`, read `docs/native.md`): Visual Studio 2022 C++ tools (MSVC 14.44), SCons (`pip install
   --user scons`), godot-cpp fetched by `tools/fetch_godot_cpp.ps1`; `tools/build_native.ps1` builds `bin/`
   (incremental; the test runner and `play.bat` call it first).
@@ -30,6 +31,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
 
 ## Docs
 - `docs/original-architecture.md`: how the original is built, file formats, gotchas.
+- `docs/original-build.md`: the reference build of the original (build, run, capture, crash addresses; the changes
+  Delphi 13 needs; NaN compare semantics).
 - `docs/port-plan.md`: phases 0-9. `docs/gap-list.md`: user-visible behaviours and their status.
 - `docs/original-bugs.md`: every bug of the original the port fixes instead of copying (and what was checked and is
   not a bug).
@@ -197,3 +200,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   the original; skinned animation and GFXD in C++ (heavy game 35 -> 69 fps); the viewer drops footmen inside the drop
   zone. 389 tests green. Next: the server thread spikes, the client-defaults audit, an all-units test (CONTINUE.md).
 
+- 2026-09-19: The original runs: its client and game server built with Delphi 13 Community from the snapshot
+  (`tools/original_build/`, `docs/original-build.md`: IDE automation, 13 documented changes), the client joins the
+  server's sandbox game and draws the Single map. Found: the shipped x87 build treats NaN compares as true for
+  `=`/`<`/`<=` (gotcha in `docs/original-architecture.md`). Open: its HUD does not lay out. Next: fix that, then
+  reference captures and side-by-side checks (CONTINUE.md).

@@ -226,11 +226,24 @@ build, import), then restored and rebuilt; noise floor = two captures of the sam
 up to 5% of pixels).
 **First, before anything else (decided with the owner 2026-09-19): reference captures from the original itself.**
 Every feature is compared against the source, but nothing against how the original looks and plays, so visible gaps
-(cursor, vsync, invisible spawners, water shapes) reach the owner. Build the original client and game server from
-`reference/` with the installed Delphi (see CLAUDE.md, Tools), run a local
-sandbox game without the closed master server (the original has `TGameManager.CreateTestserverGameInfo` and test
-server paths), and capture the same views as the map viewer (and later timings, paths, frame rates). If it runs,
-every change from then on gets a side-by-side check against the original. Report to the owner what works.
+(cursor, vsync, invisible spawners, water shapes) reach the owner.
+Done so far (2026-09-19): **the original runs.** Read `docs/original-build.md`: `tools/original_build/`
+prepares a patched code copy (`prepare_original.py`), builds it in the Delphi 13 Community IDE by real mouse /
+keyboard input (`delphi_build.ps1`: the IDE refuses command-line builds, crashes when sent window messages during a
+build, closes when its EULA reminder is clicked by message), runs server + client and captures
+(`run_original.ps1`), and resolves logged crash offsets (`resolve_map.py`). The client joins the server's sandbox and
+draws the Single map (capture in `build/original/captures/`, not committed). Rules learned with the owner: tell them
+before Delphi opens on their screen, keep every step under about a minute and report after each (they close windows
+that look idle), never capture more than the window being checked (their other screens show private apps).
+Next, in order:
+1. The original's HUD collapses into the top-left corner (no exception logged). Find the Delphi 13 difference in the
+   GUI engine (`Engine/Engine.GUI.pas`, `Engine.dXML.pas`): NaN compares are the first suspect (Delphi 10.1's x87
+   code made `NaN <= x` true, `docs/original-build.md`), then float parsing / RTTI. Log from the build copy, rebuild.
+2. The owner saw the build grid tiles grey in the original, while the port's grid shows coloured glow: compare
+   `TBuildGridManagerComponent`'s colours in the original against the port once the HUD works (the owner may be
+   judging the port's look as the target; check the source).
+3. Capture the same views as the map viewer (overview, nexus, lanes; 1 lane, 2 lanes, PvE), then side-by-side
+   checks of every open visual (gap list), and later timings, paths, frame rates.
 
 **Then, in this order (the owner's playtest, 2026-09-19, found the port slow and missing basics; they want everything
 the same as the real game or better, and the gaps found by Claude, not by them):**

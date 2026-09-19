@@ -83,6 +83,13 @@ Gotchas:
 - XML and INI values use German decimal commas (`10,1960000991821`). Every converter must parse them.
 - File names differ in case between references and disk (`footman.fbx` vs `Footman.FBX`). The original ran
   on case-insensitive Windows; converters must resolve paths case-insensitively and emit one canonical case.
+- NaN compares: the shipped Win32 build (Delphi 10.1, x87) made `NaN = x`, `NaN < x`, `NaN <= x` **true** and
+  `>`, `>=` false; IEEE (Delphi 13, GDScript, C++) makes them all false. The engine marks empty values with NaN
+  (`RVector3.EMPTY` X = NaN, `Engine/Engine.Math.pas:884`), so a ported compare that can meet NaN must reproduce the
+  original's result explicitly. Found by the reference build (`docs/original-build.md`).
+- The original patched Embarcadero's FMX text rendering (`Engine/FixedDX11Header/FMX.Canvas.D2D.diff`): the game's
+  fonts load from files into a custom DirectWrite collection, text is antialiased in grayscale (not ClearType), and
+  attributed text ranges get their own colours.
 
 ## Open questions (**?**)
 - Networking: the port runs the game-server simulation in-process for local play. Multiplayer later, if wanted.
