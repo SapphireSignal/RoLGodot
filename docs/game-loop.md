@@ -114,6 +114,42 @@ single conversions. Setup: 1.5 s per sandbox game (16 commanders with all their 
 script and data loading on the first game. Left, if it matters later: the per-frame think-timer reads (~2 us each),
 `THealthComponent.OnUnitProperies`, `TMovementComponent.OnIdle`.
 
+**Map viewer frame times** (`--fps-check=on`, a real fast right-drag through the input system, then standing still;
+`--profile=on` adds the costliest handlers of both sides and the meshes' frame work; the technical panel's FPS is
+printed next to the measured one and matches). Nothing else running. 2026-09-19, window 1600 x 900:
+
+| | server on the drawing thread | server on its own thread |
+| --- | --- | --- |
+| Single, empty sandbox, dragging | 177 fps, 12 frames of 25 ms in 3 s | 209 fps, worst frame 6.4 ms |
+| Classic, empty, dragging | 117 fps, worst 28 ms | 155 fps, worst 8.7 ms |
+| PvE, dragging | 74 fps, worst 43 ms | 95 fps, worst 12.7 ms |
+| Classic, 2 spawners + 2 drops (42 entities) | | 75 fps; client 9.4 ms/frame, server 12 ms per 32 ms frame (worst 46) |
+
+Profile of the last row: client handlers 9 ms/frame (`TMeshComponent.OnSubPositionByString` 58 us a call, called by
+the not yet ported `TParticleEffectComponent`'s inherited `TVisualizerComponent.OnIdle`; `TMeshComponent.OnIdle`,
+`TLogicToWorldComponent.OnIdle`), meshes' Animate + SetUpCustomShaders 2.2 ms; server `TThinkImpulseTimerComponent
+.OnIdle` 6 ms self (494 calls: the 16 commanders' card timers). Underneath all of it: the bus costs 2.3 us per Read
+without handlers, 4.2 us per Trigger nobody gets (`tests/bench_eventbus.gd`): GDScript call and allocation overhead.
+
+## Threads
+
+The original runs each server game on its own `TGameThread` (a `TThread`) with its globals as `threadvar`s
+(`CurrentEvent`, `Eventstack`, `GameTimeManager`, `Game`, `Map`, `GlobalEventbus`, `EntityDataCache`, `Overwatch`,
+`ServerGame`, `NOT_PAYED_RESOURCES`). The port: `TThreadContext` (`src/runtime/engine/`) holds the per-thread state;
+the static names the code uses (`TEventbus.CurrentEvent_*`, `TTimeManager.ZDiff` / `LastTickTime`, `TEntity
+._ScriptEventbusStack` / `LastScriptError`, `TWelaEffectPayCostComponent.NOT_PAYED_RESOURCES`, the lazy
+subscription-pattern and component-class caches, `RParam.ToSingle`'s buffer, `TEventbus.Prof`) are static properties
+over `TThreadContext.Current()`. The bus fetches the context once per event. Game / Map / EntityDataCache already live
+on each side's global bus.
+
+`TGameThread` owns a context (`FContext`). Without a thread (tests, headless matches, joining) `DoComputeGame` and
+`ConnectClient` swap it in on the main thread (`Enter` / `Leave`). `StartThread` runs `_ComputeFrame` on a Godot
+`Thread` at the heartbeat (32 ms after each frame's start, no catch-up) until `Terminated` or `StopThread`; it makes the
+card and scenario databases first and registers its context in a handshake before any game code runs. While it runs
+only the `TLoopbackSocket` channel (a `Mutex`) and simple flags cross threads. Godot's global `randf` / `randi_range`
+are shared by both (a harmless race: unordered numbers; the original's `Random` is one per process too). The map
+viewer starts the thread after the client has joined. `tests/test_game_thread.gd`.
+
 ## Not yet
 
 - Bots (`TPvPBotComponent`, a bot slot errors), the time manager pause, the rest of the client game (input,

@@ -25,8 +25,8 @@ func _init() -> void:
 	_bench("DSet.Make([])", func(): DSet.Make([]))
 	_bench("DSet.Make([20])", func(): DSet.Make([20]))
 	_bench("bus.StartEvent+EndEvent", func():
-		bus.StartEvent(C.eiExiled, [], [])
-		bus.EndEvent(0, [], []))
+		TEventbus.StartEvent(TThreadContext.Current(), C.eiExiled, [], [])
+		TEventbus.EndEvent(TThreadContext.Current(), 0, [], []))
 	_bench("BC.EventIdentifierToNetworkSend(eiThink)", func(): BC.EventIdentifierToNetworkSend(C.eiThink))
 	_bench("FEventhandler.get", func(): bus.FEventhandler.get(C.eiExiled * 3 + C.etRead))
 	_bench("RParam.AsBoolean(null)", func(): RParam.AsBoolean(null))

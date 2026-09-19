@@ -165,3 +165,8 @@ The global rules in `C:\Users\srrwz\.claude\CLAUDE.md` always apply.
   now grabs the ground like `TClientCameraComponent` (checked by `--drag-check`); clear color `$23373C`. The launcher
   smoke test now checks water / white pixels and grid tiles (proven to fail on broken water). The gap list names every
   unported client visual. 385 tests green, no errors. Next: see CONTINUE.md.
+- 2026-09-19: The server game runs on its own thread like the original's TGameThread (`TThreadContext` = the
+  original's threadvars; `docs/game-loop.md` "Threads"): no more hitches while dragging (worst frame 25-43 ms ->
+  6-13 ms). The HUD's technical panel (FPS, ping) in the map viewer; `--fps-check` / `--profile` measure frame times
+  with a real right-drag. Fonts and ping icons imported. 387 tests green. Next: the owner's decision on a C++ core
+  (see CONTINUE.md).

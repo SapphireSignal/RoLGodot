@@ -107,10 +107,11 @@ class TEventhandler:
 		ParameterCount = parameter_count
 		FEnumerators.append(TEventEnumerator.new(self))
 
-	func MatchingIndices(Group: int) -> PackedInt32Array:
-		if FMatchCacheGroupsVersion != TEventbus.GroupsVersion:
+	## GroupsVersion: the calling thread's (a handler lives on one side, so one thread).
+	func MatchingIndices(Group: int, GroupsVersion_: int) -> PackedInt32Array:
+		if FMatchCacheGroupsVersion != GroupsVersion_:
 			FMatchCache.clear()
-			FMatchCacheGroupsVersion = TEventbus.GroupsVersion
+			FMatchCacheGroupsVersion = GroupsVersion_
 		if FMatchCache.has(Group):
 			return FMatchCache[Group]
 		var Result := PackedInt32Array()
@@ -170,13 +171,30 @@ class TEventhandler:
 		assert(not FEnumerators[FEnumeratorIndex].FCurrentlyActive)
 
 
-## threadvar CurrentEvent : REventInformation (the event being executed); the Eventstack see StartEvent.
-static var CurrentEvent_EventIdentifier := 0
-static var CurrentEvent_CalledToGroup: Array = []
+## threadvar CurrentEvent : REventInformation (the event being executed); the Eventstack see StartEvent. Per thread:
+## the calling thread's TThreadContext (the bus itself uses its Ctx, the same object).
+static var CurrentEvent_EventIdentifier: int:
+	get:
+		return TThreadContext.Current().CurrentEvent_EventIdentifier
+	set(value):
+		TThreadContext.Current().CurrentEvent_EventIdentifier = value
+static var CurrentEvent_CalledToGroup: Array:
+	get:
+		return TThreadContext.Current().CurrentEvent_CalledToGroup
+	set(value):
+		TThreadContext.Current().CurrentEvent_CalledToGroup = value
 ## Port: the parameter array of the executing event (see SetVarParam).
-static var CurrentParameters: Array = []
+static var CurrentParameters: Array:
+	get:
+		return TThreadContext.Current().CurrentParameters
+	set(value):
+		TThreadContext.Current().CurrentParameters = value
 ## Port, a speed-up: bumped whenever a component changes its group (invalidates every TEventhandler.FMatchCache).
-static var GroupsVersion := 0
+static var GroupsVersion: int:
+	get:
+		return TThreadContext.Current().GroupsVersion
+	set(value):
+		TThreadContext.Current().GroupsVersion = value
 
 var FOwner = null  # TEntity
 ## [EnumEventIdentifier * 3 + EnumEventType] -> TEventhandler
@@ -222,16 +240,17 @@ static func _key(Event: int, EventType: int) -> int:
 
 ## Port: the Eventstack only restores the outer event when one ends, so Read / Trigger keep the outer event in
 ## locals and hand it to EndEvent (no stack object per event). The outermost event restores 0 / [] / [].
-func StartEvent(Event: int, Group: Array, Parameters: Array) -> void:
-	CurrentEvent_EventIdentifier = Event
-	CurrentEvent_CalledToGroup = Group
-	CurrentParameters = Parameters
+## Ctx is the calling thread's TThreadContext (looked up once per event by Read / Trigger).
+static func StartEvent(Ctx: TThreadContext, Event: int, Group: Array, Parameters: Array) -> void:
+	Ctx.CurrentEvent_EventIdentifier = Event
+	Ctx.CurrentEvent_CalledToGroup = Group
+	Ctx.CurrentParameters = Parameters
 
 
-func EndEvent(OuterEvent: int, OuterGroup: Array, OuterParameters: Array) -> void:
-	CurrentEvent_EventIdentifier = OuterEvent
-	CurrentEvent_CalledToGroup = OuterGroup
-	CurrentParameters = OuterParameters
+static func EndEvent(Ctx: TThreadContext, OuterEvent: int, OuterGroup: Array, OuterParameters: Array) -> void:
+	Ctx.CurrentEvent_EventIdentifier = OuterEvent
+	Ctx.CurrentEvent_CalledToGroup = OuterGroup
+	Ctx.CurrentParameters = OuterParameters
 
 
 static func _Matches(EntityComponent, Group: Array, ComponentID: int) -> bool:
@@ -242,16 +261,16 @@ static func _Matches(EntityComponent, Group: Array, ComponentID: int) -> bool:
 
 ## Port, a speed-up of the original's walk (every subscriber in order, _Matches each): the state of one walk,
 ## [matching indices of a single-group event or null, position in them, handler Version, GroupsVersion].
-static func _StartWalk(EventHandler: TEventhandler, Group: Array) -> Array:
-	var Indices = EventHandler.MatchingIndices(Group[0]) if Group.size() == 1 else null
-	return [Indices, 0, EventHandler.Version, GroupsVersion]
+static func _StartWalk(EventHandler: TEventhandler, Group: Array, Ctx: TThreadContext) -> Array:
+	var Indices = EventHandler.MatchingIndices(Group[0], Ctx.GroupsVersion) if Group.size() == 1 else null
+	return [Indices, 0, EventHandler.Version, Ctx.GroupsVersion, Ctx]
 
 
 ## Moves the enumerator to the next subscriber the event reaches and returns it, null at the end. Uses the
 ## matching indices while the subscriber list and the groups stay as they were, else walks as the original.
 static func _NextSubscriber(EventHandler: TEventhandler, EventEnumerator: TEventEnumerator, Group: Array, ComponentID: int, Walk: Array) -> RSubscriber:
 	var Subscribers: Array = EventHandler.Subscribers
-	if Walk[0] != null and (EventHandler.Version != Walk[2] or GroupsVersion != Walk[3]):
+	if Walk[0] != null and (EventHandler.Version != Walk[2] or Walk[4].GroupsVersion != Walk[3]):
 		Walk[0] = null
 	if Walk[0] != null:
 		var Indices: PackedInt32Array = Walk[0]
@@ -280,10 +299,11 @@ func Read(Eventname: int, Parameters: Array = [], Group: Array = [], ComponentID
 	if not Parameters.is_empty():
 		Parameters = Parameters.duplicate()  # open array parameter passed by value
 	Group = DSet.Make(Group)
-	var OuterEvent := CurrentEvent_EventIdentifier
-	var OuterGroup := CurrentEvent_CalledToGroup
-	var OuterParameters := CurrentParameters
-	StartEvent(Eventname, Group, Parameters)
+	var Ctx := TThreadContext.Current()
+	var OuterEvent := Ctx.CurrentEvent_EventIdentifier
+	var OuterGroup := Ctx.CurrentEvent_CalledToGroup
+	var OuterParameters := Ctx.CurrentParameters
+	StartEvent(Ctx, Eventname, Group, Parameters)
 	var Result = RParam.RPARAMEMPTY
 	if FOwner != null:
 		Result = FOwner.FBlackboard.GetValue(Eventname, Group)
@@ -291,21 +311,21 @@ func Read(Eventname: int, Parameters: Array = [], Group: Array = [], ComponentID
 	if EventHandler != null:
 		var EventEnumerator := EventHandler.GetEnumerator()
 		EventEnumerator.BeginEvent()
-		var Walk := _StartWalk(EventHandler, Group)
+		var Walk := _StartWalk(EventHandler, Group, Ctx)
 		while true:
 			var Subscriber := _NextSubscriber(EventHandler, EventEnumerator, Group, ComponentID, Walk)
 			if Subscriber == null:
 				break
-			if Prof != null:
-				var t := _ProfEnter()
+			if Ctx.Prof != null:
+				var t := _ProfEnter(Ctx)
 				Result = Subscriber.CallRead(Eventname, Parameters, Result)
-				_ProfLeave(Subscriber, t)
+				_ProfLeave(Ctx, Subscriber, t)
 			else:
 				Result = Subscriber.CallRead(Eventname, Parameters, Result)
 			EventEnumerator.FActiveIndex += 1
 		EventEnumerator.EndEvent()
 		EventHandler.ReleaseEnumerator()
-	EndEvent(OuterEvent, OuterGroup, OuterParameters)
+	EndEvent(Ctx, OuterEvent, OuterGroup, OuterParameters)
 	return Result
 
 
@@ -344,30 +364,31 @@ func SubscribeRemote(Eventname: int, EventType: int, Priority: int, EntityCompon
 func Trigger(Eventname: int, Values: Array = [], Group: Array = [], ComponentID: int = 0, Write: bool = false) -> void:
 	Values = _ScriptValues(Values)  # open array parameter passed by value
 	Group = DSet.Make(Group)
-	var OuterEvent := CurrentEvent_EventIdentifier
-	var OuterGroup := CurrentEvent_CalledToGroup
-	var OuterParameters := CurrentParameters
-	StartEvent(Eventname, Group, Values)
+	var Ctx := TThreadContext.Current()
+	var OuterEvent := Ctx.CurrentEvent_EventIdentifier
+	var OuterGroup := Ctx.CurrentEvent_CalledToGroup
+	var OuterParameters := Ctx.CurrentParameters
+	StartEvent(Ctx, Eventname, Group, Values)
 	var EventHandler: TEventhandler = FEventhandler.get(_key(Eventname, C.etWrite if Write else C.etTrigger))
 	if EventHandler != null:
 		var EventEnumerator := EventHandler.GetEnumerator()
 		EventEnumerator.BeginEvent()
-		var Walk := _StartWalk(EventHandler, Group)
+		var Walk := _StartWalk(EventHandler, Group, Ctx)
 		while true:
 			var Subscriber := _NextSubscriber(EventHandler, EventEnumerator, Group, ComponentID, Walk)
 			if Subscriber == null:
 				break
 			var Continue: bool
-			if Prof != null:
-				var t := _ProfEnter()
+			if Ctx.Prof != null:
+				var t := _ProfEnter(Ctx)
 				Continue = Subscriber.CallTrigger(Eventname, Values)
-				_ProfLeave(Subscriber, t)
+				_ProfLeave(Ctx, Subscriber, t)
 			else:
 				Continue = Subscriber.CallTrigger(Eventname, Values)
 			if not Continue:
 				EventEnumerator.EndEvent()
 				EventHandler.ReleaseEnumerator()
-				EndEvent(OuterEvent, OuterGroup, OuterParameters)
+				EndEvent(Ctx, OuterEvent, OuterGroup, OuterParameters)
 				return
 			EventEnumerator.FActiveIndex += 1
 		EventEnumerator.EndEvent()
@@ -381,7 +402,7 @@ func Trigger(Eventname: int, Values: Array = [], Group: Array = [], ComponentID:
 			GlobalEventbus.Trigger(C.eiNetworkSend, [SendID, Eventname, Group, ComponentID, Parameters, Write])
 	if FOwner != null and Write and Values.size() > 0:
 		FOwner.FBlackboard.SetValue(Eventname, Group, Values[0])
-	EndEvent(OuterEvent, OuterGroup, OuterParameters)
+	EndEvent(Ctx, OuterEvent, OuterGroup, OuterParameters)
 
 
 func Write(Eventname: int, Values: Array = [], Group: Array = [], ComponentID: int = 0) -> void:
@@ -443,23 +464,27 @@ static func _Invoke(Method: Callable, Parameters: Array):
 
 ## Port, a development aid: set Prof = {} to time every handler call ("Class.Method" -> [calls, self us,
 ## inclusive us]; self time leaves out the handlers it calls through the buses). tests/profile_sandbox.gd uses it.
-static var Prof = null
-static var _ProfChildTime: Array = []
+## Per thread (TThreadContext.Prof): profile the client and the server game separately.
+static var Prof:
+	get:
+		return TThreadContext.Current().Prof
+	set(value):
+		TThreadContext.Current().Prof = value
 
 
-static func _ProfEnter() -> int:
-	_ProfChildTime.append(0)
+static func _ProfEnter(Ctx: TThreadContext) -> int:
+	Ctx.ProfChildTime.append(0)
 	return Time.get_ticks_usec()
 
 
-static func _ProfLeave(Subscriber: RSubscriber, Start: int) -> void:
+static func _ProfLeave(Ctx: TThreadContext, Subscriber: RSubscriber, Start: int) -> void:
 	var Total: int = Time.get_ticks_usec() - Start
-	var Children: int = _ProfChildTime.pop_back()
-	if not _ProfChildTime.is_empty():
-		_ProfChildTime[-1] += Total
+	var Children: int = Ctx.ProfChildTime.pop_back()
+	if not Ctx.ProfChildTime.is_empty():
+		Ctx.ProfChildTime[-1] += Total
 	var Key: String = Subscriber.EntityComponent.ClassName() + "." + Subscriber.Method.get_method()
-	var Entry: Array = Prof.get(Key, [0, 0, 0])
+	var Entry: Array = Ctx.Prof.get(Key, [0, 0, 0])
 	Entry[0] += 1
 	Entry[1] += Total - Children
 	Entry[2] += Total
-	Prof[Key] = Entry
+	Ctx.Prof[Key] = Entry

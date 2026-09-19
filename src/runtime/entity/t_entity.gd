@@ -15,8 +15,12 @@ const SCRIPT_INHERIT_PRECEDING_VAR_NAME = "InheritsFromPreceding"
 const FILE_EXTENSION_ENTITY = ".ets"
 const PATH_SCRIPT = "\\Scripts\\"
 
-## Port: the last error of the script runner (the original raised an exception), for tests and logs.
-static var LastScriptError := ""
+## Port: the last error of the script runner (the original raised an exception), for tests and logs. Per thread.
+static var LastScriptError: String:
+	get:
+		return TThreadContext.Current().LastScriptError
+	set(value):
+		TThreadContext.Current().LastScriptError = value
 ## Tests that provoke script errors on purpose set this to keep the log free of expected errors.
 static var QuietScriptErrors := false
 
@@ -239,8 +243,10 @@ static func ExecuteFunction(Script: Object, Name: String, Parameters: Array, Glo
 	return Result
 
 
-## The global buses of the scripts running now, innermost last.
-static var _ScriptEventbusStack: Array = []
+## The global buses of the scripts running now, innermost last (per thread, TThreadContext).
+static var _ScriptEventbusStack: Array:
+	get:
+		return TThreadContext.Current().ScriptEventbusStack
 
 
 ## BaseConflict.Globals.Game, a threadvar in the original (one game per server thread): the Game of the global
@@ -430,7 +436,10 @@ static func Deserialize(EntityID: int, Stream: TEntityStream, GlobalEventbus) ->
 	return Result
 
 
-static var _component_classes := {}
+## Per thread (TThreadContext): the server game may fill it on its own thread.
+static var _component_classes: Dictionary:
+	get:
+		return TThreadContext.Current().ComponentClasses
 
 
 ## The class of a serialized component by name (RttiContext.FindType).

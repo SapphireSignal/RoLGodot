@@ -187,7 +187,16 @@ positioners, traces, range indicators, point lights, camera shake): work them do
 Owner's wishes (2026-09-18): a strict replica down to camera placement / angle / drag feel; several full audit passes
 over everything once the port is complete (phase 9); requests ahead of their phase are fine (do them unless they
 need an unported system, then say which).
-**Next:** pick by visibility: health bars and unit facing (orienters / positioners: check first whether client units
+Performance (2026-09-19, owner's priority: "a good part of why we need this port"): the server game now runs on its own
+thread like the original (section "Threads" in `docs/game-loop.md`, `TThreadContext`); the hitches while dragging are
+gone. The map viewer has the HUD's technical panel (FPS, ping; `TTechnicalPanel`, `GFXD.FPS`) and `--fps-check=on`
+(a real fast right-drag) with `--profile=on`; results and hot spots in "Performance" of `docs/game-loop.md`. Still slow
+with units: client 9 ms/frame and server 12 of 32 ms with 42 entities, mostly event bus overhead (2.3 us per Read).
+**Open decision for the owner**: a C++ GDExtension core (event bus, blackboard, the hottest components; MSVC 14.44 is
+installed, godot-cpp would be fetched) vs. GDScript-only speed-ups. Ask / follow the owner's answer before the next
+work item. Measure every change with `--fps-check` on all three setups (1 lane, 2 lanes, PvE), empty and with
+spawners, nothing else running (ask the owner to close the viewer).
+**Next (after the decision):** pick by visibility: health bars and unit facing (orienters / positioners: check first whether client units
 face their walk / attack direction), then particle effects (every hit, projectile and spell: the biggest look difference left,
 366 `.pfx`; Distortion follows them), shadow mapping (palms on the sand), or phase 5's camera component and card hand
 on top of the network.

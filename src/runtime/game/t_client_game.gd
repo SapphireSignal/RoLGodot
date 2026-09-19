@@ -74,7 +74,7 @@ func Destroy() -> void:
 ## client game on that connection. Returns null if the server refused the token.
 static func JoinLocal(GameThread: TGameThread, GameInfo_: TGameInformation, AuthentificationToken: String) -> TClientGame:
 	var Sockets := TLoopbackSocket.CreatePair()
-	GameThread.NetworkComponent.OnClientConnect(Sockets[0])
+	GameThread.ConnectClient(Sockets[0])
 	var Socket: TLoopbackSocket = Sockets[1]
 	var Hello := TCommandSequence.new().Create(BC.NET_HELLO_SERVER)
 	Hello.AddData(AuthentificationToken)

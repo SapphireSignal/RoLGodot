@@ -55,10 +55,11 @@ var _rotation := 0.0
 var _dragging := false
 var _drag_position := Vector2.ZERO  # FDragPosition: the grabbed ground point, game space XZ
 var _last_drag_screen := Vector2.ZERO  # the last dragged-to mouse position (--drag-check)
+var _last_server_ms := 0.0  # this frame's game server step (--fps-check)
+var _last_client_ms := 0.0  # this frame's client game step (--fps-check)
 var _info: Label
 var _toggles := {}
 var _load_ms := 0.0
-var _server_time := 0
 var _loading := false
 var _loading_overlay: ColorRect
 
@@ -128,8 +129,12 @@ func _build_scene() -> void:
 func _build_ui() -> void:
 	var layer := CanvasLayer.new()
 	add_child(layer)
+	# the HUD's technical panel (FPS, ping) at the top left like the game; the viewer's own panel below it
+	var technical := TTechnicalPanel.new()
+	technical.PingSource = func() -> int: return _client.Ping() if _client != null and not _loading else 0
+	layer.add_child(technical)
 	var panel := PanelContainer.new()
-	panel.position = Vector2(8, 8)
+	panel.position = Vector2(8, 8 + technical.size.y)
 	layer.add_child(panel)
 	var box := VBoxContainer.new()
 	panel.add_child(box)
@@ -206,6 +211,8 @@ func _request_scenario(index: int) -> void:
 
 
 func _unload() -> void:
+	if _thread != null:
+		_thread.StopThread()
 	if _client != null:
 		_client.Free()  # frees its map and entities (their meshes)
 		_client = null
@@ -246,7 +253,8 @@ func _load_scenario(index: int) -> void:
 	# the server answers NET_CLIENT_ENTER_CORE with the world, the client's frame takes it and says it is ready
 	_thread.DoComputeGame()
 	_client_frame()
-	_server_time = Time.get_ticks_msec()
+	# from now on the server runs on its own thread like the original's TGameThread: drawing never waits for it
+	_thread.StartThread()
 	_entity_count = _client.EntityManager.DeployedEntityCount
 	_load_ms = Time.get_ticks_msec() - start
 	_apply_toggles()
@@ -378,12 +386,11 @@ func _play_card(team_index: int, pattern: String) -> void:
 
 func _process(delta: float) -> void:
 	if _client != null and not _loading:
-		# the game server's frames, at its heartbeat (TARGET_FRAMETIME)
-		var now := Time.get_ticks_msec()
-		if now - _server_time >= TGameThread.TARGET_FRAMETIME and not _thread.Terminated:
-			_server_time = now
-			_thread.DoComputeGame()
+		# the game server runs on its own thread (TGameThread.StartThread); here only the client's frame
+		var t1 := Time.get_ticks_usec()
 		_client_frame()
+		_last_server_ms = _thread.LastFrameMs
+		_last_client_ms = (Time.get_ticks_usec() - t1) / 1000.0
 		if _client.EntityManager.DeployedEntityCount != _entity_count:
 			_entity_count = _client.EntityManager.DeployedEntityCount
 			_update_camera()
@@ -438,6 +445,20 @@ func _unhandled_input(event: InputEvent) -> void:
 			_update_camera()
 	elif event is InputEventKey and event.pressed and (event as InputEventKey).keycode == KEY_R:
 		_set_view(_views()[0])
+
+
+## The costliest event handlers of a TEventbus.Prof table, per frame: self time (without the handlers they call).
+func _print_profile(side: String, table: Dictionary, frames: int) -> void:
+	var rows := []
+	var total := 0
+	for key in table:
+		rows.append([key] + table[key])
+		total += table[key][1]
+	rows.sort_custom(func(a: Array, b: Array) -> bool: return a[2] > b[2])
+	print("profile %s: handlers %.3f ms/frame (self times, %d frames)" % [side, total / 1000.0 / frames, frames])
+	for row in rows.slice(0, 15):
+		print("profile %s:   %-60s %8.3f ms/frame self %8.3f incl, %6.1f calls/frame" % [side, row[0],
+			row[2] / 1000.0 / frames, row[3] / 1000.0 / frames, float(row[1]) / frames])
 
 
 ## Meshes drawn in the entities layer (decorations and the server's entities).
@@ -553,10 +574,93 @@ func _run_capture(maps: PackedStringArray, out_dir: String) -> void:
 			await get_tree().process_frame
 			print("drag-check: %s grabbed (%.2f, %.2f), worst drift %.4f, dragging after release %s" % [
 				SCENARIOS[i][2], grabbed.x, grabbed.y, worst, _dragging])
-		# --wait=<ms>: let the game run that long before the captures (units spawn and walk)
+			# the ground the eye sees: terrain heights along the lane (the drag holds the y = 0 plane, as the original)
+			if _map != null and _map.Terrain != null:
+				var heights := []
+				for x in range(-100, 101, 20):
+					for z in [-23.0, 0.0]:
+						heights.append("%.2f" % (_map.Terrain.GetTerrainHeight(Vector2(x, z)) as Vector3).y)
+				print("drag-check: terrain heights along z = -23 / 0, x -100..100: ", ", ".join(heights))
+		# --wait=<ms>: let the game run that long before the checks and captures (units spawn and walk)
 		var wait_until := Time.get_ticks_msec() + int(_user_arg("wait"))
 		while Time.get_ticks_msec() < wait_until:
 			await get_tree().process_frame
+		# --fps-check=on: frame times over 3 s while the view pans continuously (a drag), then 3 s standing still (after
+		# --play / --wait, so a full field can be measured)
+		if _user_arg("fps-check") == "on":
+			_set_view(views[0])
+			for f in 30:
+				await get_tree().process_frame
+			for phase in ["dragging", "still"]:
+				var frames := 0
+				var slow := 0
+				var client_sum := 0.0
+				var server_sum := 0.0
+				var times := []
+				_thread.WorstFrameMs = 0.0
+				# --profile=on (still phase): every event handler of both sides and the meshes' frame work, timed
+				var profiling: bool = phase == "still" and _user_arg("profile") == "on"
+				if profiling:
+					TEventbus.Prof = {}
+					TMesh.ProfUs = [0, 0, 0]
+					_thread.StopThread()
+					_thread.FContext.Prof = {}
+					_thread.StartThread()
+				# the drag goes through the input system like the owner's mouse: right button down in the middle of the
+				# screen, then a fast mouse move every frame (40 pixels, swinging across the screen), button up at the end
+				var screen := Vector2(get_viewport().get_visible_rect().size)
+				var mouse := screen * 0.5
+				if phase == "dragging":
+					var down := InputEventMouseButton.new()
+					down.button_index = MOUSE_BUTTON_RIGHT
+					down.pressed = true
+					down.position = mouse
+					Input.parse_input_event(down)
+				var start_ms := Time.get_ticks_usec()
+				var last := start_ms
+				while Time.get_ticks_usec() - start_ms < 3000000:
+					if phase == "dragging":
+						var step := Vector2(40, 12) * (1 if (frames / 15) % 2 == 0 else -1)
+						var motion := InputEventMouseMotion.new()
+						motion.button_mask = MOUSE_BUTTON_MASK_RIGHT
+						mouse += step
+						motion.position = mouse
+						motion.relative = step
+						Input.parse_input_event(motion)
+					await get_tree().process_frame
+					var now := Time.get_ticks_usec()
+					var ms := (now - last) / 1000.0
+					last = now
+					frames += 1
+					times.append(ms)
+					client_sum += _last_client_ms
+					server_sum += _last_server_ms
+					if ms > 12.0:
+						slow += 1
+				if phase == "dragging":
+					var up := InputEventMouseButton.new()
+					up.button_index = MOUSE_BUTTON_RIGHT
+					up.pressed = false
+					up.position = mouse
+					Input.parse_input_event(up)
+					print("fps-check: the drag moved the view to %s (dragging %s)" % [_target, _dragging])
+				times.sort()
+				var seconds := (Time.get_ticks_usec() - start_ms) / 1000000.0
+				if profiling:
+					_thread.StopThread()
+					_print_profile("client", TEventbus.Prof, frames)
+					_print_profile("server", _thread.FContext.Prof, maxi(1, int(seconds * 1000 / TGameThread.TARGET_FRAMETIME)))
+					_thread.FContext.Prof = null
+					_thread.StartThread()
+					TEventbus.Prof = null
+					print("profile client: meshes Animate %.3f ms/frame, SetUpCustomShaders %.3f ms/frame (%d mesh frames/frame)" % [
+						TMesh.ProfUs[0] / 1000.0 / frames, TMesh.ProfUs[1] / 1000.0 / frames, TMesh.ProfUs[2] / frames])
+					TMesh.ProfUs = null
+				print("fps-check: the technical panel shows %d FPS" % GFXD.FPS())
+				print("fps-check: %s %s, %d entities: %.1f fps, median %.1f ms, p99 %.1f ms, worst %.1f ms, %d frames > 12 ms; client step %.2f ms/frame; server thread %.2f ms/frame (worst %.1f, budget %d)" % [
+					SCENARIOS[i][2], phase, _client.EntityManager.DeployedEntityCount, frames / seconds,
+					times[times.size() / 2], times[int(times.size() * 0.99)], times[-1], slow, client_sum / frames,
+					server_sum / frames, _thread.WorstFrameMs, TGameThread.TARGET_FRAMETIME])
 		# --death-burst=N: after the wait, at the first unit death on the client, N frames ~60 ms apart centered on the
 		# dying mesh (the decay manager's death shader, 500 ms)
 		var burst := int(_user_arg("death-burst"))

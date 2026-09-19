@@ -8,11 +8,14 @@ extends TObject
 ## (waiting for players: all playing -> running = Start, one disconnected or not all connected within TIMEOUT_TIME
 ## -> aborted; aborted: abort sent, players disconnected, terminated after TIMEOUT_TIME; running: all players gone ->
 ## crashed); once the game is finished it terminates and fires eiServerShutdown.
-## Port notes: there is no thread; the owner calls DoComputeGame every frame until Terminated (the original's
-## heartbeat aims at TARGET_FRAMETIME = 32 ms). The game has its own clock (the original's per-thread
-## GameTimeManager): DoComputeGame swaps its LastTickTime / ZDiff into TTimeManager and back out, so a client in the
-## same process keeps its own frame times. Not ported: reporting the result to the master server, madExcept bug
-## reports, the abort's one second sleep. SetAllPlayersPlaying lets headless runs without clients start the game.
+## Threads: the game's threadvars live in its own TThreadContext (FContext: clock, current event, NOT_PAYED_RESOURCES,
+## ...). StartThread runs it like the original's Execute on a real thread (DoComputeGame at the THeartbeatManager
+## heartbeat, TARGET_FRAMETIME = 32 ms) until Terminated or StopThread: then a client in the same process (the map
+## viewer) draws without waiting for server frames. Without the thread the owner calls DoComputeGame (tests, headless
+## matches, a client joining before the thread starts): it swaps FContext in on the calling main thread. While the
+## thread runs, only the network (TLoopbackSocket) and the thread-safe flags cross over.
+## Not ported: reporting the result to the master server, madExcept bug reports, the abort's one second sleep.
+## SetAllPlayersPlaying lets headless runs without clients start the game.
 
 const C = preload("res://src/runtime/dws/dws_const.gd")
 
@@ -26,7 +29,16 @@ enum { gfNone, gfCrashed, gfFinished, gfAborted }  # EnumGameFinishedState
 
 var FServerGame: TServerGame = null
 var FNetworkComponent: TServerNetworkComponent = null
-var FClock: Array = []  # the game's TTimeManager.SaveClock
+## The game's threadvars (see TThreadContext)
+var FContext := TThreadContext.new()
+var FThread: Thread = null
+var FStopRequested := false
+## the thread's frame times (ms): the last one and the slowest since the thread started
+var LastFrameMs := 0.0
+var WorstFrameMs := 0.0
+## frames computed on the thread, and its OS thread id (tests)
+var ThreadFrames := 0
+var ThreadID := -1
 var ErrorMsg := ""
 var FTicksToGo := 0
 var FGameID := ""
@@ -56,25 +68,79 @@ var NetworkComponent: TServerNetworkComponent:
 
 func Create(GameInformation = null) -> TGameThread:
 	# final init game player data (TeamID and isBot)
+	var Outer := TThreadContext.Enter(FContext)
 	GameInformation.UpdateGamePlayers()
 	FTimeSinceCreate = TTimer.new().CreateAndStart(1000)
 	FServerGame = TServerGame.new().Create(GameInformation)
 	FNetworkComponent = TServerNetworkComponent.new().Create(FServerGame.GameEntity, GameInformation)
 	FGameID = GameInformation.GameID
-	var OuterClock := TTimeManager.SaveClock()
 	TTimeManager.StartTickTack()
 	FServerGame.GlobalEventbus.EntityDataCache = TEntityDataCache.new().Create(FServerGame.GlobalEventbus)
 	PrepareGame()
-	FClock = TTimeManager.SaveClock()
-	TTimeManager.RestoreClock(OuterClock)
+	TThreadContext.Leave(Outer)
 	return self
 
 
 func Destroy() -> void:
+	StopThread()
 	if FServerGame != null:
+		var Outer := TThreadContext.Enter(FContext)
 		FServerGame.Free()
 		FServerGame = null
+		TThreadContext.Leave(Outer)
 	super()
+
+
+## TGameThread.Execute on its own thread: frames at the heartbeat until Terminated or StopThread. The caches the
+## game fills lazily and shares (card and scenario databases) are made first; the thread waits until its context
+## is registered.
+func StartThread() -> void:
+	if FThread != null:
+		return
+	TCardInfoManager.Instance()
+	TScenarioInfoManager.Instance()
+	FStopRequested = false
+	var Ready := Semaphore.new()
+	var Go := Semaphore.new()
+	var IDs := []
+	FThread = Thread.new()
+	FThread.start(_Execute.bind(Ready, Go, IDs))
+	Ready.wait()
+	TThreadContext.RegisterThread(IDs[0], FContext)
+	Go.post()
+
+
+## Stops the thread after its current frame and waits for it.
+func StopThread() -> void:
+	if FThread == null:
+		return
+	FStopRequested = true
+	FThread.wait_to_finish()
+	FThread = null
+
+
+func IsThreadRunning() -> bool:
+	return FThread != null and FThread.is_alive()
+
+
+func _Execute(Ready: Semaphore, Go: Semaphore, IDs: Array) -> void:
+	var ID := OS.get_thread_caller_id()
+	IDs.append(ID)
+	Ready.post()
+	Go.wait()
+	ThreadID = ID
+	var NextFrame := Time.get_ticks_usec()
+	while not Terminated and not FStopRequested:
+		var Start := Time.get_ticks_usec()
+		_ComputeFrame()
+		ThreadFrames += 1
+		LastFrameMs = (Time.get_ticks_usec() - Start) / 1000.0
+		WorstFrameMs = maxf(WorstFrameMs, LastFrameMs)
+		# THeartbeatManager: the next frame TARGET_FRAMETIME after this one started (no catching up after a slow one)
+		NextFrame = maxi(NextFrame + TARGET_FRAMETIME * 1000, Time.get_ticks_usec())
+		while not FStopRequested and Time.get_ticks_usec() < NextFrame:
+			OS.delay_usec(mini(1000, NextFrame - Time.get_ticks_usec()))
+	TThreadContext.UnregisterThread(ID)
 
 
 func PrepareGame() -> void:
@@ -87,6 +153,15 @@ func PrepareGame() -> void:
 		FServerGame.Start()
 
 
+## Port: the server's listening socket accepting a local connection (before the thread starts: it runs on the
+## calling thread in the game's context).
+func ConnectClient(Socket: TLoopbackSocket) -> void:
+	assert(FThread == null, "TGameThread.ConnectClient: connect before StartThread")
+	var Outer := TThreadContext.Enter(FContext)
+	FNetworkComponent.OnClientConnect(Socket)
+	TThreadContext.Leave(Outer)
+
+
 ## The port's stand-in for the network: all players have loaded and play.
 func SetAllPlayersPlaying() -> void:
 	FAllPlayersPlaying = true
@@ -96,11 +171,10 @@ func SetAllPlayersPlaying() -> void:
 func DoComputeGame() -> void:
 	if Terminated:
 		return
-	var OuterClock := TTimeManager.SaveClock()
-	TTimeManager.RestoreClock(FClock)
+	assert(FThread == null, "TGameThread.DoComputeGame: the game runs on its own thread")
+	var Outer := TThreadContext.Enter(FContext)
 	_ComputeFrame()
-	FClock = TTimeManager.SaveClock()
-	TTimeManager.RestoreClock(OuterClock)
+	TThreadContext.Leave(Outer)
 
 
 func _ComputeFrame() -> void:

@@ -7,10 +7,14 @@ extends TWelaEffectComponent
 ## ConsumesAll pays the payer's whole balance instead; ConvertResource refunds the paid amount as another resource
 ## (eiResourceTransaction). Costs are paid in the order eiResourceCost returns them (sorted by resource in the port).
 ## NOT_PAYED_RESOURCES: a threadvar per game thread in the original, set to the default at game start and changed
-## by the card-cost game events; one static var here (the game sets it, phase 3).
+## by the card-cost game events; per thread here too (TThreadContext.NotPayedResources).
 
 const DEFAULT_NOT_PAYED_RESOURCES = [C.reLevel, C.reTier]
-static var NOT_PAYED_RESOURCES: Array = DEFAULT_NOT_PAYED_RESOURCES.duplicate()
+static var NOT_PAYED_RESOURCES: Array:
+	get:
+		return TThreadContext.Current().NotPayedResources
+	set(value):
+		TThreadContext.Current().NotPayedResources = value
 
 ## EnumResource -> SetComponentGroup
 var FPayingGroup := {}

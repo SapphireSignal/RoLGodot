@@ -824,9 +824,24 @@ func Animate() -> void:
 
 
 func _process(_delta: float) -> void:
+	if ProfUs == null:
+		if DrivenByController:
+			Animate()
+		SetUpCustomShaders()
+		return
+	var t0 := Time.get_ticks_usec()
 	if DrivenByController:
 		Animate()
+	var t1 := Time.get_ticks_usec()
 	SetUpCustomShaders()
+	ProfUs[0] += t1 - t0
+	ProfUs[1] += Time.get_ticks_usec() - t1
+	ProfUs[2] += 1
+
+
+## Port, a development aid (main thread only): set ProfUs = [0, 0, 0] to sum the per-frame mesh work
+## [Animate us, SetUpCustomShaders us, mesh frames].
+static var ProfUs = null
 
 
 ## Frees a mesh (the owner's FreeAndNil): the controller drops its drivers first. A static function, as a node can't

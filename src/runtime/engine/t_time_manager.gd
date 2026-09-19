@@ -2,8 +2,9 @@ class_name TTimeManager
 extends RefCounted
 ## Port of the TTimeManager clock (Engine/Engine.Helferlein.Windows.pas:2214): milliseconds since program start.
 ## Every TTimeManager of the original reads the same clock; the server game's GameTimeManager only adds its own
-## ZDiff (TickTack). The port keeps the clock static; a server game swaps its own frame state in (SaveClock /
-## RestoreClock). The pause (SetPause) is not ported yet.
+## ZDiff (TickTack). The port keeps the clock static; the frame state (ZDiff, LastTickTime) is per thread like the
+## original's threadvar GameTimeManager (TThreadContext: a server game's context has its own). The pause (SetPause)
+## is not ported yet.
 ## Tests freeze the clock with FakeTime (milliseconds, a float), null = the real clock.
 
 const L = preload("res://src/runtime/dws/dws_lib.gd")
@@ -11,9 +12,17 @@ const L = preload("res://src/runtime/dws/dws_lib.gd")
 static var FakeTime = null
 ## ZDiff: milliseconds between the last two TickTacks (a single). The original's per-game GameTimeManager.ZDiff;
 ## TGameThread's frame sets it, tests may set it by hand.
-static var ZDiff := 0.0
+static var ZDiff: float:
+	get:
+		return TThreadContext.Current().ZDiff
+	set(value):
+		TThreadContext.Current().ZDiff = value
 ## LetzteZeit: the time of the last TickTack (StartTickTack: the time manager's creation).
-static var LastTickTime := 0.0
+static var LastTickTime: float:
+	get:
+		return TThreadContext.Current().LastTickTime
+	set(value):
+		TThreadContext.Current().LastTickTime = value
 
 
 ## The TTimeManager constructor's part: TickTack measures from now.

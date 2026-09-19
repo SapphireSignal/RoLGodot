@@ -338,6 +338,31 @@ def import_effect_textures(check: bool, problems: list) -> int:
     return written
 
 
+def import_fonts(check: bool, problems: list) -> int:
+    """Copies the GUI fonts (Graphics/Fonts: Proza Libre in its weights, fontawesome) to assets/graphics/fonts/."""
+    fonts = sorted((GRAPHICS / 'Fonts').glob('*.ttf'))
+    if not fonts:
+        problems.append('Graphics/Fonts/*.ttf not found')
+    written = 0
+    for source in fonts:
+        if not check:
+            (OUT / 'fonts').mkdir(parents=True, exist_ok=True)
+            written += copy_if_changed(source, OUT / 'fonts' / source.name.lower())
+    # GUI images the ported HUD parts use (the GUI converter of phase 7 will take over)
+    for pattern in GUI_IMAGES:
+        sources = sorted(GRAPHICS.glob(pattern))
+        if not sources:
+            problems.append(f'GUI images "{pattern}" not found')
+        for source in sources:
+            if not check:
+                rel = source.relative_to(GRAPHICS).parent.as_posix().lower()
+                written += write_texture(source, OUT / rel / source.name.lower())
+    return written
+
+
+GUI_IMAGES = ['GUI/HUD/TechnicalPanel/*.png']
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument('--only', help='only descriptors whose path contains this (case-insensitive)')
@@ -407,6 +432,7 @@ def main() -> int:
             written += 1
     if not args.only:
         written += import_effect_textures(args.check, problems)
+        written += import_fonts(args.check, problems)
     map_problems = []
     if not args.only:
         written += import_map_graphics.import_maps(OUT, args.check, copy_if_changed, write_texture, map_problems)

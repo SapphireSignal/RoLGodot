@@ -8,10 +8,12 @@ extends RefCounted
 enum { TCPStConnected, TCPStDisconnected }  # EnumTCPStatus, as far as the game asks
 
 
+## Both ends may live on different threads (a game server on its TGameThread): every access holds Lock.
 class TChannel:
 	extends RefCounted
 	var Queues: Array = [[], []]
 	var Closed := false
+	var Lock := Mutex.new()
 
 
 var FChannel: TChannel
@@ -32,12 +34,15 @@ static func CreatePair() -> Array:
 
 var Status: int:
 	get:
-		return TCPStDisconnected if FChannel.Closed else TCPStConnected
+		return TCPStDisconnected if IsDisconnected() else TCPStConnected
 
 
 func SendData(Data: TCommandSequence) -> void:
+	var Copy := Data.GetCopy()
+	FChannel.Lock.lock()
 	if not FChannel.Closed:
-		FChannel.Queues[1 - FSide].append(Data.GetCopy())
+		FChannel.Queues[1 - FSide].append(Copy)
+	FChannel.Lock.unlock()
 
 
 func SendCommand(Command: int) -> void:
@@ -46,23 +51,34 @@ func SendCommand(Command: int) -> void:
 
 ## Packets already sent stay readable after a close, like the socket's receive buffer.
 func IsDataPacketAvailable() -> bool:
-	return not FChannel.Queues[FSide].is_empty()
+	FChannel.Lock.lock()
+	var Result: bool = not FChannel.Queues[FSide].is_empty()
+	FChannel.Lock.unlock()
+	return Result
 
 
 func ReceiveDataPacket() -> TCommandSequence:
-	return FChannel.Queues[FSide].pop_front()
+	FChannel.Lock.lock()
+	var Result: TCommandSequence = FChannel.Queues[FSide].pop_front()
+	FChannel.Lock.unlock()
+	return Result
 
 
 func CloseConnection() -> void:
+	FChannel.Lock.lock()
 	FChannel.Closed = true
+	FChannel.Lock.unlock()
 
 
 func IsConnected() -> bool:
-	return not FChannel.Closed
+	return not IsDisconnected()
 
 
 func IsDisconnected() -> bool:
-	return FChannel.Closed
+	FChannel.Lock.lock()
+	var Result := FChannel.Closed
+	FChannel.Lock.unlock()
+	return Result
 
 
 ## GetCurrentPeerTime: the peer's clock; both ends share the process clock.

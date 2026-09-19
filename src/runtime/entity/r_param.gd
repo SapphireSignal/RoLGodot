@@ -23,12 +23,11 @@ static func Copy(p):
 
 
 ## Round a float to the nearest 32-bit single, as a Delphi `single` variable holds it.
+## The buffer is per thread (TThreadContext.SingleBuffer): the server game may run on its own thread.
 static func ToSingle(x: float) -> float:
-	_single_buffer[0] = x
-	return _single_buffer[0]
-
-
-static var _single_buffer := PackedFloat32Array([0.0])
+	var Buffer := TThreadContext.Current().SingleBuffer
+	Buffer[0] = x
+	return Buffer[0]
 
 
 static func _int_bits_as_single(i: int) -> float:

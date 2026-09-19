@@ -11,6 +11,7 @@ const DEFAULTS := {
 	C.coEngineGlobalShadingReduction: "0.5",
 	C.coGameplayFixedTeamColors: "True",
 	C.coGameplayShowEffectRadius: "True",
+	C.coGameplayShowTechnicalPanel: "True",
 	C.coGraphicsPostEffectSSAO: "False",
 	C.coGraphicsPostEffectToon: "True",
 	C.coGraphicsPostEffectGlow: "True",

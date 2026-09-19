@@ -37,7 +37,12 @@ class TSubscribedEvent:
 
 
 ## class var FComponentSubscriptionPatterns: [script, IsServerSide] -> Array of [Event, EventType, Priority, Scope, Method, ParameterCount]
-static var FComponentSubscriptionPatterns := {}
+## Per thread (TThreadContext): the server game may fill it on its own thread.
+static var FComponentSubscriptionPatterns: Dictionary:
+	get:
+		return TThreadContext.Current().SubscriptionPatterns
+	set(value):
+		TThreadContext.Current().SubscriptionPatterns = value
 
 var FComponentGroup: Array = []
 var FOwner = null  # TEntity
